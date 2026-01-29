@@ -225,4 +225,114 @@ export class ProjectDetailPage extends BasePage {
     const sheet = this.page.locator('[role="dialog"]');
     await expect(sheet.getByText(`${count} warning`, { exact: false })).toBeVisible();
   }
+
+  // Container Status methods
+  async expectContainerStatus(
+    containerName: string,
+    expectedStatus: "up" | "down" | "checking",
+    options?: { timeout?: number }
+  ) {
+    const containerCard = this.page
+      .getByText(containerName, { exact: true })
+      .locator("..")
+      .locator("..");
+    const statusBadge = containerCard
+      .locator("span")
+      .filter({ hasText: /^Up$|^Down$|^Checking\.\.\.$/ });
+
+    const timeout = options?.timeout || 10000;
+
+    if (expectedStatus === "up") {
+      await expect(statusBadge).toHaveText("Up", { timeout });
+      await expect(statusBadge).toHaveClass(/bg-emerald-500|text-emerald/);
+    } else if (expectedStatus === "down") {
+      await expect(statusBadge).toHaveText("Down", { timeout });
+      await expect(statusBadge).toHaveClass(/bg-secondary|text-secondary-foreground/);
+    } else {
+      await expect(statusBadge).toHaveText("Checking...", { timeout });
+      await expect(statusBadge).toHaveClass(/bg-amber-500|text-amber/);
+    }
+  }
+
+  async mockContainerStatus(containerId: string, status: "up" | "down") {
+    const containerUrl = `https://app-${containerId}.kleff.io`;
+
+    await this.page.route(containerUrl, async (route) => {
+      if (status === "up") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: "<html><body>Container is running</body></html>"
+        });
+      } else {
+        await route.fulfill({
+          status: 500,
+          contentType: "text/html",
+          body: "<html><body>Internal Server Error</body></html>"
+        });
+      }
+    });
+  }
+
+  async mockContainerNetworkError(containerId: string) {
+    const containerUrl = `https://app-${containerId}.kleff.io`;
+
+    await this.page.route(containerUrl, async (route) => {
+      await route.abort("connectionrefused");
+    });
+  }
+
+  async waitForStatusTransition(
+    containerName: string,
+    fromStatus: "checking",
+    toStatus: "up" | "down",
+    timeout = 10000
+  ) {
+    const containerCard = this.page
+      .getByText(containerName, { exact: true })
+      .locator("..")
+      .locator("..");
+    const statusBadge = containerCard
+      .locator("span")
+      .filter({ hasText: /^Up$|^Down$|^Checking\.\.\.$/ });
+
+    // First verify it starts with "checking"
+    await expect(statusBadge).toHaveText("Checking...", { timeout: 2000 });
+
+    // Then wait for transition to final status
+    if (toStatus === "up") {
+      await expect(statusBadge).toHaveText("Up", { timeout });
+    } else {
+      await expect(statusBadge).toHaveText("Down", { timeout });
+    }
+  }
+
+  async getContainerId(containerName: string): Promise<string> {
+    // Open container detail modal to get the container ID
+    const containerCard = this.page
+      .getByText(containerName, { exact: true })
+      .locator("..")
+      .locator("..");
+    await containerCard.click();
+
+    // Wait for modal and get container ID
+    const modal = this.page.locator('[role="dialog"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    const containerIdElement = modal
+      .locator("span")
+      .filter({ hasText: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/ });
+    const containerId = await containerIdElement.textContent();
+
+    // Close modal
+    const closeButton = modal.getByRole("button", { name: /close/i });
+    await closeButton.click();
+    await expect(modal).not.toBeVisible();
+
+    if (!containerId) {
+      throw new Error(`Could not find container ID for ${containerName}`);
+    }
+
+    return containerId.trim();
+  }
 }

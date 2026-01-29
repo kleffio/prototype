@@ -550,4 +550,5 @@ func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name s
 	// Submit Update
 	_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
 	return updateErr
+
 }
