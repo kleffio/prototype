@@ -1,0 +1,27 @@
+name: "Code Freeze Check"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Deadline
+        shell: bash
+        run: |
+          # Target Deadline: Jan 30, 2026 at 23:59:59 (End of Friday)
+          # Convert to Unix Timestamp for easy comparison
+          DEADLINE=$(date -d "2026-01-31 00:00:00" +%s)
+          CURRENT=$(date +%s)
+
+          if [ $CURRENT -gt $DEADLINE ]; then
+            echo "❌ CODE FREEZE IN EFFECT."
+            echo "The deadline (Midnight, Jan 30th) has passed."
+            echo "Merges are restricted to focus on documentation and presentations."
+            exit 1
+          else
+            echo "✅ Under deadline. Merges allowed."
+          fi

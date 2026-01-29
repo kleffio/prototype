@@ -7,6 +7,7 @@ import { SecureComponent } from "@app/components/SecureComponent";
 import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
+import { useWebsiteStatus } from "@features/projects/hooks/useWebsiteStatus";
 
 const translations = {
   en: enTranslations,
@@ -23,6 +24,7 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
   const appUrl = `https://app-${container.containerId}.kleff.io`;
   const [locale, setLocale] = React.useState(getLocale());
   const t = translations[locale].projectDetail.containerDetail;
+  const { status } = useWebsiteStatus(appUrl);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -56,16 +58,10 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
 
       {/* Center: Status Badge */}
       <Badge
-        variant={
-          container.status?.toLowerCase().includes("running")
-            ? "success"
-            : container.status?.toLowerCase().includes("stopped")
-              ? "secondary"
-              : "warning"
-        }
+        variant={status === "up" ? "success" : status === "down" ? "secondary" : "warning"}
         className="justify-self-center text-xs"
       >
-        {container.status || t.unknown}
+        {status === "up" ? "Up" : status === "down" ? "Down" : "Checking..."}
       </Badge>
 
       {/* Right side: Actions */}
