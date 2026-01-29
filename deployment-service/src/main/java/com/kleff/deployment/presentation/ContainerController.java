@@ -45,16 +45,24 @@ public class ContainerController {
         return containerService.updateContainer(containerID, containerRequest);
     }
 
-    @DeleteMapping("/{containerID}")
-    public ResponseEntity<Void> deleteContainer(@PathVariable String containerID) {
-        containerService.deleteContainer(containerID);
-        return ResponseEntity.noContent().build();
-    }
-
     @PatchMapping("/{containerID}/env")
     public ContainerResponseModel updateContainerEnvVariables(
             @PathVariable String containerID,
             @RequestBody UpdateEnvVariablesRequest request) {
         return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+    }
+
+    @DeleteMapping("/{containerID}")
+    public ResponseEntity<String> deleteContainer(@PathVariable String containerID) {
+        try {
+            containerService.deleteContainer(containerID);
+            return ResponseEntity.ok("Container deleted successfully");
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            } else {
+                return ResponseEntity.internalServerError().body("Failed to delete container: " + e.getMessage());
+            }
+        }
     }
 }

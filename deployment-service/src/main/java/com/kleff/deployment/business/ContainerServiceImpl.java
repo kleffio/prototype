@@ -150,24 +150,33 @@ public class ContainerServiceImpl {
             throw new RuntimeException("Container not found with ID: " + containerID);
         }
 
-        // Send upstream delete request first
-        triggerWebAppDelete(container.getProjectID(), containerID);
+        try {
+            // Delete from database first
+            containerRepository.delete(container);
+            log.info("Container deleted from database: {}", containerID);
 
-        // If upstream succeeds, delete from DB
-        containerRepository.deleteById(containerID);
+            // Make upstream call to delete the WebApp in Kubernetes
+            triggerWebAppDeletion(container.getProjectID(), containerID);
+
+        } catch (Exception e) {
+            log.error("Failed to delete container {}: {}", containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
+        }
     }
 
-    private void triggerWebAppDelete(String projectID, String containerID) {
+    private void triggerWebAppDeletion(String projectID, String containerID) {
         String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
 
         try {
             restTemplate.delete(deleteServiceUrl);
-            log.info("WebApp delete triggered successfully for containerID: {}", containerID);
+            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
         } catch (Exception e) {
-            log.error("Failed to trigger WebApp delete for containerID {}: {}", containerID, e.getMessage());
-            throw new RuntimeException("Failed to delete WebApp: " + e.getMessage());
+            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}", 
+                     projectID, containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
         }
     }
+
 
     // Static Inner DTO
     private static class GoBuildRequest {

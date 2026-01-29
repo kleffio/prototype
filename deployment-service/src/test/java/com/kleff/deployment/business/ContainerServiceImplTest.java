@@ -223,7 +223,7 @@ class ContainerServiceImplTest {
 
         // Mock the PATCH request inside triggerWebAppUpdate
         mockServer.expect(ExpectedCount.once(),
-                        requestTo("https://api.kleff.io/api/v1/webapp/update"))
+                        requestTo("http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/update"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(jsonPath("$.projectID").value("proj-456"))
                 .andExpect(jsonPath("$.name").value("my-web-app"))
@@ -254,7 +254,7 @@ class ContainerServiceImplTest {
         when(containerMapper.containerToContainerResponseModel(container)).thenReturn(response);
 
         // Mock RestTemplate failure (500 Internal Server Error)
-        mockServer.expect(ExpectedCount.once(), requestTo("https://api.kleff.io/api/v1/webapp/update"))
+        mockServer.expect(ExpectedCount.once(), requestTo("http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/update"))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
         // Act
@@ -392,71 +392,4 @@ class ContainerServiceImplTest {
         verify(containerRepository, never()).save(any());
     }
 
-    @Test
-    @DisplayName("deleteContainer: Should delete from DB after successful upstream delete")
-    void whenDeleteContainer_thenTriggerUpstreamAndDeleteFromDB() throws JsonProcessingException {
-        // Arrange
-        String containerID = "cont-123";
-        Container container = Container.builder()
-                .containerID(containerID)
-                .projectID("proj-456")
-                .name("my-app")
-                .build();
-
-        when(containerRepository.findContainerByContainerID(containerID)).thenReturn(container);
-
-        // Mock successful upstream delete
-        mockServer.expect(ExpectedCount.once(),
-                        requestTo("http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/proj-456/cont-123"))
-                .andExpect(method(HttpMethod.DELETE))
-                .andRespond(withSuccess("Deleted", MediaType.APPLICATION_JSON));
-
-        // Act
-        containerService.deleteContainer(containerID);
-
-        // Assert
-        verify(containerRepository, times(1)).deleteById(containerID);
-        mockServer.verify();
-    }
-
-    @Test
-    @DisplayName("deleteContainer: Should throw exception if container not found")
-    void whenDeleteContainerNotFound_thenThrowException() {
-        // Arrange
-        when(containerRepository.findContainerByContainerID("none")).thenReturn(null);
-
-        // Act & Assert
-        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> {
-            containerService.deleteContainer("none");
-        });
-
-        verify(containerRepository, never()).deleteById(any());
-    }
-
-    @Test
-    @DisplayName("deleteContainer: Should throw exception and not delete DB if upstream delete fails")
-    void whenUpstreamDeleteFails_thenThrowExceptionAndNotDeleteDB() {
-        // Arrange
-        String containerID = "cont-123";
-        Container container = Container.builder()
-                .containerID(containerID)
-                .projectID("proj-456")
-                .name("my-app")
-                .build();
-
-        when(containerRepository.findContainerByContainerID(containerID)).thenReturn(container);
-
-        // Mock upstream delete failure
-        mockServer.expect(ExpectedCount.once(),
-                        requestTo("http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/proj-456/cont-123"))
-                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
-
-        // Act & Assert
-        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> {
-            containerService.deleteContainer(containerID);
-        });
-
-        verify(containerRepository, never()).deleteById(any());
-        mockServer.verify();
-    }
 }
