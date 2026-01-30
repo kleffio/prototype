@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     workspace_id UUID,
     start_date DATE,
     end_date DATE,
+    payement_date DATE,
     status VARCHAR(20),
     total_cpu DECIMAL(19,2),
     total_ram DECIMAL(19,2),

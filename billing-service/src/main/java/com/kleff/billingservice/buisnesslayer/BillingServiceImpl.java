@@ -14,6 +14,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -137,6 +140,21 @@ public class BillingServiceImpl implements BillingService {
             }
 
         return outstandingCents;
+    }
+
+
+    public void markInvoiceAsPaid(String invoiceId, String stripeSessionId) {
+        Invoice invoice = getInvoiceById(invoiceId);
+
+        // Only update if not already paid
+        if (invoice.getStatus() != InvoiceStatus.PAID) {
+            invoice.setStatus(InvoiceStatus.PAID);
+            invoice.setPaymentDate(Date.valueOf(LocalDate.now()));
+            invoiceRepository.save(invoice);
+            log.info("Invoice {} marked as paid", invoiceId);
+        } else {
+            log.info("Invoice {} already paid, skipping update", invoiceId);
+        }
     }
 
 
