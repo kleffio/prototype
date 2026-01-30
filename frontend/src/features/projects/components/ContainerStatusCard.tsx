@@ -18,9 +18,10 @@ interface ContainerStatusCardProps {
   container: Container;
   onManage: (container: Container) => void;
   onViewLogs?: (container: Container) => void;
+  onDelete?: (container: Container) => void;
 }
 
-export function ContainerStatusCard({ container, onManage, onViewLogs }: ContainerStatusCardProps) {
+export function ContainerStatusCard({ container, onManage, onViewLogs, onDelete }: ContainerStatusCardProps) {
   const appUrl = `https://app-${container.containerId}.kleff.io`;
   const [locale, setLocale] = React.useState(getLocale());
   const t = translations[locale].projectDetail.containerDetail;
@@ -45,6 +46,12 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
     onManage(container);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(container);
+    }
+  };
 
   return (
     <button
@@ -81,7 +88,7 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
             {t.view_logs}
           </Button>
         </SecureComponent>
-        
+
         <Button
           size="sm"
           variant="ghost"
@@ -96,12 +103,8 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
           <Button
             size="sm"
             variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              // This will be handled by the parent component
-              // For now, we'll just prevent the card click from firing
-            }}
-            className="h-8 px-3 text-xs text-red-400 hover:bg-red-400/10 hover:text-red-300"
+            onClick={handleDelete}
+            className="h-8 px-3 text-xs text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200"
           >
             <Trash2 className="mr-1 h-3 w-3" />
             {t.delete}

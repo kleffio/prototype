@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Crown
+  Crown,
+  AlertTriangle
 } from "lucide-react";
 import { useProject } from "@features/projects/hooks/useProject";
 import { useProjectContainers } from "@features/projects/hooks/useProjectContainers";
@@ -39,6 +40,7 @@ import { TeamModal } from "@features/projects/components/TeamModal";
 import { SecureComponent } from "@app/components/SecureComponent";
 import { SimpleContainerLogsSheet } from "@features/projects/components/SimpleContainerLogsSheet";
 import ProjectBillingEstimatesCard from "@features/billing/components/getEstimateBilling";
+import { ConfirmationDialog } from "@shared/ui/ConfirmationDialog";
 
 const translations = {
   en: enTranslations,
@@ -70,6 +72,11 @@ export function ProjectDetailPage() {
 
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
+
+  // Delete flow state
+  const [containerToDelete, setContainerToDelete] = useState<Container | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const id = project?.ownerId || "";
   const ownerUser = useUsername(id);
@@ -112,21 +119,32 @@ export function ProjectDetailPage() {
     await reload();
   };
 
-  const handleDeleteContainer = async (containerId: string) => {
+  const handleDeleteClick = (container: Container) => {
+    setContainerToDelete(container);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!containerToDelete) return;
+
+    const containerId = containerToDelete.containerId;
     const previousContainers = containers;
-    // Optimistic update
-    setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
+    setIsDeleting(true);
 
     try {
+      // Optimistic update
+      setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
       await deleteContainer(containerId);
 
       // If delete succeeds, try to reload for source-of-truth
-      // But if reload fails, DO NOT rollback the deletion
       try {
         await reload();
       } catch (reloadError) {
         console.error("Failed to reload containers after deletion:", reloadError);
       }
+
+      setIsDeleteConfirmOpen(false);
+      setContainerToDelete(null);
     } catch (error: any) {
       // If the error is 404, it means the container is already gone. 
       // Treat this as success and do not rollback.
@@ -136,12 +154,39 @@ export function ProjectDetailPage() {
         } catch (reloadError) {
           console.error("Failed to reload containers after 404 deletion:", reloadError);
         }
+        setIsDeleteConfirmOpen(false);
+        setContainerToDelete(null);
         return;
       }
 
       // Only rollback if the delete genuinely failed
       setContainers(previousContainers);
-      throw error;
+      console.error("Failed to delete container:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // This is kept for the modal usage if needed, though we might use the unified flow
+  const handleDeleteContainer = async (containerId: string) => {
+    // Reuse logic if necessary, but for now the modal handles its own delete via the same API import
+    // or we could refactor to use the same function. 
+    // For minimal disruption, leaving the implementation needed by Modal as is if it calls this.
+
+    // However, the ContainerDetailModal takes a prop `onDelete` which is this function.
+    // So validation: 
+    const previousContainers = containers;
+    setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
+    try {
+      await deleteContainer(containerId);
+      await reload();
+    } catch (err: any) {
+      if (err?.response?.status === 404 || err?.status === 404) {
+        await reload();
+        return;
+      }
+      setContainers(previousContainers);
+      throw err;
     }
   };
 
@@ -355,6 +400,7 @@ export function ProjectDetailPage() {
                     setIsDetailModalOpen(true);
                   }}
                   onViewLogs={handleViewLogs}
+                  onDelete={handleDeleteClick}
                 />
               ))}
             </div>
@@ -434,6 +480,36 @@ export function ProjectDetailPage() {
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+        title={t.containerDetail.delete_container_title || "Delete Container"}
+        description={t.containerDetail.delete_container_description || "Are you sure you want to delete this container? This action cannot be undone."}
+        confirmText={t.containerDetail.delete || "Delete"}
+        cancelText={t.containerDetail.cancel || "Cancel"}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        variant="destructive"
+        isLoading={isDeleting}
+      >
+        {containerToDelete && (
+          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">{t.containerDetail.irreversible_action || "Warning: Irreversible Action"}</span>
+            </div>
+            <p className="mt-2 text-sm text-neutral-300">
+              {t.containerDetail.delete_container_warning || "This will permanently delete the container and all its data."}
+            </p>
+            <div className="mt-3 flex items-center gap-2 rounded-md border border-white/10 bg-white/5 p-3">
+              <span className="text-xs font-mono text-neutral-400">{t.containerDetail.container_id}:</span>
+              <span className="font-mono text-sm font-semibold text-white">{containerToDelete.name}</span>
+            </div>
+          </div>
+        )}
+      </ConfirmationDialog>
     </section>
   );
 }

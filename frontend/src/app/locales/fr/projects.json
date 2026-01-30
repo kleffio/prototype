@@ -126,11 +126,11 @@
       "stop": "Arrêter",
       "delete": "Supprimer",
       "delete_container": "Supprimer le conteneur",
+      "delete_container_title": "Supprimer le conteneur",
       "delete_container_description": "Cette action supprimera définitivement le conteneur et ne peut pas être annulée.",
       "cancel": "Annuler",
       "irreversible_action": "Action irréversible",
-      "delete_container_warning": "La suppression de ce conteneur supprimera toutes les données et configurations associées. Cette action ne peut pas être annulée.",
-      "container_id": "ID du conteneur"
+      "delete_container_warning": "La suppression de ce conteneur supprimera toutes les données et configurations associées. Cette action ne peut pas être annulée."
     }
   },
   "containerModal": {
