@@ -135,7 +135,6 @@ function AuditPagination({
 export function SettingsPage() {
   const navigate = useNavigate();
 
-  
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
 
