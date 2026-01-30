@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -101,13 +102,16 @@ func extractBearerToken(r *http.Request) string {
 // extractUserIDFromToken extracts user ID from JWT token (simplified, assumes JWT format)
 func extractUserIDFromToken(token string) (string, error) {
 	// Make a call to user-service to validate and get user ID
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
 	req, err := http.NewRequest("GET", "http://user-service:8080/api/v1/users/me", nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to validate token: %w", err)
@@ -131,7 +135,11 @@ func extractUserIDFromToken(token string) (string, error) {
 // checkUserStatus checks if user is active via user-service
 func checkUserStatus(userID string) (bool, error) {
 	url := fmt.Sprintf("http://user-service:8080/api/v1/users/status/%s", userID)
-	resp, err := http.Get(url)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return false, fmt.Errorf("failed to check user status: %w", err)
 	}

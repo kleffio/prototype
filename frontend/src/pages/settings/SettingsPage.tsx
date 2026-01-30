@@ -13,7 +13,7 @@ import {
   Trash2,
   AlertTriangle
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { updateUserProfile } from "@features/users/api/UpdateUserProfile";
 import { getMyAuditLogs } from "@features/users/api/getMyAuditLogs";
@@ -133,7 +133,7 @@ function AuditPagination({
 }
 
 export function SettingsPage() {
-  
+  const navigate = useNavigate();
 
   
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
@@ -272,11 +272,8 @@ export function SettingsPage() {
 
     try {
       await deactivateAccount();
-      setNotification({
-        type: "success",
-        message: "Your account has been successfully deactivated."
-      });
-      setShowDeactivationModal(false);
+      localStorage.setItem('account-deactivated', 'true');
+      navigate('/error/deactivated');
     } catch (err) {
       setNotification({
         type: "error",

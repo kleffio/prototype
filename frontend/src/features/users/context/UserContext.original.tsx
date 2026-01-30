@@ -3,7 +3,7 @@ import { useAuth } from "react-oidc-context";
 import type { UserSettings, UserSettingsState } from "@features/users/types/User";
 import { setAccessToken } from "@shared/lib/client";
 import { Me } from "@features/users/api/me";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const UserSettingsContext = createContext<UserSettingsState | undefined>(undefined);
 
@@ -11,27 +11,10 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const { isLoading: authLoading, isAuthenticated, user } = auth;
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-
-  const checkDeactivatedRoute = useCallback(() => {
-    if (localStorage.getItem('account-deactivated') === 'true') {
-      const path = location.pathname;
-      if (path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects')) {
-        if (path !== '/error/deactivated') {
-          navigate('/error/deactivated');
-        }
-      }
-    }
-  }, [location.pathname, navigate]);
-
-  const isProtectedRoute = useCallback(() => {
-    const path = location.pathname;
-    return path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects');
-  }, [location.pathname]);
 
   const load = useCallback(async () => {
     if (authLoading) {
@@ -40,15 +23,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     }
 
     
-    if (location.pathname === '/error/deactivated') {
-      setIsLoading(false);
-      return;
-    }
-
-    // Skip API calls on public pages if already deactivated
-    if (!isProtectedRoute() && localStorage.getItem('account-deactivated') === 'true') {
-      setSettings(null);
-      setError(null);
+    if (window.location.pathname === '/error/deactivated') {
       setIsLoading(false);
       return;
     }
@@ -94,7 +69,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [authLoading, isAuthenticated, user?.access_token, location.pathname, navigate, isProtectedRoute]);
+  }, [authLoading, isAuthenticated, user?.access_token]);
 
   useEffect(() => {
     const events = auth.events;
@@ -115,8 +90,25 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   useEffect(() => {
-    checkDeactivatedRoute();
-  }, [checkDeactivatedRoute]);
+    const checkRoute = () => {
+      if (localStorage.getItem('account-deactivated') === 'true') {
+        const path = window.location.pathname;
+        if (path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects')) {
+          if (path !== '/error/deactivated') {
+            navigate('/error/deactivated');
+          }
+        }
+      }
+    };
+
+    // Check immediately
+    checkRoute();
+    
+    // Check periodically for route changes
+    const interval = setInterval(checkRoute, 2000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const value: UserSettingsState = useMemo(
     () => ({

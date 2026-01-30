@@ -369,6 +369,26 @@ func (r *PostgresUserRepository) Close() error {
 	return r.db.Close()
 }
 
+func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found: %s", id)
+	}
+
+	return nil
+}
+
 // Helper functions
 
 func nullString(s string) sql.NullString {

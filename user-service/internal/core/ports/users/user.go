@@ -15,6 +15,7 @@ type UserRepository interface {
 	UpdateUserID(ctx context.Context, oldID, newID domain.ID) error
 	UsernameExists(ctx context.Context, username string, excludeID domain.ID) (bool, error)
 	DeactivateAccount(ctx context.Context, id domain.ID) error
+	Delete(ctx context.Context, id domain.ID) error
 }
 
 type TokenClaims struct {

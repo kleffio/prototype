@@ -17,8 +17,11 @@ import java.io.IOException;
 @Component
 public class DeactivationCheckFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private UserStatusService userStatusService;
+    private final UserStatusService userStatusService;
+
+    public DeactivationCheckFilter(UserStatusService userStatusService) {
+        this.userStatusService = userStatusService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

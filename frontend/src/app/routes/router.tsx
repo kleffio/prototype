@@ -19,11 +19,16 @@ import { TermsOfServicePage } from "@pages/legal/TermsOfServicePage";
 import { AuthPage } from "@pages/auth/AuthPage";
 import PricingPage from "@pages/legal/PricingPage";
 import { StatusPage } from "@pages/landing/StatusPage";
+import { UserSettingsProvider } from "@features/users/context/UserContext";
+
+function AppWithUserSettings({ children }: { children: React.ReactNode }) {
+  return <UserSettingsProvider>{children}</UserSettingsProvider>;
+}
 
 export const router = createBrowserRouter([
   {
-    path: ROUTES.HOME,
-    element: <AppLayout />,
+    path: "/",
+    element: <AppWithUserSettings><AppLayout /></AppWithUserSettings>,
     errorElement: <ErrorPage />,
     children: [
       {
@@ -68,9 +73,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.DASHBOARD,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout />
-      </ProtectedRoute>
+      <AppWithUserSettings>
+        <ProtectedRoute>
+          <DashboardLayout />
+        </ProtectedRoute>
+      </AppWithUserSettings>
     ),
     errorElement: <ErrorPage />,
     children: [
@@ -99,9 +106,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.SETTINGS,
     element: (
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
+      <AppWithUserSettings>
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      </AppWithUserSettings>
     ),
     errorElement: <ErrorPage />
   }

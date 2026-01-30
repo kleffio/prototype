@@ -74,7 +74,6 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 		return nil, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
-	
 	if user != nil && user.IsDeactivated {
 		return nil, ErrAccountDeactivated
 	}
@@ -123,7 +122,6 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 				existingUser.ID = domain.ID(claims.Sub)
 			}
 
-			
 			if existingUser.IsDeactivated {
 				return nil, ErrAccountDeactivated
 			}
@@ -360,23 +358,21 @@ func (s *Service) DeactivateAccount(ctx context.Context, userID domain.ID) error
 		return ErrUserNotFound
 	}
 
-	
 	if existingUser.IsDeactivated {
-		return fmt.Errorf("account is already deactivated")
+		return ErrAccountDeactivated
 	}
 
-	
-	if err := s.repo.DeactivateAccount(ctx, userID); err != nil {
-		return fmt.Errorf("failed to deactivate account: %w", err)
+	// Hard delete: Remove user data permanently
+	if err := s.repo.Delete(ctx, userID); err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	
-	s.logAction(ctx, userID, "account_deactivated", map[string]domain.ChangeDetail{
-		"is_deactivated": {Old: "false", New: "true"},
-		"deactivated_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},
+	s.logAction(ctx, userID, "account_permanently_deleted", map[string]domain.ChangeDetail{
+		"deleted":    {Old: "false", New: "true"},
+		"deleted_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},
 	})
 
-	log.Printf("Account deactivated for user %s", userID)
+	log.Printf("Account permanently deleted for user %s", userID)
 	return nil
 }
 
