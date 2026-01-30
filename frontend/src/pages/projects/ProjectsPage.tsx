@@ -37,7 +37,7 @@ type SortOption = "date-desc" | "date-asc" | "name-asc" | "name-desc";
 type FilterOption = "all" | "owned" | "shared";
 
 export function ProjectsPage() {
-  // Check for deactivated account and redirect if needed
+  
 
   
   const [locale, setLocaleState] = useState(getLocale());

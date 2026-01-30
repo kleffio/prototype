@@ -133,7 +133,7 @@ function AuditPagination({
 }
 
 export function SettingsPage() {
-  // Check for deactivated account and redirect if needed
+  
 
   
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
@@ -156,7 +156,7 @@ export function SettingsPage() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
 
-  // Deactivation modal state
+  
   const [showDeactivationModal, setShowDeactivationModal] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 

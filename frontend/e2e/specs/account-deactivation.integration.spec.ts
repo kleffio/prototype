@@ -5,20 +5,16 @@ import { DeactivationTestUtils } from "../utils/deactivation";
 
 test.describe("Account Deactivation - Safe Integration Tests", () => {
   
-  // CRITICAL: Block all real deactivation API calls to protect test accounts
   test.beforeEach(async ({ page }) => {
-    // Block actual deactivation API
     await page.route("**/api/v1/users/me/deactivate", async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: "MOCK: Deactivation API blocked in tests" })
+        body: JSON.stringify({ message: "Deactivation blocked" })
       });
     });
     
-    // Mock 403 responses for deactivated accounts if needed
     await page.route("**/api/v1/users/me", async route => {
-      // Only return 403 if localStorage flag is set (simulating deactivation)
       const hasDeactivatedFlag = await page.evaluate(() => 
         localStorage.getItem('account-deactivated') === 'true'
       );
@@ -46,7 +42,6 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
   });
 
   test("localStorage simulation - dashboard redirect", async ({ page }) => {
-    // SAFE: Only uses localStorage simulation, no real API calls
     await page.addInitScript(() => {
       localStorage.setItem('account-deactivated', 'true');
     });
@@ -56,7 +51,6 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
   });
 
   test("localStorage simulation - settings redirect", async ({ page }) => {
-    // SAFE: Only uses localStorage simulation, no real API calls
     await page.addInitScript(() => {
       localStorage.setItem('account-deactivated', 'true');
     });
@@ -66,7 +60,6 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
   });
 
   test("public pages remain accessible with simulation", async ({ page }) => {
-    // SAFE: Only uses localStorage simulation
     await page.addInitScript(() => {
       localStorage.setItem('account-deactivated', 'true');
     });
@@ -92,7 +85,6 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
   });
 
   test("error page loads without authentication", async ({ page }) => {
-    // SAFE: Just tests the error page loading
     await page.goto("/error/deactivated");
     await page.waitForLoadState('domcontentloaded');
     

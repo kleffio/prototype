@@ -179,7 +179,7 @@ const dashboardData = {
 };
 
 export function DashboardPage() {
-  // Check for deactivated account and redirect if needed
+  
 
   
   const [isModalOpen, setIsModalOpen] = useState(false);

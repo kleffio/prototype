@@ -74,7 +74,7 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 		return nil, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
-	// Check if user is deactivated
+	
 	if user != nil && user.IsDeactivated {
 		return nil, ErrAccountDeactivated
 	}
@@ -123,7 +123,7 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 				existingUser.ID = domain.ID(claims.Sub)
 			}
 
-			// Check if existing user is deactivated AFTER updating the ID
+			
 			if existingUser.IsDeactivated {
 				return nil, ErrAccountDeactivated
 			}
@@ -360,17 +360,17 @@ func (s *Service) DeactivateAccount(ctx context.Context, userID domain.ID) error
 		return ErrUserNotFound
 	}
 
-	// Check if already deactivated
+	
 	if existingUser.IsDeactivated {
 		return fmt.Errorf("account is already deactivated")
 	}
 
-	// Perform deactivation
+	
 	if err := s.repo.DeactivateAccount(ctx, userID); err != nil {
 		return fmt.Errorf("failed to deactivate account: %w", err)
 	}
 
-	// Log the deactivation action
+	
 	s.logAction(ctx, userID, "account_deactivated", map[string]domain.ChangeDetail{
 		"is_deactivated": {Old: "false", New: "true"},
 		"deactivated_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},

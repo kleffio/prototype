@@ -81,10 +81,10 @@ export class DeactivationTestUtils {
    * Tests the complete deactivation flow from settings
    */
   async testDeactivationFlow() {
-    // Mock APIs to avoid actually deactivating
+    
     await this.mockDeactivationAPI();
     
-    // Click deactivate account button
+
     const deactivateButton = this.page.getByRole("button", { name: /deactivate account/i });
     await expect(deactivateButton).toBeVisible();
     await deactivateButton.click();
@@ -94,7 +94,7 @@ export class DeactivationTestUtils {
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
     
-    // Should redirect to deactivated error page
+    
     await expect(this.page).toHaveURL(/\/error\/deactivated/, { timeout: 10_000 });
   }
 }

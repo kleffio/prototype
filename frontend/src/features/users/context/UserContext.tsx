@@ -20,7 +20,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Skip loading if we're on the deactivated error page
+    
     if (window.location.pathname === '/error/deactivated') {
       setIsLoading(false);
       return;
@@ -31,7 +31,6 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(null);
       setError(null);
       setIsLoading(false);
-      // Clear deactivation flag when not authenticated
       localStorage.removeItem('account-deactivated');
       return;
     }
@@ -56,7 +55,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error("Failed to load user settings", e);
       
-      // Check if this is a deactivated account error
+      
       if ((e as any).status === 403 && (e as any).isDeactivated) {
         localStorage.setItem('account-deactivated', 'true');
         window.location.href = '/error/deactivated';
@@ -88,7 +87,6 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     void load();
   }, [load]);
 
-  // Route protection for deactivated accounts
   useEffect(() => {
     const checkRoute = () => {
       if (localStorage.getItem('account-deactivated') === 'true') {
