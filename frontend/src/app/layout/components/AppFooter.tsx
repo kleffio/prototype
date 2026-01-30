@@ -4,49 +4,126 @@ import { UnderlineLink } from "@shared/ui/UnderlineLink";
 export function AppFooter() {
   return (
     <footer className="border-t border-white/5 bg-black/40">
-      <div className="app-container flex flex-col items-center gap-3 py-4 text-center text-[11px] text-neutral-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
-        <div className="flex items-center gap-2">
-          <span className="bg-kleff-primary h-5 w-5 rounded-lg" />
-          <div className="flex flex-col">
-            <span className="text-foreground text-xs font-semibold">Kleff Platform</span>
-            <span className="hidden text-[10px] text-neutral-500 sm:inline">
-              Open-source-first hosting for modern teams.
-            </span>
+      <div className="app-container py-8">
+        <div className="flex flex-wrap items-start justify-between gap-x-12 gap-y-8">
+          {/* Brand Section */}
+          <div className="flex min-w-[200px] items-start gap-2">
+            <span className="bg-kleff-primary mt-1 h-4 w-5 flex-shrink-0 rounded-lg" />
+            <div className="flex flex-col">
+              <span className="text-foreground text-[17px] font-semibold">Kleff Platform</span>
+              <span className="mt-1 max-w-xs text-[15px] text-neutral-500">
+                Open-source-first hosting for modern teams.
+              </span>
+            </div>
+          </div>
+
+          {/* Links Grid */}
+          <div className="flex flex-wrap gap-x-12 gap-y-8">
+            {/* Product Column */}
+            <div className="min-w-[120px]">
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Product</h3>
+              <ul className="space-y-2">
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.DOCS}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Docs
+                  </UnderlineLink>
+                </li>
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.PRICING}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Pricing
+                  </UnderlineLink>
+                </li>
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.STATUS}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Status
+                  </UnderlineLink>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company Column */}
+            <div className="min-w-[120px]">
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Company</h3>
+              <ul className="space-y-2">
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.ABOUT}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    About
+                  </UnderlineLink>
+                </li>
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.FAQ}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    FAQ
+                  </UnderlineLink>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal Column */}
+            <div className="min-w-[120px]">
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Legal</h3>
+              <ul className="space-y-2">
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.TERMS}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Terms
+                  </UnderlineLink>
+                </li>
+                <li>
+                  <UnderlineLink
+                    to={ROUTES.PRIVACY}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Privacy
+                  </UnderlineLink>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact Us Column */}
+            <div>
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Contact Us</h3>
+              <ul className="space-y-2">
+                <li>
+                  <UnderlineLink
+                    to={"https://www.linkedin.com/company/kleffio/"}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Linkedin
+                  </UnderlineLink>
+                </li>
+                <li>
+                  <UnderlineLink
+                    to={"mailto:kleffioapp@gmail.com"}
+                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
+                  >
+                    Email
+                  </UnderlineLink>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] sm:justify-end">
-          <UnderlineLink to={ROUTES.DOCS} className="text-neutral-500 hover:text-neutral-200">
-            Docs
-          </UnderlineLink>
-
-          <UnderlineLink to={ROUTES.STATUS} className="text-neutral-500 hover:text-neutral-200">
-            Status
-          </UnderlineLink>
-
-          <UnderlineLink to={ROUTES.PRICING} className="text-neutral-500 hover:text-neutral-200">
-            Pricing
-          </UnderlineLink>
-
-          <span className="hidden text-neutral-600 sm:inline">•</span>
-
-          <UnderlineLink to={ROUTES.ABOUT} className="text-neutral-500 hover:text-neutral-200">
-            About
-          </UnderlineLink>
-
-          <UnderlineLink to={ROUTES.FAQ} className="text-neutral-500 hover:text-neutral-200">
-            FAQ
-          </UnderlineLink>
-
-          <UnderlineLink to={ROUTES.TERMS} className="text-neutral-500 hover:text-neutral-200">
-            Terms
-          </UnderlineLink>
-
-          <UnderlineLink to={ROUTES.PRIVACY} className="text-neutral-500 hover:text-neutral-200">
-            Privacy
-          </UnderlineLink>
-
-          <span className="text-neutral-600">&copy; {new Date().getFullYear()} Kleff</span>
+        {/* Copyright */}
+        <div className="mt-8 border-t border-white/5 pt-6 text-center text-[14px] text-neutral-600">
+          &copy; {new Date().getFullYear()} Kleff. All rights reserved.
         </div>
       </div>
     </footer>
