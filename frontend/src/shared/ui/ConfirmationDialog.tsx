@@ -5,25 +5,22 @@ import { cn } from "@shared/lib/utils";
 import { Button } from "./Button";
 import { X, AlertTriangle, CheckCircle, Ban } from "lucide-react";
 
-const dialogVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg",
-  {
-    variants: {
-      size: {
-        sm: "w-full max-w-sm",
-        md: "w-full max-w-md",
-        lg: "w-full max-w-lg"
-      }
-    },
-    defaultVariants: {
-      size: "md"
+const dialogVariants = cva("fixed z-50 gap-4 bg-background p-6 shadow-lg", {
+  variants: {
+    size: {
+      sm: "w-full max-w-sm",
+      md: "w-full max-w-md",
+      lg: "w-full max-w-lg"
     }
+  },
+  defaultVariants: {
+    size: "md"
   }
-);
+});
 
 interface ConfirmationDialogProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>,
-  VariantProps<typeof dialogVariants> {
+    VariantProps<typeof dialogVariants> {
   title: string;
   description: string;
   confirmText?: string;
@@ -110,14 +107,12 @@ const ConfirmationDialog = React.forwardRef<
             ref={ref}
             className={cn(
               dialogVariants({ size }),
-              "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-black/70 shadow-2xl shadow-black/60"
+              "fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-black/70 shadow-2xl shadow-black/60"
             )}
           >
             <div className="mb-4 flex items-start justify-between">
               <div className="flex items-start gap-3">
-                {!hideIcon && (
-                  <div className="mt-0.5 flex-shrink-0">{getIcon()}</div>
-                )}
+                {!hideIcon && <div className="mt-0.5 flex-shrink-0">{getIcon()}</div>}
                 <div>
                   <DialogPrimitive.Title className="text-lg font-semibold text-white">
                     {title}

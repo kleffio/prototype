@@ -1,7 +1,6 @@
 import { expect } from "@playwright/test";
 import { BaseComponent } from "./base.component";
 
-
 /**
  * Container detail modal component
  * Used on project detail pages to view and manage container details
@@ -159,10 +158,12 @@ export class ContainerDetailModal extends BaseComponent {
     await this.deleteButton().click();
 
     // Handle confirmation dialog
-    const confirmationDialog = this.page.getByRole("dialog").filter({ hasText: /delete container/i });
+    const confirmationDialog = this.page
+      .getByRole("dialog")
+      .filter({ hasText: /delete container/i });
     await expect(confirmationDialog).toBeVisible();
 
-    // In ConfirmationDialog component: 
+    // In ConfirmationDialog component:
     // destructive variant button has no specific text other than children, or confirmText
     // We can target the button with "Delete" text inside the dialog
     // The dialog content renders children, and buttons.

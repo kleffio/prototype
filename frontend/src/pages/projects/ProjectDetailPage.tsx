@@ -40,7 +40,6 @@ import { SecureComponent } from "@app/components/SecureComponent";
 import { SimpleContainerLogsSheet } from "@features/projects/components/SimpleContainerLogsSheet";
 import ProjectBillingEstimatesCard from "@features/billing/components/getEstimateBilling";
 
-
 const translations = {
   en: enTranslations,
   fr: frTranslations
@@ -73,7 +72,6 @@ export function ProjectDetailPage() {
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
 
   // Delete flow state
-
 
   const ownerUser = useUsername(project?.ownerId || "");
 
@@ -115,16 +113,14 @@ export function ProjectDetailPage() {
     await reload();
   };
 
-
-
   // This is kept for the modal usage if needed, though we might use the unified flow
   const handleDeleteContainer = async (containerId: string) => {
     // Reuse logic if necessary, but for now the modal handles its own delete via the same API import
-    // or we could refactor to use the same function. 
+    // or we could refactor to use the same function.
     // For minimal disruption, leaving the implementation needed by Modal as is if it calls this.
 
     // However, the ContainerDetailModal takes a prop `onDelete` which is this function.
-    // So validation: 
+    // So validation:
     const previousContainers = containers;
     setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
     try {
@@ -132,32 +128,32 @@ export function ProjectDetailPage() {
       await reload();
     } catch (err: unknown) {
       // Type guard to safely check for status property
-      const hasStatus = (obj: unknown): obj is { status?: number } => 
-        typeof obj === 'object' && obj !== null && 'status' in obj;
-      
+      const hasStatus = (obj: unknown): obj is { status?: number } =>
+        typeof obj === "object" && obj !== null && "status" in obj;
+
       const hasResponseStatus = (obj: unknown): obj is { response?: { status?: number } } => {
-        if (typeof obj !== 'object' || obj === null) {
+        if (typeof obj !== "object" || obj === null) {
           return false;
         }
-        
+
         const responseObj = (obj as { response?: unknown }).response;
-        if (typeof responseObj !== 'object' || responseObj === null || responseObj === undefined) {
+        if (typeof responseObj !== "object" || responseObj === null || responseObj === undefined) {
           return false;
         }
-        
-        return 'status' in responseObj;
+
+        return "status" in responseObj;
       };
 
       if (hasResponseStatus(err) && err.response?.status === 404) {
         await reload();
         return;
       }
-      
+
       if (hasStatus(err) && err.status === 404) {
         await reload();
         return;
       }
-      
+
       setContainers(previousContainers);
       throw err;
     }
@@ -454,7 +450,6 @@ export function ProjectDetailPage() {
       />
 
       {/* Delete Confirmation Dialog */}
-
     </section>
   );
 }

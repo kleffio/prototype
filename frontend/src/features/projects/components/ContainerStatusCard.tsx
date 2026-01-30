@@ -21,7 +21,12 @@ interface ContainerStatusCardProps {
   onDelete?: (container: Container) => void;
 }
 
-export function ContainerStatusCard({ container, onManage, onViewLogs, onDelete }: ContainerStatusCardProps) {
+export function ContainerStatusCard({
+  container,
+  onManage,
+  onViewLogs,
+  onDelete
+}: ContainerStatusCardProps) {
   const appUrl = `https://app-${container.containerId}.kleff.io`;
   const [locale, setLocale] = React.useState(getLocale());
   const t = translations[locale].projectDetail.containerDetail;
@@ -105,7 +110,7 @@ export function ContainerStatusCard({ container, onManage, onViewLogs, onDelete 
               size="sm"
               variant="ghost"
               onClick={handleDelete}
-              className="h-8 px-3 text-xs text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200"
+              className="h-8 px-3 text-xs text-red-400 transition-all duration-200 hover:bg-red-500/20 hover:text-red-300"
             >
               <Trash2 className="mr-1 h-3 w-3" />
               {t.delete}

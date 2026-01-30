@@ -355,11 +355,9 @@ export function ContainerDetailModal({
             <AlertTriangle className="h-5 w-5" />
             <span className="font-medium">{t.irreversible_action}</span>
           </div>
-          <p className="mt-2 text-sm text-neutral-300">
-            {t.delete_container_warning}
-          </p>
+          <p className="mt-2 text-sm text-neutral-300">{t.delete_container_warning}</p>
           <div className="mt-3 flex items-center gap-2 rounded-md border border-white/10 bg-white/5 p-3">
-            <span className="text-xs font-mono text-neutral-400">{t.container_id}:</span>
+            <span className="font-mono text-xs text-neutral-400">{t.container_id}:</span>
             <span className="font-mono text-sm font-semibold text-white">{container.name}</span>
           </div>
         </div>
