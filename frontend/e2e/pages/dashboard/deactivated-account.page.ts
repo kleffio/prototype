@@ -8,8 +8,8 @@ export class DeactivatedAccountPage extends BasePage {
 
   async expectLoaded() {
     // Wait for the page to load
-    await this.page.waitForLoadState('domcontentloaded');
-    
+    await this.page.waitForLoadState("domcontentloaded");
+
     // More flexible selectors
     await expect(this.page.getByText("Account Deactivated").first()).toBeVisible({
       timeout: 30_000
@@ -40,6 +40,6 @@ export class DeactivatedAccountPage extends BasePage {
 
   async expectContactSupportEmail() {
     // Should open mailto link
-    await this.page.waitForEvent('popup');
+    await this.page.waitForEvent("popup");
   }
 }

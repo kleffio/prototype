@@ -11,7 +11,7 @@ export class DeactivationTestUtils {
    */
   async setDeactivatedAccountFlag() {
     await this.page.addInitScript(() => {
-      localStorage.setItem('account-deactivated', 'true');
+      localStorage.setItem("account-deactivated", "true");
     });
   }
 
@@ -20,7 +20,7 @@ export class DeactivationTestUtils {
    */
   async clearDeactivatedAccountFlag() {
     await this.page.addInitScript(() => {
-      localStorage.removeItem('account-deactivated');
+      localStorage.removeItem("account-deactivated");
     });
   }
 
@@ -28,12 +28,12 @@ export class DeactivationTestUtils {
    * Mocks the user API to return 403 for deactivated accounts
    */
   async mockDeactivatedUserAPI() {
-    await this.page.route("**/api/v1/users/me", async route => {
+    await this.page.route("**/api/v1/users/me", async (route) => {
       await route.fulfill({
         status: 403,
-        contentType: 'application/json',
-        body: JSON.stringify({ 
-          error: "account has been deactivated" 
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "account has been deactivated"
         })
       });
     });
@@ -43,12 +43,12 @@ export class DeactivationTestUtils {
    * Mocks the deactivation API call to avoid actually deactivating accounts
    */
   async mockDeactivationAPI() {
-    await this.page.route("**/api/v1/users/me/deactivate", async route => {
+    await this.page.route("**/api/v1/users/me/deactivate", async (route) => {
       await route.fulfill({
         status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ 
-          message: "Account deactivated successfully" 
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Account deactivated successfully"
         })
       });
     });
@@ -59,11 +59,11 @@ export class DeactivationTestUtils {
    */
   async expectProtectedRouteRedirect(protectedPath: string) {
     // Navigate to the path and wait for potential redirect
-    await this.page.goto(protectedPath, { waitUntil: 'domcontentloaded' });
-    
+    await this.page.goto(protectedPath, { waitUntil: "domcontentloaded" });
+
     // Give the UserContext time to process the route change and redirect
     await this.page.waitForTimeout(1000);
-    
+
     // Check if we were redirected to the error page
     await expect(this.page).toHaveURL(/\/error\/deactivated/, { timeout: 15_000 });
   }
@@ -81,20 +81,17 @@ export class DeactivationTestUtils {
    * Tests the complete deactivation flow from settings
    */
   async testDeactivationFlow() {
-    
     await this.mockDeactivationAPI();
-    
 
     const deactivateButton = this.page.getByRole("button", { name: /deactivate account/i });
     await expect(deactivateButton).toBeVisible();
     await deactivateButton.click();
-    
+
     // Confirm in modal
     const confirmButton = this.page.getByRole("button", { name: /yes, deactivate/i });
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
-    
-    
+
     await expect(this.page).toHaveURL(/\/error\/deactivated/, { timeout: 10_000 });
   }
 }
