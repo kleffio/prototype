@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { BaseComponent } from "./base.component";
 
+
 /**
  * Container detail modal component
  * Used on project detail pages to view and manage container details
@@ -152,6 +153,30 @@ export class ContainerDetailModal extends BaseComponent {
   async clickEditContainer() {
     await this.editContainerButton().click();
     // Modal closing is handled by React state changes, not immediate DOM updates
+  }
+
+  async deleteContainer() {
+    await this.deleteButton().click();
+
+    // Handle confirmation dialog
+    const confirmationDialog = this.page.getByRole("dialog").filter({ hasText: /delete container/i });
+    await expect(confirmationDialog).toBeVisible();
+
+    // In ConfirmationDialog component: 
+    // destructive variant button has no specific text other than children, or confirmText
+    // We can target the button with "Delete" text inside the dialog
+    // The dialog content renders children, and buttons.
+    // The confirm button is the last button usually or variant="destructive"
+
+    // Based on ConfirmationDialog.tsx:
+    // <Button variant={getConfirmButtonVariant()} ... >{isConfirming ? "Deleting..." : confirmText}</Button>
+    // confirmText defaults to "Confirm", but in ContainerDetailModal usage: confirmText={t.delete}
+    // and t.delete is likely "Delete"
+
+    const confirmButton = confirmationDialog.getByRole("button", { name: /delete/i }).last();
+    await confirmButton.click();
+
+    await this.expectClosed();
   }
 
   // Verifications
