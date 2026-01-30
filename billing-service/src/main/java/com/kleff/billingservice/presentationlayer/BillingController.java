@@ -223,5 +223,28 @@ public class BillingController {
         return billingService.getPrices();
     }
 
+    @GetMapping("/notifications/{projectId}")
+    public ResponseEntity<?> getNotificationsForProject(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+
+            // Check if user has MANAGE_BILLING permission
+            if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
+                logger.warn("User {} attempted to view invoices for project {} without MANAGE_BILLING permission", userId, projectId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "You don't have permission to view billing information for this project"));
+            }
+
+            List<Invoice> items = billingService.getNotificationsForProject(projectId);
+            return ResponseEntity.ok(items);
+        } catch (Exception e) {
+            logger.error("Error getting invoices for project {}: {}", projectId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve invoices"));
+        }
+    }
 
 }
