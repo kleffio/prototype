@@ -53,7 +53,6 @@ test.describe("Account Deactivation", () => {
       localStorage.setItem('account-deactivated', 'true');
     });
 
-    const dashboard = new DashboardPage(page);
     await page.goto("/dashboard");
     
     await expect(page).toHaveURL(/\/error\/deactivated/, { timeout: 10_000 });

@@ -5,6 +5,11 @@ import { setAccessToken } from "@shared/lib/client";
 import { Me } from "@features/users/api/me";
 import { useNavigate, useLocation } from "react-router-dom";
 
+interface DeactivatedAccountError extends Error {
+  status: number;
+  isDeactivated: boolean;
+}
+
 const UserSettingsContext = createContext<UserSettingsState | undefined>(undefined);
 
 function UserSettingsProvider({ children }: { children: ReactNode }) {
@@ -83,7 +88,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       console.error("Failed to load user settings", e);
       
       
-      if ((e as any).status === 403 && (e as any).isDeactivated) {
+      if ((e as DeactivatedAccountError).status === 403 && (e as DeactivatedAccountError).isDeactivated) {
         localStorage.setItem('account-deactivated', 'true');
         navigate('/error/deactivated');
         return;
@@ -108,7 +113,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       events.removeAccessTokenExpired(handleTokenExpired);
       events.removeSilentRenewError(handleSilentRenewError);
     };
-  }, []);
+  }, [auth.events]);
 
   useEffect(() => {
     void load();

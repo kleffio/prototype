@@ -19,11 +19,7 @@ import { TermsOfServicePage } from "@pages/legal/TermsOfServicePage";
 import { AuthPage } from "@pages/auth/AuthPage";
 import PricingPage from "@pages/legal/PricingPage";
 import { StatusPage } from "@pages/landing/StatusPage";
-import { UserSettingsProvider } from "@features/users/context/UserContext";
-
-function AppWithUserSettings({ children }: { children: React.ReactNode }) {
-  return <UserSettingsProvider>{children}</UserSettingsProvider>;
-}
+import { AppWithUserSettings } from "@app/components/AppWithUserSettings";
 
 export const router = createBrowserRouter([
   {
