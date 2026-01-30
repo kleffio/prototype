@@ -24,6 +24,7 @@ import { EditEnvVariablesModal } from "@features/projects/components/EditEnvVari
 import { ContainerStatusCard } from "@features/projects/components/ContainerStatusCard";
 import { ContainerDetailModal } from "@features/projects/components/ContainerDetailModal";
 import updateContainerEnvVariables from "@features/projects/api/updateContainerEnvVariables";
+import deleteContainer from "@features/projects/api/deleteContainer";
 import type { Container } from "@features/projects/types/Container";
 import { ROUTES } from "@app/routes/routes";
 import enTranslations from "@app/locales/en/projects.json";
@@ -51,7 +52,8 @@ export function ProjectDetailPage() {
     containers,
     isLoading: containersLoading,
     error: containersError,
-    reload
+    reload,
+    setContainers
   } = useProjectContainers(projectId || "");
 
   const { role } = usePermissions(projectId);
@@ -108,6 +110,39 @@ export function ProjectDetailPage() {
   ) => {
     await updateContainerEnvVariables(containerId, envVariables);
     await reload();
+  };
+
+  const handleDeleteContainer = async (containerId: string) => {
+    const previousContainers = containers;
+    // Optimistic update
+    setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
+
+    try {
+      await deleteContainer(containerId);
+
+      // If delete succeeds, try to reload for source-of-truth
+      // But if reload fails, DO NOT rollback the deletion
+      try {
+        await reload();
+      } catch (reloadError) {
+        console.error("Failed to reload containers after deletion:", reloadError);
+      }
+    } catch (error: any) {
+      // If the error is 404, it means the container is already gone. 
+      // Treat this as success and do not rollback.
+      if (error?.response?.status === 404 || error?.status === 404) {
+        try {
+          await reload();
+        } catch (reloadError) {
+          console.error("Failed to reload containers after 404 deletion:", reloadError);
+        }
+        return;
+      }
+
+      // Only rollback if the delete genuinely failed
+      setContainers(previousContainers);
+      throw error;
+    }
   };
 
   if (projectLoading) {
@@ -390,6 +425,7 @@ export function ProjectDetailPage() {
         container={selectedContainer}
         onEditEnv={handleEditEnv}
         onEditContainer={handleEditContainer}
+        onDelete={handleDeleteContainer}
       />
 
       <SimpleContainerLogsSheet

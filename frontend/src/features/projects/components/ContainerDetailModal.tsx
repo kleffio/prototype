@@ -2,6 +2,7 @@ import React from "react";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { Badge } from "@shared/ui/Badge";
+import { ConfirmationDialog } from "@shared/ui/ConfirmationDialog";
 import {
   X,
   ExternalLink,
@@ -15,7 +16,8 @@ import {
   Square,
   Trash2,
   Network,
-  Edit
+  Edit,
+  AlertTriangle
 } from "lucide-react";
 import { formatRepoUrl, formatPort } from "@shared/lib/utils";
 import type { Container } from "@features/projects/types/Container";
@@ -35,6 +37,7 @@ interface ContainerDetailModalProps {
   container: Container | null;
   onEditEnv?: (container: Container) => void;
   onEditContainer?: (container: Container) => void;
+  onDelete?: (containerId: string) => Promise<void>;
 }
 
 export function ContainerDetailModal({
@@ -42,9 +45,12 @@ export function ContainerDetailModal({
   onClose,
   container,
   onEditEnv,
-  onEditContainer
+  onEditContainer,
+  onDelete
 }: ContainerDetailModalProps) {
   const [copiedId, setCopiedId] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [locale, setLocale] = React.useState(getLocale());
   const t = translations[locale].projectDetail.containerDetail;
 
@@ -69,6 +75,21 @@ export function ContainerDetailModal({
       setTimeout(() => setCopiedId(false), 2000);
     } catch (err) {
       console.error("Failed to copy container ID:", err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await onDelete(container.containerId);
+      onClose();
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Failed to delete container:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -304,6 +325,8 @@ export function ContainerDetailModal({
                   size="sm"
                   variant="destructive"
                   className="bg-red-600 text-white hover:bg-red-700"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isDeleting}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   {t.delete}
@@ -313,6 +336,34 @@ export function ContainerDetailModal({
           </div>
         </SoftPanel>
       </section>
+
+      {/* Enhanced Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={t.delete_container}
+        description={t.delete_container_description}
+        confirmText={t.delete}
+        cancelText={t.cancel}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        variant="destructive"
+        isLoading={isDeleting}
+      >
+        <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+          <div className="flex items-center gap-2 text-red-400">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">{t.irreversible_action}</span>
+          </div>
+          <p className="mt-2 text-sm text-neutral-300">
+            {t.delete_container_warning}
+          </p>
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-white/10 bg-white/5 p-3">
+            <span className="text-xs font-mono text-neutral-400">{t.container_id}:</span>
+            <span className="font-mono text-sm font-semibold text-white">{container.name}</span>
+          </div>
+        </div>
+      </ConfirmationDialog>
     </section>
   );
 }

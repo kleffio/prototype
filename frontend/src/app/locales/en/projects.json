@@ -139,7 +139,13 @@
       "copied": "Copied!",
       "restart": "Restart",
       "stop": "Stop",
-      "delete": "Delete"
+      "delete": "Delete",
+      "delete_container": "Delete Container",
+      "delete_container_description": "This action will permanently delete the container and cannot be undone.",
+      "cancel": "Cancel",
+      "irreversible_action": "Irreversible Action",
+      "delete_container_warning": "Deleting this container will remove all associated data and configurations. This action cannot be undone.",
+      "container_id": "Container ID"
     }
   },
   "containerModal": {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@shared/ui/Button";
 import { Badge } from "@shared/ui/Badge";
-import { Box, ExternalLink, FileText } from "lucide-react";
+import { Box, ExternalLink, FileText, Trash2 } from "lucide-react";
 import type { Container } from "@features/projects/types/Container";
 import { SecureComponent } from "@app/components/SecureComponent";
 import enTranslations from "@app/locales/en/projects.json";
@@ -45,6 +45,7 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
     onManage(container);
   };
 
+
   return (
     <button
       onClick={handleCardClick}
@@ -66,22 +67,21 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
 
       {/* Right side: Actions */}
       <div className="flex items-center justify-end gap-2">
-        {onViewLogs && (
-          <SecureComponent requiredPermission="VIEW_LOGS">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewLogs(container);
-              }}
-              className="h-8 px-3 text-xs text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
-            >
-              <FileText className="mr-1 h-3 w-3" />
-              {t.view_logs}
-            </Button>
-          </SecureComponent>
-        )}
+        <SecureComponent requiredPermission="VIEW_LOGS">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewLogs) onViewLogs(container);
+            }}
+            className="h-8 px-3 text-xs text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
+          >
+            <FileText className="mr-1 h-3 w-3" />
+            {t.view_logs}
+          </Button>
+        </SecureComponent>
+        
         <Button
           size="sm"
           variant="ghost"
@@ -91,6 +91,22 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
           <ExternalLink className="mr-1 h-3 w-3" />
           {t.visit_app}
         </Button>
+
+        <SecureComponent requiredPermission="DELETE_PROJECT">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              // This will be handled by the parent component
+              // For now, we'll just prevent the card click from firing
+            }}
+            className="h-8 px-3 text-xs text-red-400 hover:bg-red-400/10 hover:text-red-300"
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            {t.delete}
+          </Button>
+        </SecureComponent>
       </div>
     </button>
   );
