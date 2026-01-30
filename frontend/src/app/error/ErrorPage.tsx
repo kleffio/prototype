@@ -5,6 +5,7 @@ import { AlertTriangle, Home, RefreshCcw, ArrowLeft } from "lucide-react";
 
 import { AppHeader } from "@app/layout/AppHeader";
 import { AppFooter } from "@app/layout/components/AppFooter";
+import { DeactivatedAccountError } from "./DeactivatedAccountError";
 
 interface ErrorDetails {
   status: number;
@@ -89,6 +90,16 @@ export function ErrorPage() {
   const error = useRouteError();
   const errorDetails = getErrorDetails(error);
   const isDevelopment = import.meta.env.DEV;
+
+  // Check if this is a deactivated account error
+  const isDeactivatedAccount = errorDetails.status === 403 && 
+    (errorDetails.message.toLowerCase().includes('deactivated') || 
+     errorDetails.message.toLowerCase().includes('account has been deactivated'));
+
+  // Show custom deactivated account page
+  if (isDeactivatedAccount) {
+    return <DeactivatedAccountError />;
+  }
 
   const handleRefresh = () => {
     window.location.reload();

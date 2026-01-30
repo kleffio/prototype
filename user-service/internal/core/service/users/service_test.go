@@ -13,9 +13,12 @@ import (
 type mockUserRepository struct {
 	getByIDFunc        func(ctx context.Context, id domain.ID) (*domain.User, error)
 	getByUsernameFunc  func(ctx context.Context, username string) (*domain.User, error)
+	getByEmailFunc     func(ctx context.Context, email string) (*domain.User, error)
 	saveFunc           func(ctx context.Context, user *domain.User) error
 	updateProfileFunc  func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) error
+	updateUserIDFunc   func(ctx context.Context, oldID, newID domain.ID) error
 	usernameExistsFunc func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
+	deactivateFunc     func(ctx context.Context, id domain.ID) error
 }
 
 func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
@@ -28,6 +31,13 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain
 func (m *mockUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	if m.getByUsernameFunc != nil {
 		return m.getByUsernameFunc(ctx, username)
+	}
+	return nil, nil
+}
+
+func (m *mockUserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	if m.getByEmailFunc != nil {
+		return m.getByEmailFunc(ctx, email)
 	}
 	return nil, nil
 }
@@ -51,6 +61,20 @@ func (m *mockUserRepository) UsernameExists(ctx context.Context, username string
 		return m.usernameExistsFunc(ctx, username, excludeID)
 	}
 	return false, nil
+}
+
+func (m *mockUserRepository) UpdateUserID(ctx context.Context, oldID, newID domain.ID) error {
+	if m.updateUserIDFunc != nil {
+		return m.updateUserIDFunc(ctx, oldID, newID)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) DeactivateAccount(ctx context.Context, id domain.ID) error {
+	if m.deactivateFunc != nil {
+		return m.deactivateFunc(ctx, id)
+	}
+	return nil
 }
 
 type mockAuditRepository struct {
@@ -1038,4 +1062,111 @@ func TestLogAction_NoAuditRepo_NoPanic(t *testing.T) {
 	svc.logAction(context.Background(), "user123", "anything", map[string]domain.ChangeDetail{
 		"x": {Old: "a", New: "b"},
 	})
+}
+
+func TestDeactivateAccount(t *testing.T) {
+	tests := []struct {
+		name            string
+		userID          domain.ID
+		existingUser    *domain.User
+		getByIDError    error
+		deactivateError error
+		expectError     bool
+		errorIs         error
+	}{
+		{
+			name:         "user not found - nil user",
+			userID:       "user123",
+			existingUser: nil,
+			expectError:  true,
+			errorIs:      ErrUserNotFound,
+		},
+		{
+			name:         "get user fails",
+			userID:       "user123",
+			getByIDError: errors.New("database error"),
+			expectError:  true,
+		},
+		{
+			name:   "user already deactivated",
+			userID: "user123",
+			existingUser: &domain.User{
+				ID:            "user123",
+				Username:      "testuser",
+				IsDeactivated: true,
+			},
+			expectError: true,
+		},
+		{
+			name:   "deactivation fails",
+			userID: "user123",
+			existingUser: &domain.User{
+				ID:            "user123",
+				Username:      "testuser",
+				IsDeactivated: false,
+			},
+			deactivateError: errors.New("deactivation failed"),
+			expectError:     true,
+		},
+		{
+			name:   "successful deactivation",
+			userID: "user123",
+			existingUser: &domain.User{
+				ID:            "user123",
+				Username:      "testuser",
+				IsDeactivated: false,
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var auditLogRecorded bool
+			repo := &mockUserRepository{
+				getByIDFunc: func(ctx context.Context, id domain.ID) (*domain.User, error) {
+					if tt.getByIDError != nil {
+						return nil, tt.getByIDError
+					}
+					return tt.existingUser, nil
+				},
+				deactivateFunc: func(ctx context.Context, id domain.ID) error {
+					return tt.deactivateError
+				},
+			}
+
+			auditRepo := &mockAuditRepository{
+				recordFunc: func(ctx context.Context, log *domain.AuditLog) error {
+					auditLogRecorded = true
+					if log.Action != "account_deactivated" {
+						t.Errorf("expected action 'account_deactivated', got %s", log.Action)
+					}
+					return nil
+				},
+			}
+
+			svc := NewService(repo, auditRepo, &mockTokenValidator{}, &mockAuthentikManager{})
+
+			err := svc.DeactivateAccount(context.Background(), tt.userID)
+
+			if tt.expectError {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				if tt.errorIs != nil && !errors.Is(err, tt.errorIs) {
+					t.Errorf("expected error %v, got %v", tt.errorIs, err)
+				}
+				if auditLogRecorded {
+					t.Error("expected no audit log when error occurred")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if !auditLogRecorded {
+					t.Error("expected audit log to be recorded on successful deactivation")
+				}
+			}
+		})
+	}
 }

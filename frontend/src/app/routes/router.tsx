@@ -1,4 +1,5 @@
 import { ErrorPage } from "@app/error/ErrorPage";
+import { DeactivatedAccountError } from "@app/error/DeactivatedAccountError";
 import { ProjectDetailPage } from "@pages/projects/ProjectDetailPage";
 import { AppLayout } from "@app/layout/AppLayout";
 import { DashboardLayout } from "@app/layout/DashboardLayout";
@@ -36,6 +37,13 @@ export const router = createBrowserRouter([
       { path: "pricing", element: <PricingPage /> },
 
       { path: "status", element: <StatusPage /> },
+      
+      // Error routes
+      {
+        path: "error/deactivated",
+        element: <DeactivatedAccountError />
+      },
+      
       // Auth routes
       {
         path: "auth",

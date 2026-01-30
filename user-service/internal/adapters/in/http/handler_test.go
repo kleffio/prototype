@@ -23,6 +23,7 @@ type mockUserService struct {
 	resolveManyFunc    func(ctx context.Context, ids []domain.ID) (map[domain.ID]*domain.User, error)
 	getAuditLogsFunc   func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, error)
 	getMyAuditLogsFunc func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, int64, error)
+	deactivateFunc     func(ctx context.Context, userID domain.ID) error
 }
 
 func (m *mockUserService) GetMe(ctx context.Context, token string) (*domain.User, error) {
@@ -72,6 +73,13 @@ func (m *mockUserService) GetMyAuditLogs(ctx context.Context, userID domain.ID, 
 		return m.getMyAuditLogsFunc(ctx, userID, limit, offset)
 	}
 	return nil, 0, nil
+}
+
+func (m *mockUserService) DeactivateAccount(ctx context.Context, userID domain.ID) error {
+	if m.deactivateFunc != nil {
+		return m.deactivateFunc(ctx, userID)
+	}
+	return nil
 }
 
 func TestHealth(t *testing.T) {
@@ -849,6 +857,120 @@ func TestExtractBearerToken(t *testing.T) {
 			result := extractBearerToken(req)
 			if result != tt.expected {
 				t.Errorf("expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestDeactivateAccount(t *testing.T) {
+	tests := []struct {
+		name           string
+		authHeader     string
+		getMeFunc      func(ctx context.Context, token string) (*domain.User, error)
+		deactivateFunc func(ctx context.Context, userID domain.ID) error
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name:           "missing auth header",
+			authHeader:     "",
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "missing or invalid authorization header",
+		},
+		{
+			name:       "invalid token",
+			authHeader: "Bearer invalid-token",
+			getMeFunc: func(ctx context.Context, token string) (*domain.User, error) {
+				return nil, coresvc.ErrInvalidToken
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "invalid or expired token",
+		},
+		{
+			name:       "user not found during deactivation",
+			authHeader: "Bearer valid-token",
+			getMeFunc: func(ctx context.Context, token string) (*domain.User, error) {
+				return &domain.User{ID: "user123", Username: "testuser"}, nil
+			},
+			deactivateFunc: func(ctx context.Context, userID domain.ID) error {
+				return coresvc.ErrUserNotFound
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  "user not found",
+		},
+		{
+			name:       "user already deactivated",
+			authHeader: "Bearer valid-token",
+			getMeFunc: func(ctx context.Context, token string) (*domain.User, error) {
+				return &domain.User{ID: "user123", Username: "testuser"}, nil
+			},
+			deactivateFunc: func(ctx context.Context, userID domain.ID) error {
+				return coresvc.ErrAccountDeactivated
+			},
+			expectedStatus: http.StatusConflict,
+			expectedError:  "account is already deactivated",
+		},
+		{
+			name:       "internal server error",
+			authHeader: "Bearer valid-token",
+			getMeFunc: func(ctx context.Context, token string) (*domain.User, error) {
+				return &domain.User{ID: "user123", Username: "testuser"}, nil
+			},
+			deactivateFunc: func(ctx context.Context, userID domain.ID) error {
+				return errors.New("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "internal server error",
+		},
+		{
+			name:       "successful deactivation",
+			authHeader: "Bearer valid-token",
+			getMeFunc: func(ctx context.Context, token string) (*domain.User, error) {
+				return &domain.User{ID: "user123", Username: "testuser"}, nil
+			},
+			deactivateFunc: func(ctx context.Context, userID domain.ID) error {
+				return nil
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := NewHandler(&mockUserService{
+				getMeFunc:      tt.getMeFunc,
+				deactivateFunc: tt.deactivateFunc,
+			})
+
+			req := httptest.NewRequest(http.MethodDelete, "/api/v1/users/me/deactivate", nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			w := httptest.NewRecorder()
+			h.DeactivateAccount(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
+
+			if tt.expectedError != "" {
+				var response errorResponse
+				if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if response.Error != tt.expectedError {
+					t.Errorf("expected error %s, got %s", tt.expectedError, response.Error)
+				}
+			} else {
+				// Check for success response
+				var response map[string]string
+				if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+					t.Fatalf("failed to unmarshal success response: %v", err)
+				}
+				if message, ok := response["message"]; !ok || message != "Account successfully deactivated" {
+					t.Errorf("expected success message, got %v", response)
+				}
 			}
 		})
 	}

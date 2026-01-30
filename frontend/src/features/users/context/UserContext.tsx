@@ -13,6 +13,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isDeactivated, setIsDeactivated] = useState(false);
 
   const load = useCallback(async () => {
     if (authLoading) {
@@ -20,10 +21,38 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // If account is marked as deactivated, redirect to error page from protected routes only
+    if (localStorage.getItem('account-deactivated') === 'true') {
+      const currentPath = window.location.pathname;
+      const isProtectedRoute = currentPath.startsWith('/dashboard') || 
+                              currentPath.startsWith('/settings') || 
+                              currentPath.startsWith('/projects');
+      
+      if (isProtectedRoute && currentPath !== '/error/deactivated') {
+        window.location.href = '/error/deactivated';
+        return;
+      }
+    }
+
+    // Skip loading if we're on the deactivated error page
+    if (window.location.pathname === '/error/deactivated') {
+      setIsLoading(false);
+      return;
+    }
+
     if (!isAuthenticated) {
       setAccessToken(null);
       setSettings(null);
       setError(null);
+      setIsLoading(false);
+      setIsDeactivated(false);
+      // Clear deactivation flag when not authenticated
+      localStorage.removeItem('account-deactivated');
+      return;
+    }
+
+    // If account is already known to be deactivated, don't try to load again
+    if (isDeactivated) {
       setIsLoading(false);
       return;
     }
@@ -47,12 +76,25 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(data);
     } catch (e) {
       console.error("Failed to load user settings", e);
+      
+      // Check if this is a deactivated account error
+      const error = e as any;
+      if (error.status === 403 && error.isDeactivated) {
+        // Mark as deactivated to prevent further attempts
+        setIsDeactivated(true);
+        // Set localStorage flag to prevent further API calls
+        localStorage.setItem('account-deactivated', 'true');
+        // Redirect to deactivated account error page (without signing out automatically)
+        window.location.href = '/error/deactivated';
+        return;
+      }
+      
       setError(e as Error);
       setSettings(null);
     } finally {
       setIsLoading(false);
     }
-  }, [authLoading, isAuthenticated, user?.access_token]);
+  }, [authLoading, isAuthenticated, user?.access_token, isDeactivated, auth]);
 
   useEffect(() => {
     const handleTokenExpiring = () => {

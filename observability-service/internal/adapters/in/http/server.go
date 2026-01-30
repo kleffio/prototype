@@ -1,6 +1,11 @@
 package http
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +21,7 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine 
 	}))
 
 	api := router.Group("/api/v1/systems")
+	api.Use(jwtAuthMiddleware()) // Apply JWT middleware to all API routes
 	{
 		api.GET("/metrics", handler.GetAllMetrics)
 		api.GET("/overview", handler.GetOverview)
@@ -51,4 +57,96 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine 
 	})
 
 	return router
+}
+
+// jwtAuthMiddleware validates JWT tokens and checks user deactivation status
+func jwtAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := extractBearerToken(c.Request)
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid authorization header"})
+			c.Abort()
+			return
+		}
+
+		// Check user status via user-service
+		userID, err := extractUserIDFromToken(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.Abort()
+			return
+		}
+
+		isActive, err := checkUserStatus(userID)
+		if err != nil || !isActive {
+			c.JSON(http.StatusForbidden, gin.H{"error": "account has been deactivated"})
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", userID)
+		c.Next()
+	}
+}
+
+// extractBearerToken extracts the bearer token from Authorization header
+func extractBearerToken(r *http.Request) string {
+	auth := r.Header.Get("Authorization")
+	if !strings.HasPrefix(auth, "Bearer ") {
+		return ""
+	}
+	return strings.TrimPrefix(auth, "Bearer ")
+}
+
+// extractUserIDFromToken extracts user ID from JWT token (simplified, assumes JWT format)
+func extractUserIDFromToken(token string) (string, error) {
+	// Make a call to user-service to validate and get user ID
+	req, err := http.NewRequest("GET", "http://user-service:8080/api/v1/users/me", nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("token validation failed")
+	}
+
+	var user struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return "", fmt.Errorf("failed to decode user response: %w", err)
+	}
+
+	return user.ID, nil
+}
+
+// checkUserStatus checks if user is active via user-service
+func checkUserStatus(userID string) (bool, error) {
+	url := fmt.Sprintf("http://user-service:8080/api/v1/users/status/%s", userID)
+	resp, err := http.Get(url)
+	if err != nil {
+		return false, fmt.Errorf("failed to check user status: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("user status check failed")
+	}
+
+	var status struct {
+		Active bool `json:"active"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+		return false, fmt.Errorf("failed to decode status response: %w", err)
+	}
+
+	return status.Active, nil
 }

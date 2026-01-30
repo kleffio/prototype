@@ -15,11 +15,12 @@ import (
 )
 
 var (
-	ErrUserNotFound    = errors.New("user not found")
-	ErrInvalidToken    = errors.New("invalid or expired token")
-	ErrInvalidUsername = errors.New("invalid username format")
-	ErrUsernameTaken   = errors.New("username already taken")
-	ErrInvalidUpdate   = errors.New("invalid profile update")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrInvalidToken       = errors.New("invalid or expired token")
+	ErrInvalidUsername    = errors.New("invalid username format")
+	ErrUsernameTaken      = errors.New("username already taken")
+	ErrInvalidUpdate      = errors.New("invalid profile update")
+	ErrAccountDeactivated = errors.New("account is already deactivated")
 )
 
 var usernameRegex = regexp.MustCompile(`^[a-z0-9_-]{2,63}$`)
@@ -73,9 +74,65 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 		return nil, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
+	// Check if user is deactivated
+	if user != nil && user.IsDeactivated {
+		return nil, ErrAccountDeactivated
+	}
+
 	now := time.Now().UTC()
 
 	if user == nil {
+		// Check if a user with this email already exists
+		existingUser, err := s.repo.GetByEmail(ctx, claims.Email)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check existing user by email: %w", err)
+		}
+
+		if existingUser != nil {
+			// User exists with this email but different ID, update the existing user's ID
+			log.Printf("Found existing user with email %s (id=%s), updating to new token ID %s", claims.Email, existingUser.ID, claims.Sub)
+
+			// Store the original ID for updating the record
+			originalID := existingUser.ID
+
+			// Update the existing user with new token claims
+			existingUser.EmailVerified = claims.EmailVerified
+			existingUser.LoginUsername = claims.PreferredUsername
+			existingUser.UpdatedAt = now
+
+			// Try to resolve Authentik ID if not already set
+			if existingUser.AuthentikID == "" && s.authentikManager != nil && claims.Email != "" {
+				if uuid, err := s.authentikManager.ResolveUserID(ctx, claims.Email); err != nil {
+					log.Printf("failed to resolve authentik uuid for %s: %v", claims.Email, err)
+				} else {
+					existingUser.AuthentikID = uuid
+				}
+			}
+
+			// First save the updates to the existing record (keeping the original ID)
+			if err := s.repo.Save(ctx, existingUser); err != nil {
+				return nil, fmt.Errorf("failed to update existing user data: %w", err)
+			}
+
+			// Now handle ID change if needed - update the ID in the database directly
+			if originalID != domain.ID(claims.Sub) {
+				if err := s.repo.UpdateUserID(ctx, originalID, domain.ID(claims.Sub)); err != nil {
+					return nil, fmt.Errorf("failed to update user ID: %w", err)
+				}
+				// Update the user object with the new ID
+				existingUser.ID = domain.ID(claims.Sub)
+			}
+
+			// Check if existing user is deactivated AFTER updating the ID
+			if existingUser.IsDeactivated {
+				return nil, ErrAccountDeactivated
+			}
+
+			log.Printf("updated existing user: id=%s->%s username=%s", originalID, claims.Sub, existingUser.Username)
+			return existingUser, nil
+		}
+
+		// No existing user, create new one
 		username := s.generateUniqueUsername(ctx, claims)
 		displayName := s.generateDisplayName(claims)
 
@@ -87,8 +144,6 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 				authentikID = uuid
 			}
 		}
-
-		log.Print(authentikID)
 
 		user = &domain.User{
 			ID:            domain.ID(claims.Sub),
@@ -173,7 +228,6 @@ func (s *Service) GetByHandle(ctx context.Context, handle string) (*domain.User,
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
-	log.Printf(user.AuthentikID)
 	return user, nil
 }
 
@@ -293,6 +347,37 @@ func (s *Service) GetMyAuditLogs(
 	}
 
 	return logs, total, nil
+}
+
+// DeactivateAccount deactivates a user account
+func (s *Service) DeactivateAccount(ctx context.Context, userID domain.ID) error {
+	// Check if user exists first
+	existingUser, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+	if existingUser == nil {
+		return ErrUserNotFound
+	}
+
+	// Check if already deactivated
+	if existingUser.IsDeactivated {
+		return fmt.Errorf("account is already deactivated")
+	}
+
+	// Perform deactivation
+	if err := s.repo.DeactivateAccount(ctx, userID); err != nil {
+		return fmt.Errorf("failed to deactivate account: %w", err)
+	}
+
+	// Log the deactivation action
+	s.logAction(ctx, userID, "account_deactivated", map[string]domain.ChangeDetail{
+		"is_deactivated": {Old: "false", New: "true"},
+		"deactivated_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},
+	})
+
+	log.Printf("Account deactivated for user %s", userID)
+	return nil
 }
 
 // --- Helpers ---

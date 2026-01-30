@@ -5,6 +5,7 @@ import { getLocale } from "@app/locales/locale";
 import { CreateProjectModal } from "@features/projects/components/CreateProjectModal";
 import { PendingInvitations } from "@features/projects/components/PendingInvitations";
 import { useProjects } from "@features/projects/hooks/useProjects";
+
 import { Button } from "@shared/ui/Button";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Badge } from "@shared/ui/Badge";
@@ -36,6 +37,9 @@ type SortOption = "date-desc" | "date-asc" | "name-asc" | "name-desc";
 type FilterOption = "all" | "owned" | "shared";
 
 export function ProjectsPage() {
+  // Check for deactivated account and redirect if needed
+
+  
   const [locale, setLocaleState] = useState(getLocale());
   const { projects, isLoading, error, reload } = useProjects();
   const [isModalOpen, setIsModalOpen] = useState(false);

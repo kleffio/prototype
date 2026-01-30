@@ -40,6 +40,14 @@ func buildUserRepository(cfg *config.Config) (
 
 	log.Printf("users table initialized")
 
+	// Run database migrations
+	if err := repo.RunMigrations(ctx); err != nil {
+		_ = repo.Close()
+		return nil, nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	log.Printf("database migrations completed")
+
 	return repo, repo, nil
 }
 

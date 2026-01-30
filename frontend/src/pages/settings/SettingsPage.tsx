@@ -8,13 +8,18 @@ import {
   FolderGit2,
   Palette,
   Mail,
-  CreditCard
+  CreditCard,
+  Shield,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { updateUserProfile } from "@features/users/api/UpdateUserProfile";
 import { getMyAuditLogs } from "@features/users/api/getMyAuditLogs";
+import { deactivateAccount } from "@features/users/api/deactivateAccount";
 import { useUser } from "@features/users/hooks/useUser";
+
 
 import { Button } from "@shared/ui/Button";
 import { Input } from "@shared/ui/Input";
@@ -128,6 +133,9 @@ function AuditPagination({
 }
 
 export function SettingsPage() {
+  // Check for deactivated account and redirect if needed
+
+  
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -147,6 +155,10 @@ export function SettingsPage() {
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
+
+  // Deactivation modal state
+  const [showDeactivationModal, setShowDeactivationModal] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(auditTotal / PAGE_SIZE));
 
@@ -252,6 +264,29 @@ export function SettingsPage() {
     }
   };
 
+  const handleDeactivateAccount = async () => {
+    if (!user) return;
+
+    setIsDeactivating(true);
+    setNotification(null);
+
+    try {
+      await deactivateAccount();
+      setNotification({
+        type: "success",
+        message: "Your account has been successfully deactivated."
+      });
+      setShowDeactivationModal(false);
+    } catch (err) {
+      setNotification({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to deactivate account."
+      });
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-kleff-bg text-foreground relative min-h-screen">
@@ -354,6 +389,17 @@ export function SettingsPage() {
                   Public profile
                 </button>
                 <button
+                  onClick={() => setActiveTab("account")}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                    activeTab === "account"
+                      ? "bg-neutral-800/50 font-medium text-neutral-50"
+                      : "text-neutral-400 hover:bg-neutral-800/30 hover:text-neutral-200"
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Account
+                </button>
+                <button
                   onClick={() => setActiveTab("projects")}
                   disabled
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
@@ -409,16 +455,19 @@ export function SettingsPage() {
               )}
 
               <div className="space-y-8">
-                {/* Profile Section */}
-                <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
-                  <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                    <h2 className="mb-2 text-xl font-bold text-neutral-50">Public profile</h2>
-                    <p className="text-sm text-neutral-400">
-                      This information will be displayed publicly so be careful what you share.
-                    </p>
-                  </div>
+                {/* Profile Tab */}
+                {activeTab === "profile" && (
+                  <>
+                    {/* Profile Section */}
+                    <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                      <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Public profile</h2>
+                        <p className="text-sm text-neutral-400">
+                          This information will be displayed publicly so be careful what you share.
+                        </p>
+                      </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-8">
+                      <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Profile Picture */}
                     <div className="flex items-start gap-8 border-b border-neutral-800/50 pb-8">
                       <div className="flex-shrink-0">
@@ -629,11 +678,109 @@ export function SettingsPage() {
                     </>
                   )}
                 </div>
+                  </>
+                )}
+
+                {/* Account Tab */}
+                {activeTab === "account" && (
+                  <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                    <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                      <h2 className="mb-2 text-xl font-bold text-neutral-50">Account Management</h2>
+                      <p className="text-sm text-neutral-400">
+                        Manage your account settings and preferences.
+                      </p>
+                    </div>
+
+                    <div className="space-y-8">
+                      {/* Deactivate Account Section */}
+                      <div className="border border-red-500/20 rounded-lg bg-red-500/5 p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <AlertTriangle className="h-6 w-6 text-red-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="mb-2 text-lg font-semibold text-red-300">
+                              Deactivate Account
+                            </h3>
+                            <p className="mb-4 text-sm text-neutral-400">
+                              Deactivating your account will permanently remove all your data and cannot be undone.
+                              This action will immediately log you out and remove access to all your projects and data.
+                            </p>
+                            <Button
+                              onClick={() => setShowDeactivationModal(true)}
+                              variant="destructive"
+                              className="bg-red-600 text-white hover:bg-red-700"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Deactivate Account
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Deactivation Confirmation Modal */}
+      {showDeactivationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isDeactivating && setShowDeactivationModal(false)}
+          />
+          
+          {/* Modal content */}
+          <div className="relative z-10 w-full max-w-md mx-4">
+            <div className="rounded-xl border border-red-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+                <h3 className="text-lg font-semibold text-red-300">
+                  Deactivate Account
+                </h3>
+              </div>
+              
+              <div className="mb-6 space-y-3 text-sm text-neutral-300">
+                <p>
+                  <strong>This action cannot be undone.</strong> Deactivating your account will:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-4 text-neutral-400">
+                  <li>Permanently delete all your data</li>
+                  <li>Remove access to all projects</li>
+                  <li>Log you out immediately</li>
+                  <li>Cannot be reversed</li>
+                </ul>
+                <p className="text-red-300 font-medium">
+                  Are you sure you want to deactivate your account?
+                </p>
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <Button
+                  onClick={() => setShowDeactivationModal(false)}
+                  disabled={isDeactivating}
+                  variant="secondary"
+                  className="px-4 py-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeactivateAccount}
+                  disabled={isDeactivating}
+                  className="bg-red-600 text-white hover:bg-red-700 px-4 py-2"
+                >
+                  {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="relative z-20 border-t border-neutral-800/50 bg-neutral-900/30 backdrop-blur-sm">
