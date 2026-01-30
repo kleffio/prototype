@@ -195,7 +195,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
   const loadCollaboratorUsernames = async () => {
     try {
       const usernameMap: Record<string, string> = {};
-      
+
       // Use Promise.all for parallel requests (faster)
       await Promise.all(
         collaborators.map(async (collaborator) => {
@@ -209,7 +209,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
           }
         })
       );
-      
+
       setUsernames(usernameMap);
     } catch (error) {
       console.error("Failed to load usernames:", error);
@@ -464,8 +464,8 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                       collaborators.map((collaborator) => (
                         <TableRow key={collaborator.id} className="hover:bg-white/5">
                           <TableCell className="font-mono text-sm text-neutral-300">
-                            {usernames[collaborator.userId] || 
-                             collaborator.userId.substring(0, 8) + "..."}
+                            {usernames[collaborator.userId] ||
+                              collaborator.userId.substring(0, 8) + "..."}
                           </TableCell>
                           <TableCell>
                             {editingUserId === collaborator.userId && canManageTeam ? (
