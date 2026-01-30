@@ -75,8 +75,7 @@ export function ProjectDetailPage() {
   // Delete flow state
 
 
-  const id = project?.ownerId || "";
-  const ownerUser = useUsername(id);
+  const ownerUser = useUsername(project?.ownerId || "");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -131,11 +130,34 @@ export function ProjectDetailPage() {
     try {
       await deleteContainer(containerId);
       await reload();
-    } catch (err: any) {
-      if (err?.response?.status === 404 || err?.status === 404) {
+    } catch (err: unknown) {
+      // Type guard to safely check for status property
+      const hasStatus = (obj: unknown): obj is { status?: number } => 
+        typeof obj === 'object' && obj !== null && 'status' in obj;
+      
+      const hasResponseStatus = (obj: unknown): obj is { response?: { status?: number } } => {
+        if (typeof obj !== 'object' || obj === null) {
+          return false;
+        }
+        
+        const responseObj = (obj as { response?: unknown }).response;
+        if (typeof responseObj !== 'object' || responseObj === null || responseObj === undefined) {
+          return false;
+        }
+        
+        return 'status' in responseObj;
+      };
+
+      if (hasResponseStatus(err) && err.response?.status === 404) {
         await reload();
         return;
       }
+      
+      if (hasStatus(err) && err.status === 404) {
+        await reload();
+        return;
+      }
+      
       setContainers(previousContainers);
       throw err;
     }
