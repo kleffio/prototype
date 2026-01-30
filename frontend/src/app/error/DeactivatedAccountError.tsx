@@ -27,18 +27,13 @@ export function DeactivatedAccountError() {
               <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-orange-500/5" />
 
               <div className="relative space-y-6">
-                <div className="flex items-center justify-center gap-4">
-                  <span className="text-6xl" role="img" aria-label="Account deactivated">
-                    🚫
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Badge variant="destructive" className="text-xs">
+                    Account Deactivated
+                  </Badge>
+                  <span className="font-mono text-xs text-neutral-500">
+                    Status 403
                   </span>
-                  <div className="flex flex-col items-start gap-2">
-                    <Badge variant="destructive" className="text-xs">
-                      Account Deactivated
-                    </Badge>
-                    <span className="text-left font-mono text-xs text-neutral-500">
-                      Status 403
-                    </span>
-                  </div>
                 </div>
 
                 <div className="space-y-2">

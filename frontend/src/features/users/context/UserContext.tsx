@@ -13,25 +13,11 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [isDeactivated, setIsDeactivated] = useState(false);
 
   const load = useCallback(async () => {
     if (authLoading) {
       setIsLoading(true);
       return;
-    }
-
-    // If account is marked as deactivated, redirect to error page from protected routes only
-    if (localStorage.getItem('account-deactivated') === 'true') {
-      const currentPath = window.location.pathname;
-      const isProtectedRoute = currentPath.startsWith('/dashboard') || 
-                              currentPath.startsWith('/settings') || 
-                              currentPath.startsWith('/projects');
-      
-      if (isProtectedRoute && currentPath !== '/error/deactivated') {
-        window.location.href = '/error/deactivated';
-        return;
-      }
     }
 
     // Skip loading if we're on the deactivated error page
@@ -45,15 +31,8 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(null);
       setError(null);
       setIsLoading(false);
-      setIsDeactivated(false);
       // Clear deactivation flag when not authenticated
       localStorage.removeItem('account-deactivated');
-      return;
-    }
-
-    // If account is already known to be deactivated, don't try to load again
-    if (isDeactivated) {
-      setIsLoading(false);
       return;
     }
 
@@ -78,13 +57,8 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       console.error("Failed to load user settings", e);
       
       // Check if this is a deactivated account error
-      const error = e as any;
-      if (error.status === 403 && error.isDeactivated) {
-        // Mark as deactivated to prevent further attempts
-        setIsDeactivated(true);
-        // Set localStorage flag to prevent further API calls
+      if ((e as any).status === 403 && (e as any).isDeactivated) {
         localStorage.setItem('account-deactivated', 'true');
-        // Redirect to deactivated account error page (without signing out automatically)
         window.location.href = '/error/deactivated';
         return;
       }
@@ -94,37 +68,47 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [authLoading, isAuthenticated, user?.access_token, isDeactivated, auth]);
+  }, [authLoading, isAuthenticated, user?.access_token]);
 
   useEffect(() => {
-    const handleTokenExpiring = () => {
-      if (import.meta.env.DEV) console.log("🔄 Token expiring, attempting silent refresh...");
-    };
-
-    const handleTokenExpired = () => {
-      if (import.meta.env.DEV) console.log("⚠️ Token expired");
-    };
-
-    const handleSilentRenewError = (error: Error) => {
-      console.error("❌ Silent renew error:", error);
-    };
-
     const events = auth.events;
-    events.addAccessTokenExpiring(handleTokenExpiring);
+    const handleTokenExpired = () => console.error("Token expired");
+    const handleSilentRenewError = (error: Error) => console.error("Silent renew error:", error);
+
     events.addAccessTokenExpired(handleTokenExpired);
     events.addSilentRenewError(handleSilentRenewError);
 
     return () => {
-      events.removeAccessTokenExpiring(handleTokenExpiring);
       events.removeAccessTokenExpired(handleTokenExpired);
       events.removeSilentRenewError(handleSilentRenewError);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Route protection for deactivated accounts
+  useEffect(() => {
+    const checkRoute = () => {
+      if (localStorage.getItem('account-deactivated') === 'true') {
+        const path = window.location.pathname;
+        if (path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects')) {
+          if (path !== '/error/deactivated') {
+            window.location.href = '/error/deactivated';
+          }
+        }
+      }
+    };
+
+    // Check immediately
+    checkRoute();
+    
+    // Check periodically for route changes
+    const interval = setInterval(checkRoute, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const value: UserSettingsState = useMemo(
     () => ({

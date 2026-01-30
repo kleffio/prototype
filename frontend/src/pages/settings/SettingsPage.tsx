@@ -708,8 +708,8 @@ export function SettingsPage() {
                             </p>
                             <Button
                               onClick={() => setShowDeactivationModal(true)}
-                              variant="destructive"
-                              className="bg-red-600 text-white hover:bg-red-700"
+                              variant="outline"
+                              className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-400"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Deactivate Account
@@ -737,10 +737,10 @@ export function SettingsPage() {
           
           {/* Modal content */}
           <div className="relative z-10 w-full max-w-md mx-4">
-            <div className="rounded-xl border border-red-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
+            <div className="rounded-xl border border-yellow-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
               <div className="mb-4 flex items-center gap-3">
-                <AlertTriangle className="h-6 w-6 text-red-400" />
-                <h3 className="text-lg font-semibold text-red-300">
+                <AlertTriangle className="h-6 w-6 text-yellow-400" />
+                <h3 className="text-lg font-semibold text-yellow-300">
                   Deactivate Account
                 </h3>
               </div>
@@ -755,7 +755,7 @@ export function SettingsPage() {
                   <li>Log you out immediately</li>
                   <li>Cannot be reversed</li>
                 </ul>
-                <p className="text-red-300 font-medium">
+                <p className="text-yellow-300 font-medium">
                   Are you sure you want to deactivate your account?
                 </p>
               </div>
@@ -772,7 +772,7 @@ export function SettingsPage() {
                 <Button
                   onClick={handleDeactivateAccount}
                   disabled={isDeactivating}
-                  className="bg-red-600 text-white hover:bg-red-700 px-4 py-2"
+                  className="bg-yellow-600 text-white hover:bg-yellow-700 px-4 py-2"
                 >
                   {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
                 </Button>

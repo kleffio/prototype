@@ -27,11 +27,8 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Check for deactivated account errors
-    if (error.response?.status === 403 && 
-        (error.response?.data?.error?.toLowerCase()?.includes('deactivated') ||
-         error.response?.data?.message?.toLowerCase()?.includes('deactivated'))) {
-      // Create custom error for deactivated account that the ErrorPage can detect
+    // Check for 403 errors that indicate deactivated accounts
+    if (error.response?.status === 403) {
       const deactivatedError = new Error('Account has been deactivated');
       (deactivatedError as any).status = 403;
       (deactivatedError as any).isDeactivated = true;
