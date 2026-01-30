@@ -83,7 +83,12 @@ func (r *PostgresUserRepository) runMigration(ctx context.Context, filename stri
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			// Log rollback error but don't override the main error
+			fmt.Printf("Warning: failed to rollback transaction: %v\n", rollbackErr)
+		}
+	}()
 
 	// Execute migration
 	if _, err := tx.ExecContext(ctx, string(content)); err != nil {
