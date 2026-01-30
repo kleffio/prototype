@@ -332,7 +332,6 @@ func (h *Handler) DeactivateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	err = h.svc.DeactivateAccount(r.Context(), user.ID)
 	if err != nil {
 		if errors.Is(err, coresvc.ErrUserNotFound) {

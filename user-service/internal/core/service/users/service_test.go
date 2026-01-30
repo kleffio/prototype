@@ -19,6 +19,7 @@ type mockUserRepository struct {
 	updateUserIDFunc   func(ctx context.Context, oldID, newID domain.ID) error
 	usernameExistsFunc func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
 	deactivateFunc     func(ctx context.Context, id domain.ID) error
+	deleteFunc         func(ctx context.Context, id domain.ID) error
 }
 
 func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
@@ -73,6 +74,13 @@ func (m *mockUserRepository) UpdateUserID(ctx context.Context, oldID, newID doma
 func (m *mockUserRepository) DeactivateAccount(ctx context.Context, id domain.ID) error {
 	if m.deactivateFunc != nil {
 		return m.deactivateFunc(ctx, id)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) Delete(ctx context.Context, id domain.ID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
 	}
 	return nil
 }
@@ -1130,7 +1138,7 @@ func TestDeactivateAccount(t *testing.T) {
 					}
 					return tt.existingUser, nil
 				},
-				deactivateFunc: func(ctx context.Context, id domain.ID) error {
+				deleteFunc: func(ctx context.Context, id domain.ID) error {
 					return tt.deactivateError
 				},
 			}
@@ -1138,8 +1146,8 @@ func TestDeactivateAccount(t *testing.T) {
 			auditRepo := &mockAuditRepository{
 				recordFunc: func(ctx context.Context, log *domain.AuditLog) error {
 					auditLogRecorded = true
-					if log.Action != "account_deactivated" {
-						t.Errorf("expected action 'account_deactivated', got %s", log.Action)
+					if log.Action != "account_permanently_deleted" {
+						t.Errorf("expected action 'account_permanently_deleted', got %s", log.Action)
 					}
 					return nil
 				},
