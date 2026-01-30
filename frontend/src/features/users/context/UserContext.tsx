@@ -23,11 +23,15 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   const checkDeactivatedRoute = useCallback(() => {
-    if (localStorage.getItem('account-deactivated') === 'true') {
+    if (localStorage.getItem("account-deactivated") === "true") {
       const path = location.pathname;
-      if (path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects')) {
-        if (path !== '/error/deactivated') {
-          navigate('/error/deactivated');
+      if (
+        path.startsWith("/dashboard") ||
+        path.startsWith("/settings") ||
+        path.startsWith("/projects")
+      ) {
+        if (path !== "/error/deactivated") {
+          navigate("/error/deactivated");
         }
       }
     }
@@ -35,7 +39,9 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
 
   const isProtectedRoute = useCallback(() => {
     const path = location.pathname;
-    return path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects');
+    return (
+      path.startsWith("/dashboard") || path.startsWith("/settings") || path.startsWith("/projects")
+    );
   }, [location.pathname]);
 
   const load = useCallback(async () => {
@@ -44,14 +50,13 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    
-    if (location.pathname === '/error/deactivated') {
+    if (location.pathname === "/error/deactivated") {
       setIsLoading(false);
       return;
     }
 
     // Skip API calls on public pages if already deactivated
-    if (!isProtectedRoute() && localStorage.getItem('account-deactivated') === 'true') {
+    if (!isProtectedRoute() && localStorage.getItem("account-deactivated") === "true") {
       setSettings(null);
       setError(null);
       setIsLoading(false);
@@ -63,7 +68,7 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(null);
       setError(null);
       setIsLoading(false);
-      localStorage.removeItem('account-deactivated');
+      localStorage.removeItem("account-deactivated");
       return;
     }
 
@@ -86,20 +91,29 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(data);
     } catch (e) {
       console.error("Failed to load user settings", e);
-      
-      
-      if ((e as DeactivatedAccountError).status === 403 && (e as DeactivatedAccountError).isDeactivated) {
-        localStorage.setItem('account-deactivated', 'true');
-        navigate('/error/deactivated');
+
+      if (
+        (e as DeactivatedAccountError).status === 403 &&
+        (e as DeactivatedAccountError).isDeactivated
+      ) {
+        localStorage.setItem("account-deactivated", "true");
+        navigate("/error/deactivated");
         return;
       }
-      
+
       setError(e as Error);
       setSettings(null);
     } finally {
       setIsLoading(false);
     }
-  }, [authLoading, isAuthenticated, user?.access_token, location.pathname, navigate, isProtectedRoute]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    user?.access_token,
+    location.pathname,
+    navigate,
+    isProtectedRoute
+  ]);
 
   useEffect(() => {
     const events = auth.events;

@@ -24,7 +24,11 @@ import { AppWithUserSettings } from "@app/components/AppWithUserSettings";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppWithUserSettings><AppLayout /></AppWithUserSettings>,
+    element: (
+      <AppWithUserSettings>
+        <AppLayout />
+      </AppWithUserSettings>
+    ),
     errorElement: <ErrorPage />,
     children: [
       {
@@ -38,13 +42,13 @@ export const router = createBrowserRouter([
       { path: "pricing", element: <PricingPage /> },
 
       { path: "status", element: <StatusPage /> },
-      
+
       // Error routes
       {
         path: "error/deactivated",
         element: <DeactivatedAccountError />
       },
-      
+
       // Auth routes
       {
         path: "auth",

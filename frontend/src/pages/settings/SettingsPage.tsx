@@ -20,7 +20,6 @@ import { getMyAuditLogs } from "@features/users/api/getMyAuditLogs";
 import { deactivateAccount } from "@features/users/api/deactivateAccount";
 import { useUser } from "@features/users/hooks/useUser";
 
-
 import { Button } from "@shared/ui/Button";
 import { Input } from "@shared/ui/Input";
 import { Label } from "@shared/ui/Label";
@@ -155,7 +154,6 @@ export function SettingsPage() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
 
-  
   const [showDeactivationModal, setShowDeactivationModal] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 
@@ -271,8 +269,8 @@ export function SettingsPage() {
 
     try {
       await deactivateAccount();
-      localStorage.setItem('account-deactivated', 'true');
-      navigate('/error/deactivated');
+      localStorage.setItem("account-deactivated", "true");
+      navigate("/error/deactivated");
     } catch (err) {
       setNotification({
         type: "error",
@@ -464,216 +462,216 @@ export function SettingsPage() {
                       </div>
 
                       <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Profile Picture */}
-                    <div className="flex items-start gap-8 border-b border-neutral-800/50 pb-8">
-                      <div className="flex-shrink-0">
-                        <UserAvatar initial={initial} size="lg" src={displayAvatar} />
-                        <p className="mt-3 text-center text-xs text-neutral-500">
-                          Member since
-                          <br />
-                          <span className="font-medium text-neutral-400">{createdAtLabel}</span>
-                        </p>
-                      </div>
-                      <div className="flex-1">
-                        <Label
-                          htmlFor="avatarUrl"
-                          className="mb-2 block text-sm font-semibold text-neutral-200"
-                        >
-                          Avatar URL
-                        </Label>
-                        <Input
-                          id="avatarUrl"
-                          value={formData.avatarUrl}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))
-                          }
-                          placeholder="https://example.com/avatar.png"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Enter a URL to your profile picture. File uploads coming soon.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Username */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="username"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Username
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="username"
-                          value={formData.username}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, username: e.target.value }))
-                          }
-                          placeholder="your-username"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Used in URLs and mentions. Only lowercase letters, numbers, dashes and
-                          underscores.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Display Name */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="displayName"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Display Name
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="displayName"
-                          value={formData.displayName}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, displayName: e.target.value }))
-                          }
-                          placeholder="How you appear in the app"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="email"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Email
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          disabled
-                          className="cursor-not-allowed border-neutral-800 bg-neutral-900/80 text-neutral-500"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Email is managed by Authentik and cannot be changed here.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Bio */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="bio"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Bio
-                      </Label>
-                      <div className="md:col-span-2">
-                        <textarea
-                          id="bio"
-                          value={formData.bio}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, bio: e.target.value }))
-                          }
-                          maxLength={512}
-                          rows={5}
-                          className="focus:border-kleff-gold focus:ring-kleff-gold/20 w-full resize-none rounded-lg border border-neutral-800 bg-neutral-950/80 px-4 py-3 text-sm text-neutral-50 transition outline-none focus:ring-2"
-                          placeholder="Tell people a bit about yourself."
-                        />
-                        <div className="mt-3 flex justify-between text-xs text-neutral-500">
-                          <span>
-                            You can @mention other users and organizations to link to them.
-                          </span>
-                          <span className="font-medium">{formData.bio.length}/512</span>
+                        {/* Profile Picture */}
+                        <div className="flex items-start gap-8 border-b border-neutral-800/50 pb-8">
+                          <div className="flex-shrink-0">
+                            <UserAvatar initial={initial} size="lg" src={displayAvatar} />
+                            <p className="mt-3 text-center text-xs text-neutral-500">
+                              Member since
+                              <br />
+                              <span className="font-medium text-neutral-400">{createdAtLabel}</span>
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <Label
+                              htmlFor="avatarUrl"
+                              className="mb-2 block text-sm font-semibold text-neutral-200"
+                            >
+                              Avatar URL
+                            </Label>
+                            <Input
+                              id="avatarUrl"
+                              value={formData.avatarUrl}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))
+                              }
+                              placeholder="https://example.com/avatar.png"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Enter a URL to your profile picture. File uploads coming soon.
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Save Button */}
-                    <div className="flex justify-end border-t border-neutral-800/50 pt-6">
-                      <Button
-                        type="submit"
-                        disabled={isSaving}
-                        className="bg-gradient-kleff shadow-kleff-gold/20 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-neutral-950 shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <Save className="h-4 w-4" />
-                        {isSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </div>
-                  </form>
-                </div>
+                        {/* Username */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="username"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Username
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="username"
+                              value={formData.username}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, username: e.target.value }))
+                              }
+                              placeholder="your-username"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Used in URLs and mentions. Only lowercase letters, numbers, dashes and
+                              underscores.
+                            </p>
+                          </div>
+                        </div>
 
-                {/* Account Activity */}
-                <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
-                  <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                    <h2 className="mb-2 text-xl font-bold text-neutral-50">Account activity</h2>
-                    <p className="text-sm text-neutral-400">
-                      Security-relevant events recorded by the user-service.
-                    </p>
-                  </div>
+                        {/* Display Name */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="displayName"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Display Name
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="displayName"
+                              value={formData.displayName}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, displayName: e.target.value }))
+                              }
+                              placeholder="How you appear in the app"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                          </div>
+                        </div>
 
-                  {showAuditSkeleton && (
-                    <div className="space-y-3">
-                      {Array.from({ length: 5 }).map((_, idx) => (
-                        <Skeleton
-                          key={idx}
-                          className="h-20 w-full rounded-lg border border-neutral-800 bg-neutral-900/70"
-                        />
-                      ))}
-                    </div>
-                  )}
+                        {/* Email */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="email"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Email
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="email"
+                              type="email"
+                              value={formData.email}
+                              disabled
+                              className="cursor-not-allowed border-neutral-800 bg-neutral-900/80 text-neutral-500"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Email is managed by Authentik and cannot be changed here.
+                            </p>
+                          </div>
+                        </div>
 
-                  {!showAuditSkeleton && auditError && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-                      {auditError}
-                    </div>
-                  )}
-
-                  {!showAuditSkeleton && !auditError && (
-                    <>
-                      <div
-                        className="space-y-0 divide-y divide-neutral-800/50"
-                        data-testid="settings-audit-list"
-                      >
-                        {displayLogs.map((log) => (
-                          <div key={log.id} className="flex items-center justify-between py-4">
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1 text-sm font-semibold text-neutral-50">
-                                {log.action}
-                              </div>
-                              <div className="truncate text-xs text-neutral-500">
-                                {log.ipAddress ?? "unknown"} ·{" "}
-                                {log.userAgent?.slice(0, 80) ?? "unknown"}
-                              </div>
-                            </div>
-                            <div className="ml-4 flex-shrink-0 text-xs text-neutral-500">
-                              {new Date(log.timestamp).toLocaleString()}
+                        {/* Bio */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="bio"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Bio
+                          </Label>
+                          <div className="md:col-span-2">
+                            <textarea
+                              id="bio"
+                              value={formData.bio}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, bio: e.target.value }))
+                              }
+                              maxLength={512}
+                              rows={5}
+                              className="focus:border-kleff-gold focus:ring-kleff-gold/20 w-full resize-none rounded-lg border border-neutral-800 bg-neutral-950/80 px-4 py-3 text-sm text-neutral-50 transition outline-none focus:ring-2"
+                              placeholder="Tell people a bit about yourself."
+                            />
+                            <div className="mt-3 flex justify-between text-xs text-neutral-500">
+                              <span>
+                                You can @mention other users and organizations to link to them.
+                              </span>
+                              <span className="font-medium">{formData.bio.length}/512</span>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="flex justify-end border-t border-neutral-800/50 pt-6">
+                          <Button
+                            type="submit"
+                            disabled={isSaving}
+                            className="bg-gradient-kleff shadow-kleff-gold/20 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-neutral-950 shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Save className="h-4 w-4" />
+                            {isSaving ? "Saving..." : "Save"}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Account Activity */}
+                    <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                      <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Account activity</h2>
+                        <p className="text-sm text-neutral-400">
+                          Security-relevant events recorded by the user-service.
+                        </p>
                       </div>
 
-                      {auditLogs.length === 0 && (
-                        <p className="mt-6 text-center text-xs text-neutral-500 italic">
-                          Note: Showing example activity data. Real audit logs coming soon.
-                        </p>
+                      {showAuditSkeleton && (
+                        <div className="space-y-3">
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <Skeleton
+                              key={idx}
+                              className="h-20 w-full rounded-lg border border-neutral-800 bg-neutral-900/70"
+                            />
+                          ))}
+                        </div>
                       )}
 
-                      {auditLogs.length > 0 && (
-                        <AuditPagination
-                          currentPage={auditPage}
-                          totalPages={totalPages}
-                          isLoading={auditLoading}
-                          onPageChange={(page) => void loadAuditPage(page)}
-                        />
+                      {!showAuditSkeleton && auditError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+                          {auditError}
+                        </div>
                       )}
-                    </>
-                  )}
-                </div>
+
+                      {!showAuditSkeleton && !auditError && (
+                        <>
+                          <div
+                            className="space-y-0 divide-y divide-neutral-800/50"
+                            data-testid="settings-audit-list"
+                          >
+                            {displayLogs.map((log) => (
+                              <div key={log.id} className="flex items-center justify-between py-4">
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-1 text-sm font-semibold text-neutral-50">
+                                    {log.action}
+                                  </div>
+                                  <div className="truncate text-xs text-neutral-500">
+                                    {log.ipAddress ?? "unknown"} ·{" "}
+                                    {log.userAgent?.slice(0, 80) ?? "unknown"}
+                                  </div>
+                                </div>
+                                <div className="ml-4 flex-shrink-0 text-xs text-neutral-500">
+                                  {new Date(log.timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {auditLogs.length === 0 && (
+                            <p className="mt-6 text-center text-xs text-neutral-500 italic">
+                              Note: Showing example activity data. Real audit logs coming soon.
+                            </p>
+                          )}
+
+                          {auditLogs.length > 0 && (
+                            <AuditPagination
+                              currentPage={auditPage}
+                              totalPages={totalPages}
+                              isLoading={auditLoading}
+                              onPageChange={(page) => void loadAuditPage(page)}
+                            />
+                          )}
+                        </>
+                      )}
+                    </div>
                   </>
                 )}
 
@@ -689,7 +687,7 @@ export function SettingsPage() {
 
                     <div className="space-y-8">
                       {/* Deactivate Account Section */}
-                      <div className="border border-red-500/20 rounded-lg bg-red-500/5 p-6">
+                      <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-6">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
                             <AlertTriangle className="h-6 w-6 text-red-400" />
@@ -699,13 +697,14 @@ export function SettingsPage() {
                               Deactivate Account
                             </h3>
                             <p className="mb-4 text-sm text-neutral-400">
-                              Deactivating your account will permanently remove all your data and cannot be undone.
-                              This action will immediately log you out and remove access to all your projects and data.
+                              Deactivating your account will permanently remove all your data and
+                              cannot be undone. This action will immediately log you out and remove
+                              access to all your projects and data.
                             </p>
                             <Button
                               onClick={() => setShowDeactivationModal(true)}
                               variant="outline"
-                              className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 hover:border-yellow-400"
+                              className="border-yellow-500/50 text-yellow-400 hover:border-yellow-400 hover:bg-yellow-500/10"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Deactivate Account
@@ -726,37 +725,35 @@ export function SettingsPage() {
       {showDeactivationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Background overlay */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => !isDeactivating && setShowDeactivationModal(false)}
           />
-          
+
           {/* Modal content */}
-          <div className="relative z-10 w-full max-w-md mx-4">
+          <div className="relative z-10 mx-4 w-full max-w-md">
             <div className="rounded-xl border border-yellow-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
               <div className="mb-4 flex items-center gap-3">
                 <AlertTriangle className="h-6 w-6 text-yellow-400" />
-                <h3 className="text-lg font-semibold text-yellow-300">
-                  Deactivate Account
-                </h3>
+                <h3 className="text-lg font-semibold text-yellow-300">Deactivate Account</h3>
               </div>
-              
+
               <div className="mb-6 space-y-3 text-sm text-neutral-300">
                 <p>
                   <strong>This action cannot be undone.</strong> Deactivating your account will:
                 </p>
-                <ul className="list-disc list-inside space-y-1 ml-4 text-neutral-400">
+                <ul className="ml-4 list-inside list-disc space-y-1 text-neutral-400">
                   <li>Permanently delete all your data</li>
                   <li>Remove access to all projects</li>
                   <li>Log you out immediately</li>
                   <li>Cannot be reversed</li>
                 </ul>
-                <p className="text-yellow-300 font-medium">
+                <p className="font-medium text-yellow-300">
                   Are you sure you want to deactivate your account?
                 </p>
               </div>
-              
-              <div className="flex gap-3 justify-end">
+
+              <div className="flex justify-end gap-3">
                 <Button
                   onClick={() => setShowDeactivationModal(false)}
                   disabled={isDeactivating}
@@ -768,7 +765,7 @@ export function SettingsPage() {
                 <Button
                   onClick={handleDeactivateAccount}
                   disabled={isDeactivating}
-                  className="bg-yellow-600 text-white hover:bg-yellow-700 px-4 py-2"
+                  className="bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
                 >
                   {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
                 </Button>

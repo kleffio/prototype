@@ -10,10 +10,14 @@ export function ProtectedRoute({ children }: Props) {
   const location = useLocation();
 
   // Immediate check for deactivated accounts on route access
-  if (localStorage.getItem('account-deactivated') === 'true') {
+  if (localStorage.getItem("account-deactivated") === "true") {
     const path = location.pathname;
-    if (path.startsWith('/dashboard') || path.startsWith('/settings') || path.startsWith('/projects')) {
-      if (path !== '/error/deactivated') {
+    if (
+      path.startsWith("/dashboard") ||
+      path.startsWith("/settings") ||
+      path.startsWith("/projects")
+    ) {
+      if (path !== "/error/deactivated") {
         return <Navigate to="/error/deactivated" replace />;
       }
     }

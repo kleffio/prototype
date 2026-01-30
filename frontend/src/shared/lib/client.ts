@@ -31,9 +31,8 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-
     if (error.response?.status === 403) {
-      const deactivatedError = new Error('Account has been deactivated') as DeactivatedAccountError;
+      const deactivatedError = new Error("Account has been deactivated") as DeactivatedAccountError;
       deactivatedError.status = 403;
       deactivatedError.isDeactivated = true;
       return Promise.reject(deactivatedError);

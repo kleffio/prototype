@@ -91,12 +91,11 @@ export function ErrorPage() {
   const errorDetails = getErrorDetails(error);
   const isDevelopment = import.meta.env.DEV;
 
-  
-  const isDeactivatedAccount = errorDetails.status === 403 && 
-    (errorDetails.message.toLowerCase().includes('deactivated') || 
-     errorDetails.message.toLowerCase().includes('account has been deactivated'));
+  const isDeactivatedAccount =
+    errorDetails.status === 403 &&
+    (errorDetails.message.toLowerCase().includes("deactivated") ||
+      errorDetails.message.toLowerCase().includes("account has been deactivated"));
 
-  
   if (isDeactivatedAccount) {
     return <DeactivatedAccountError />;
   }

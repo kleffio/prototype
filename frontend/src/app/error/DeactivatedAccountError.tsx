@@ -7,7 +7,7 @@ export function DeactivatedAccountError() {
   const auth = useAuth();
 
   const handleSignOut = () => {
-    localStorage.removeItem('account-deactivated');
+    localStorage.removeItem("account-deactivated");
     auth.signoutRedirect();
   };
 
@@ -30,15 +30,11 @@ export function DeactivatedAccountError() {
                   <Badge variant="destructive" className="text-xs">
                     Account Deactivated
                   </Badge>
-                  <span className="font-mono text-xs text-neutral-500">
-                    Status 403
-                  </span>
+                  <span className="font-mono text-xs text-neutral-500">Status 403</span>
                 </div>
 
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold text-neutral-50">
-                    Account Deactivated
-                  </h1>
+                  <h1 className="text-3xl font-bold text-neutral-50">Account Deactivated</h1>
                   <p className="text-sm text-neutral-400">
                     Your account has been permanently deactivated and cannot be restored.
                   </p>
@@ -51,7 +47,9 @@ export function DeactivatedAccountError() {
                       <div>
                         <p className="text-xs font-semibold text-red-200">What this means:</p>
                         <ul className="mt-2 space-y-1 text-xs text-red-300">
-                          <li>• Your account and all associated data have been permanently deleted</li>
+                          <li>
+                            • Your account and all associated data have been permanently deleted
+                          </li>
                           <li>• All projects, containers, and configurations have been removed</li>
                           <li>• This action cannot be undone or reversed</li>
                           <li>• You will need to create a new account to use Kleff again</li>
@@ -79,7 +77,10 @@ export function DeactivatedAccountError() {
                     variant="ghost"
                     size="sm"
                     className="mt-2 text-xs text-neutral-400 hover:text-neutral-200"
-                    onClick={() => window.location.href = "mailto:support@kleff.io?subject=Deactivated Account Issue"}
+                    onClick={() =>
+                      (window.location.href =
+                        "mailto:support@kleff.io?subject=Deactivated Account Issue")
+                    }
                   >
                     <Mail className="mr-1 h-3 w-3" />
                     Contact Support

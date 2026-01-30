@@ -4,6 +4,7 @@ import com.kleff.projectmanagementservice.buisnesslayer.ProjectService;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
 import com.kleff.projectmanagementservice.presentationlayer.ProjectController;
+import com.kleff.projectmanagementservice.service.UserStatusService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -18,6 +20,10 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -33,6 +39,12 @@ class ProjectControllerTest {
 
     @MockBean
     private ProjectService projectService;
+
+    @MockBean
+    private UserStatusService userStatusService;
+
+    @MockBean
+    private RestTemplate restTemplate;
     @MockBean
     private ProjectRepository projectRepository;
 
@@ -42,6 +54,9 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Mock UserStatusService to return true for all active user checks
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
+        
         testUserId = "user-123-abc";
         Date now = new Date();
 

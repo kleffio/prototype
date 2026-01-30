@@ -37,9 +37,6 @@ type SortOption = "date-desc" | "date-asc" | "name-asc" | "name-desc";
 type FilterOption = "all" | "owned" | "shared";
 
 export function ProjectsPage() {
-  
-
-  
   const [locale, setLocaleState] = useState(getLocale());
   const { projects, isLoading, error, reload } = useProjects();
   const [isModalOpen, setIsModalOpen] = useState(false);

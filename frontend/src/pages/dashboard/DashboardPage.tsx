@@ -179,9 +179,6 @@ const dashboardData = {
 };
 
 export function DashboardPage() {
-  
-
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [locale, setLocaleState] = useState(getLocale());
 
