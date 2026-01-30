@@ -100,15 +100,17 @@ export function ContainerStatusCard({ container, onManage, onViewLogs, onDelete 
         </Button>
 
         <SecureComponent requiredPermission="DELETE_PROJECT">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            className="h-8 px-3 text-xs text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200"
-          >
-            <Trash2 className="mr-1 h-3 w-3" />
-            {t.delete}
-          </Button>
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDelete}
+              className="h-8 px-3 text-xs text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200"
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              {t.delete}
+            </Button>
+          )}
         </SecureComponent>
       </div>
     </button>
