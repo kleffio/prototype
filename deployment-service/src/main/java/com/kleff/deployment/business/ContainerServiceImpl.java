@@ -165,6 +165,7 @@ public class ContainerServiceImpl {
     }
 
     private void triggerWebAppDeletion(String projectID, String containerID) {
+
         String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
 
         try {

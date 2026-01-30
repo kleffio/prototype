@@ -37,19 +37,42 @@ public class ContainerController {
     
     @PostMapping
     public ContainerResponseModel createContainer(@RequestBody ContainerRequestModel container) {
+        // Basic validation
+        if (container.getName() == null || container.getName().trim().isEmpty()) {
+            throw new RuntimeException("Container name cannot be empty");
+        }
+        if (container.getProjectID() == null || container.getProjectID().trim().isEmpty()) {
+            throw new RuntimeException("Project ID cannot be empty");
+        }
         return containerService.createContainer(container);
     }
 
     @PutMapping("/{containerID}")
     public ContainerResponseModel updateContainer(@PathVariable String containerID, @RequestBody ContainerRequestModel containerRequest) {
-        return containerService.updateContainer(containerID, containerRequest);
+        try {
+            return containerService.updateContainer(containerID, containerRequest);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                throw new RuntimeException("Container not found with ID: " + containerID);
+            } else {
+                throw e;
+            }
+        }
     }
 
     @PatchMapping("/{containerID}/env")
     public ContainerResponseModel updateContainerEnvVariables(
             @PathVariable String containerID,
             @RequestBody UpdateEnvVariablesRequest request) {
-        return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+        try {
+            return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                throw new RuntimeException("Container not found with ID: " + containerID);
+            } else {
+                throw e;
+            }
+        }
     }
 
     @DeleteMapping("/{containerID}")
