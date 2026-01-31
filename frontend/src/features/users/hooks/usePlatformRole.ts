@@ -34,7 +34,7 @@ export function usePlatformAdmin(): { isPlatformAdmin: boolean; isLoading: boole
         setIsPlatformAdmin(false);
 
         // Check if this is a deactivation error
-        const err = error as any;
+        const err = error as { status?: number; isDeactivated?: boolean; response?: { status?: number }; message?: string };
         const isDeactivated = 
           // Custom deactivated error from axios interceptor
           (err.status === 403 && err.isDeactivated) ||

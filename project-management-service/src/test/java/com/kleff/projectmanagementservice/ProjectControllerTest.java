@@ -4,6 +4,10 @@ import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
 import com.kleff.projectmanagementservice.presentationlayer.project.ProjectController;
+import com.kleff.projectmanagementservice.service.UserStatusService;
+import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
+import com.kleff.projectmanagementservice.authorization.service.AuthorizationService;
+import com.kleff.projectmanagementservice.authorization.aspect.AuthorizationAspect;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,14 @@ class ProjectControllerTest {
     private ProjectService projectService;
     @MockBean
     private ProjectRepository projectRepository;
+    @MockBean
+    private UserStatusService userStatusService;
+    @MockBean
+    private DeactivationCheckFilter deactivationCheckFilter;
+    @MockBean
+    private AuthorizationService authorizationService;
+    @MockBean
+    private AuthorizationAspect authorizationAspect;
 
     private Project testProject1;
     private Project testProject2;
