@@ -38,7 +38,7 @@ func NewPostgresPlatformRoleRepository(connectionString string) (*PostgresPlatfo
 
 func (r *PostgresPlatformRoleRepository) CreateTable(ctx context.Context) error {
 	log.Println("[DEBUG] CreateTable: Starting platform_roles table creation...")
-	
+
 	query := `
 		CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -73,7 +73,7 @@ func (r *PostgresPlatformRoleRepository) CreateTable(ctx context.Context) error 
 		log.Printf("[DEBUG] CreateTable: FAILED with error: %v", err)
 		return err
 	}
-	
+
 	log.Println("[DEBUG] CreateTable: Successfully created (or verified) platform_roles table")
 	return nil
 }
@@ -176,5 +176,3 @@ func (r *PostgresPlatformRoleRepository) RevokeRole(ctx context.Context, userID 
 func (r *PostgresPlatformRoleRepository) Close() error {
 	return r.db.Close()
 }
-
-
