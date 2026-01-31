@@ -27,25 +27,21 @@ export function useProjectContainers(projectId: string) {
     void loadContainers();
   }, [projectId]);
 
-  const reload = () => {
+  const reload = async () => {
     if (projectId) {
-      const loadContainers = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const data = await fetchProjectContainers(projectId);
-          setContainers(data);
-        } catch (err: unknown) {
-          const error = err as { message?: string };
-          setError(error?.message || "Failed to load containers");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      void loadContainers();
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchProjectContainers(projectId);
+        setContainers(data);
+      } catch (err: unknown) {
+        const error = err as { message?: string };
+        setError(error?.message || "Failed to load containers");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  return { containers, isLoading, error, reload };
+  return { containers, isLoading, error, reload, setContainers };
 }

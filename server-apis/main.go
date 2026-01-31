@@ -131,7 +131,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/build/create", enableCors(server.handleCreateBuild))
-	mux.HandleFunc("/api/v1/build/hello", enableCors(server.handleHelloWorld))
+	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
 	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
 
 		srv := &http.Server{
@@ -148,18 +148,12 @@ func main() {
 	}
 }
 
-func (s *Server) handleHelloWorld(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Hello World, this is a CD test for christine"))
-}
-
 func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Limit request body size (1MB)
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
 	var req BuildRequest
@@ -460,6 +454,58 @@ func validateAndSanitize(name string) (string, error) {
 	return name, nil
 }
 
+func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
+	// 1. Extract parameters from the URL path
+	// (Requires Go 1.22+. For older versions, use strings.Split or a router like chi/gorilla)
+	projectID := r.PathValue("projectID")
+	containerID := r.PathValue("containerID")
+
+	// 2. Validation
+	if projectID == "" || containerID == "" {
+		s.Logger.Warn("Delete request missing path parameters", "projectID", projectID, "containerID", containerID)
+		http.Error(w, "projectID and containerID are required in the URL path", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Sanitize and Format (Same logic as before)
+	namespaceName, err := validateAndSanitize(projectID)
+	if err != nil {
+		http.Error(w, "Invalid Project ID", http.StatusBadRequest)
+		return
+	}
+	
+	rawUUID, err := validateAndSanitize(containerID)
+	if err != nil {
+		http.Error(w, "Invalid Container ID", http.StatusBadRequest)
+		return
+	}
+	resourceName := "app-" + rawUUID
+
+	// 4. Delete from Kubernetes
+	err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
+	
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			s.Logger.Warn("WebApp not found for deletion", "resourceName", resourceName, "namespace", namespaceName)
+			http.Error(w, "WebApp not found", http.StatusNotFound)
+			return
+		}
+		s.Logger.Error("Failed to delete WebApp", "resourceName", resourceName, "error", err)
+		http.Error(w, fmt.Sprintf("Failed to delete WebApp: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	s.Logger.Info("WebApp deleted successfully via upstream call", "resourceName", resourceName, "namespace", namespaceName)
+
+	// 5. Success Response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		Namespace: namespaceName,
+		AppName:   resourceName,
+		Message:   "WebApp deleted successfully",
+	})
+}
+
 func enableCors(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
@@ -467,7 +513,7 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, DELETE, PATCH")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
