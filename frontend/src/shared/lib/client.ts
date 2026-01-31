@@ -1,5 +1,10 @@
 import axios from "axios";
 
+interface DeactivatedAccountError extends Error {
+  status: number;
+  isDeactivated: boolean;
+}
+
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
@@ -22,3 +27,16 @@ client.interceptors.request.use((config) => {
   }
   return config;
 });
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 403) {
+      const deactivatedError = new Error("Account has been deactivated") as DeactivatedAccountError;
+      deactivatedError.status = 403;
+      deactivatedError.isDeactivated = true;
+      return Promise.reject(deactivatedError);
+    }
+    return Promise.reject(error);
+  }
+);

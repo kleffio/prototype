@@ -82,7 +82,7 @@ func (r *PostgresUserRepository) CreateTable(ctx context.Context) error {
 func (r *PostgresUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
 	query := `
 		SELECT id, authentik_id, email, email_verified, login_username,
-		       username, display_name, avatar_url, bio, created_at, updated_at
+		       username, display_name, avatar_url, bio, is_deactivated, deactivated_at, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -90,10 +90,11 @@ func (r *PostgresUserRepository) GetByID(ctx context.Context, id domain.ID) (*do
 	var u domain.User
 	var avatarURL, bio sql.NullString
 	var authentikID, loginUsername sql.NullString
+	var deactivatedAt sql.NullTime
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&u.ID, &authentikID, &u.Email, &u.EmailVerified, &loginUsername,
-		&u.Username, &u.DisplayName, &avatarURL, &bio, &u.CreatedAt, &u.UpdatedAt,
+		&u.Username, &u.DisplayName, &avatarURL, &bio, &u.IsDeactivated, &deactivatedAt, &u.CreatedAt, &u.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -114,6 +115,9 @@ func (r *PostgresUserRepository) GetByID(ctx context.Context, id domain.ID) (*do
 	}
 	if bio.Valid {
 		u.Bio = &bio.String
+	}
+	if deactivatedAt.Valid {
+		u.DeactivatedAt = &deactivatedAt.Time
 	}
 
 	return &u, nil
@@ -122,7 +126,7 @@ func (r *PostgresUserRepository) GetByID(ctx context.Context, id domain.ID) (*do
 func (r *PostgresUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	query := `
 		SELECT id, authentik_id, email, email_verified, login_username,
-		       username, display_name, avatar_url, bio, created_at, updated_at
+		       username, display_name, avatar_url, bio, is_deactivated, deactivated_at, created_at, updated_at
 		FROM users
 		WHERE username = $1
 	`
@@ -130,10 +134,11 @@ func (r *PostgresUserRepository) GetByUsername(ctx context.Context, username str
 	var u domain.User
 	var avatarURL, bio sql.NullString
 	var authentikID, loginUsername sql.NullString
+	var deactivatedAt sql.NullTime
 
 	err := r.db.QueryRowContext(ctx, query, username).Scan(
 		&u.ID, &authentikID, &u.Email, &u.EmailVerified, &loginUsername,
-		&u.Username, &u.DisplayName, &avatarURL, &bio, &u.CreatedAt, &u.UpdatedAt,
+		&u.Username, &u.DisplayName, &avatarURL, &bio, &u.IsDeactivated, &deactivatedAt, &u.CreatedAt, &u.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -154,6 +159,53 @@ func (r *PostgresUserRepository) GetByUsername(ctx context.Context, username str
 	}
 	if bio.Valid {
 		u.Bio = &bio.String
+	}
+	if deactivatedAt.Valid {
+		u.DeactivatedAt = &deactivatedAt.Time
+	}
+
+	return &u, nil
+}
+
+func (r *PostgresUserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := `
+		SELECT id, authentik_id, email, email_verified, login_username,
+		       username, display_name, avatar_url, bio, is_deactivated, deactivated_at, created_at, updated_at
+		FROM users
+		WHERE email = $1
+	`
+
+	var u domain.User
+	var avatarURL, bio sql.NullString
+	var authentikID, loginUsername sql.NullString
+	var deactivatedAt sql.NullTime
+
+	err := r.db.QueryRowContext(ctx, query, email).Scan(
+		&u.ID, &authentikID, &u.Email, &u.EmailVerified, &loginUsername,
+		&u.Username, &u.DisplayName, &avatarURL, &bio, &u.IsDeactivated, &deactivatedAt, &u.CreatedAt, &u.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+
+	if authentikID.Valid {
+		u.AuthentikID = authentikID.String
+	}
+	if loginUsername.Valid {
+		u.LoginUsername = loginUsername.String
+	}
+	if avatarURL.Valid {
+		u.AvatarURL = &avatarURL.String
+	}
+	if bio.Valid {
+		u.Bio = &bio.String
+	}
+	if deactivatedAt.Valid {
+		u.DeactivatedAt = &deactivatedAt.Time
 	}
 
 	return &u, nil
@@ -169,8 +221,8 @@ func (r *PostgresUserRepository) UsernameExists(ctx context.Context, username st
 func (r *PostgresUserRepository) Save(ctx context.Context, user *domain.User) error {
 	query := `
 		INSERT INTO users (id, authentik_id, email, email_verified, login_username,
-		                   username, display_name, avatar_url, bio, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		                   username, display_name, avatar_url, bio, is_deactivated, deactivated_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (id) DO UPDATE SET
 			authentik_id   = EXCLUDED.authentik_id,
 			email          = EXCLUDED.email,
@@ -180,8 +232,17 @@ func (r *PostgresUserRepository) Save(ctx context.Context, user *domain.User) er
 			display_name   = EXCLUDED.display_name,
 			avatar_url     = EXCLUDED.avatar_url,
 			bio            = EXCLUDED.bio,
+			is_deactivated = EXCLUDED.is_deactivated,
+			deactivated_at = EXCLUDED.deactivated_at,
 			updated_at     = EXCLUDED.updated_at
 	`
+
+	var deactivatedAtParam interface{}
+	if user.DeactivatedAt != nil {
+		deactivatedAtParam = *user.DeactivatedAt
+	} else {
+		deactivatedAtParam = nil
+	}
 
 	_, err := r.db.ExecContext(ctx, query,
 		user.ID,
@@ -193,6 +254,8 @@ func (r *PostgresUserRepository) Save(ctx context.Context, user *domain.User) er
 		user.DisplayName,
 		nullStringPtr(user.AvatarURL),
 		nullStringPtr(user.Bio),
+		user.IsDeactivated,
+		deactivatedAtParam,
 		user.CreatedAt,
 		user.UpdatedAt,
 	)
@@ -258,8 +321,72 @@ func (r *PostgresUserRepository) UpdateProfile(ctx context.Context, id domain.ID
 	return nil
 }
 
+func (r *PostgresUserRepository) DeactivateAccount(ctx context.Context, id domain.ID) error {
+	query := `
+        UPDATE users
+        SET is_deactivated = true, 
+            deactivated_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1 AND is_deactivated = false
+    `
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("deactivation failed: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("user not found or already deactivated")
+	}
+
+	log.Printf("[postgres] deactivated user %s", id)
+	return nil
+}
+
+func (r *PostgresUserRepository) UpdateUserID(ctx context.Context, oldID, newID domain.ID) error {
+	query := `
+        UPDATE users
+        SET id = $2, updated_at = NOW()
+        WHERE id = $1
+    `
+
+	result, err := r.db.ExecContext(ctx, query, oldID, newID)
+	if err != nil {
+		return fmt.Errorf("failed to update user ID: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("user with ID %s not found", oldID)
+	}
+
+	log.Printf("[postgres] updated user ID from %s to %s", oldID, newID)
+	return nil
+}
+
 func (r *PostgresUserRepository) Close() error {
 	return r.db.Close()
+}
+
+func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found: %s", id)
+	}
+
+	return nil
 }
 
 // Helper functions
