@@ -10,14 +10,12 @@ import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
 import com.kleff.projectmanagementservice.authorization.service.AuthorizationService;
 import com.kleff.projectmanagementservice.authorization.domain.AuthorizationDecision;
 import com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult;
-import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,8 +32,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = ProjectController.class, excludeAutoConfiguration = {})
-@Import({}) // Exclude AOP configuration that might interfere with authorization aspect
+@WebMvcTest(controllers = ProjectController.class)
 class ProjectControllerTest {
 
         @Autowired
