@@ -22,13 +22,30 @@ export function usePlatformAdmin(): { isPlatformAdmin: boolean; isLoading: boole
         return;
       }
 
+      // Always check platform admin status from server
+
       try {
         setIsLoading(true);
         const data = await getPlatformRoles(auth.user.access_token);
         setIsPlatformAdmin(data.roles.includes("platform_admin"));
+        // Don't clear deactivated flag here - only the main user settings should do that
       } catch (error) {
         console.error("Failed to check platform admin status:", error);
         setIsPlatformAdmin(false);
+
+        // Check if this is a deactivation error
+        const err = error as any;
+        const isDeactivated = 
+          // Custom deactivated error from axios interceptor
+          (err.status === 403 && err.isDeactivated) ||
+          // Direct axios response check
+          (err.response?.status === 403) ||
+          // Message-based check
+          (err.message?.includes("deactivated"));
+
+        if (isDeactivated) {
+          window.location.href = "/error/deactivated";
+        }
       } finally {
         setIsLoading(false);
       }

@@ -5,11 +5,6 @@ import { setAccessToken } from "@shared/lib/client";
 import { Me } from "@features/users/api/me";
 import { useNavigate, useLocation } from "react-router-dom";
 
-interface DeactivatedAccountError extends Error {
-  status: number;
-  isDeactivated: boolean;
-}
-
 const UserSettingsContext = createContext<UserSettingsState | undefined>(undefined);
 
 function UserSettingsProvider({ children }: { children: ReactNode }) {
@@ -21,21 +16,11 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [deactivatedUsers, setDeactivatedUsers] = useState<Set<string>>(new Set());
 
   const checkDeactivatedRoute = useCallback(() => {
-    if (localStorage.getItem("account-deactivated") === "true") {
-      const path = location.pathname;
-      if (
-        path.startsWith("/dashboard") ||
-        path.startsWith("/settings") ||
-        path.startsWith("/projects")
-      ) {
-        if (path !== "/error/deactivated") {
-          navigate("/error/deactivated");
-        }
-      }
-    }
-  }, [location.pathname, navigate]);
+    // No localStorage checking - deactivation is now detected from server responses only
+  }, []);
 
   const isProtectedRoute = useCallback(() => {
     const path = location.pathname;
@@ -55,20 +40,15 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Skip API calls on public pages if already deactivated
-    if (!isProtectedRoute() && localStorage.getItem("account-deactivated") === "true") {
-      setSettings(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
+    // Always make API calls to check current user status from server
 
     if (!isAuthenticated) {
       setAccessToken(null);
       setSettings(null);
       setError(null);
       setIsLoading(false);
-      localStorage.removeItem("account-deactivated");
+      // Clear deactivated users cache when signing out
+      setDeactivatedUsers(new Set());
       return;
     }
 
@@ -83,6 +63,18 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
 
     setAccessToken(token);
 
+    // Check if this user is known to be deactivated (anti-spam protection)
+    const userEmail = user?.profile?.email || user?.profile?.sub || token.substring(0, 10);
+    if (deactivatedUsers.has(userEmail)) {
+      setSettings(null);
+      setError(null);
+      setIsLoading(false);
+      if (isProtectedRoute()) {
+        navigate("/error/deactivated");
+      }
+      return;
+    }
+
     // Only call API if we don't have settings yet (avoid repeated calls)
     if (settings !== null) {
       setIsLoading(false);
@@ -95,14 +87,23 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
 
       const data = await Me(token);
       setSettings(data);
+      // Don't clear deactivated flag here - only sign out should clear it
     } catch (e) {
       console.error("Failed to load user settings", e);
 
-      if (
-        (e as DeactivatedAccountError).status === 403 &&
-        (e as DeactivatedAccountError).isDeactivated
-      ) {
-        localStorage.setItem("account-deactivated", "true");
+      // Check for deactivated account - handle both axios error and custom error format
+      const error = e as any;
+      const isDeactivated = 
+        // Custom deactivated error from axios interceptor
+        (error.status === 403 && error.isDeactivated) ||
+        // Direct axios response check
+        (error.response?.status === 403) ||
+        // Message-based check
+        (error.message?.includes("deactivated"));
+
+      if (isDeactivated) {
+        // Remember this user is deactivated (per-user caching, not browser-wide)
+        setDeactivatedUsers(prev => new Set(prev).add(userEmail));
         navigate("/error/deactivated");
         return;
       }

@@ -7,7 +7,6 @@ export function DeactivatedAccountError() {
   const auth = useAuth();
 
   const handleSignOut = () => {
-    localStorage.removeItem("account-deactivated");
     auth.signoutRedirect();
   };
 
