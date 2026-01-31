@@ -395,17 +395,17 @@ func (s *Service) DeactivateAccount(ctx context.Context, userID domain.ID) error
 		return ErrAccountDeactivated
 	}
 
-	// Hard delete: Remove user data permanently
+	// Soft delete: Mark user as deactivated
 	if err := s.repo.Delete(ctx, userID); err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return fmt.Errorf("failed to deactivate user: %w", err)
 	}
 
-	s.logAction(ctx, userID, "account_permanently_deleted", map[string]domain.ChangeDetail{
-		"deleted":    {Old: "false", New: "true"},
-		"deleted_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},
+	s.logAction(ctx, userID, "account_deactivated", map[string]domain.ChangeDetail{
+		"is_deactivated": {Old: "false", New: "true"},
+		"deactivated_at": {Old: "", New: time.Now().UTC().Format(time.RFC3339)},
 	})
 
-	log.Printf("Account permanently deleted for user %s", userID)
+	log.Printf("Account deactivated for user %s", userID)
 	return nil
 }
 

@@ -370,34 +370,15 @@ func (r *PostgresUserRepository) Close() error {
 }
 
 func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error {
-	// First get the user's email to record the deletion
-	var email string
-	getUserQuery := `SELECT email FROM users WHERE id = $1`
-	err := r.db.QueryRowContext(ctx, getUserQuery, id).Scan(&email)
-	if err == sql.ErrNoRows {
-		return fmt.Errorf("user not found: %s", id)
-	}
+	// Soft delete: mark user as deactivated instead of deleting
+	updateQuery := `
+		UPDATE users 
+		SET is_deactivated = true, deactivated_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND is_deactivated = false`
+
+	result, err := r.db.ExecContext(ctx, updateQuery, id)
 	if err != nil {
-		return fmt.Errorf("failed to get user email: %w", err)
-	}
-
-	// Record the deletion in deleted_users table
-	insertDeletedQuery := `
-		INSERT INTO deleted_users (id, email, deleted_at) 
-		VALUES ($1, $2, NOW())
-		ON CONFLICT (email) DO UPDATE SET 
-			id = EXCLUDED.id, 
-			deleted_at = EXCLUDED.deleted_at`
-
-	if _, err := r.db.ExecContext(ctx, insertDeletedQuery, id, email); err != nil {
-		return fmt.Errorf("failed to record deletion: %w", err)
-	}
-
-	// Now delete the user
-	deleteQuery := `DELETE FROM users WHERE id = $1`
-	result, err := r.db.ExecContext(ctx, deleteQuery, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return fmt.Errorf("failed to deactivate user: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -406,25 +387,25 @@ func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("user not found: %s", id)
+		return fmt.Errorf("user not found or already deactivated: %s", id)
 	}
 
 	return nil
 }
 
 func (r *PostgresUserRepository) IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error) {
-	query := `SELECT 1 FROM deleted_users WHERE id = $1 OR email = $2 LIMIT 1`
+	query := `SELECT is_deactivated FROM users WHERE id = $1 OR email = $2 LIMIT 1`
 
-	var exists int
-	err := r.db.QueryRowContext(ctx, query, id, email).Scan(&exists)
+	var isDeactivated bool
+	err := r.db.QueryRowContext(ctx, query, id, email).Scan(&isDeactivated)
 	if err == sql.ErrNoRows {
-		return false, nil
+		return false, nil // User doesn't exist, not deleted
 	}
 	if err != nil {
-		return false, fmt.Errorf("failed to check deleted users: %w", err)
+		return false, fmt.Errorf("failed to check user deactivation status: %w", err)
 	}
 
-	return true, nil
+	return isDeactivated, nil
 }
 
 // Helper functions
