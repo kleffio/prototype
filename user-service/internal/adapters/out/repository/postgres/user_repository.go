@@ -370,9 +370,32 @@ func (r *PostgresUserRepository) Close() error {
 }
 
 func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error {
-	query := `DELETE FROM users WHERE id = $1`
+	// First get the user's email to record the deletion
+	var email string
+	getUserQuery := `SELECT email FROM users WHERE id = $1`
+	err := r.db.QueryRowContext(ctx, getUserQuery, id).Scan(&email)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("user not found: %s", id)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get user email: %w", err)
+	}
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	// Record the deletion in deleted_users table
+	insertDeletedQuery := `
+		INSERT INTO deleted_users (id, email, deleted_at) 
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (email) DO UPDATE SET 
+			id = EXCLUDED.id, 
+			deleted_at = EXCLUDED.deleted_at`
+	
+	if _, err := r.db.ExecContext(ctx, insertDeletedQuery, id, email); err != nil {
+		return fmt.Errorf("failed to record deletion: %w", err)
+	}
+
+	// Now delete the user
+	deleteQuery := `DELETE FROM users WHERE id = $1`
+	result, err := r.db.ExecContext(ctx, deleteQuery, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
@@ -387,6 +410,21 @@ func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error
 	}
 
 	return nil
+}
+
+func (r *PostgresUserRepository) IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error) {
+	query := `SELECT 1 FROM deleted_users WHERE id = $1 OR email = $2 LIMIT 1`
+	
+	var exists int
+	err := r.db.QueryRowContext(ctx, query, id, email).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to check deleted users: %w", err)
+	}
+	
+	return true, nil
 }
 
 // Helper functions

@@ -84,6 +84,17 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 		return nil, ErrAccountDeactivated
 	}
 
+	// If user doesn't exist, check if they were deleted
+	if user == nil {
+		isDeleted, err := s.repo.IsUserDeleted(ctx, domain.ID(claims.Sub), claims.Email)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check deleted users: %w", err)
+		}
+		if isDeleted {
+			return nil, ErrAccountDeactivated
+		}
+	}
+
 	now := time.Now().UTC()
 
 	if user == nil {
