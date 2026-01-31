@@ -335,4 +335,40 @@ export class ProjectDetailPage extends BasePage {
 
     return containerId.trim();
   }
+
+  // Action Log methods
+  async openActionLog() {
+    const actionLogButton = this.page
+      .getByRole("button", { name: /view activity/i })
+      .or(this.page.getByRole("button", { name: /activity log/i }));
+    await actionLogButton.click();
+  }
+
+  async expectActionLogButtonVisible() {
+    const actionLogButton = this.page
+      .getByRole("button", { name: /view activity/i })
+      .or(this.page.getByRole("button", { name: /activity log/i }));
+    await expect(actionLogButton).toBeVisible({ timeout: 10_000 });
+  }
+
+  async expectContainerStatusCardVisitAppUrl(containerName: string, containerId: string) {
+    const containerCard = this.page
+      .getByText(containerName, { exact: true })
+      .locator("..")
+      .locator("..");
+    const visitButton = containerCard.getByRole("link", { name: /visit app/i });
+
+    await expect(visitButton).toBeVisible({ timeout: 10_000 });
+
+    const href = await visitButton.getAttribute("href");
+    expect(href).toContain(containerId);
+  }
+
+  async openContainerDetailModal(containerName: string) {
+    const containerCard = this.page
+      .getByText(containerName, { exact: true })
+      .locator("..")
+      .locator("..");
+    await containerCard.click();
+  }
 }

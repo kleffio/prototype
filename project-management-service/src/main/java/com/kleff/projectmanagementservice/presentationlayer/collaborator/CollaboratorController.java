@@ -40,6 +40,8 @@ public class CollaboratorController {
         return ResponseEntity.ok(collaborators);
     }
 
+    @PutMapping("/projects/{projectId}/collaborators/{userId}")
+    @RequirePermission(value = ProjectPermission.MANAGE_COLLABORATORS, action = "update_collaborator", resourceType = "COLLABORATOR")
     public ResponseEntity<CollaboratorResponseModel> updateCollaborator(@PathVariable String projectId,
             @PathVariable String userId,
             @RequestBody CollaboratorRequestModel request,

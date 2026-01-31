@@ -28,117 +28,118 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(CollaboratorController.class)
 class CollaboratorControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @MockBean
-    private CollaboratorService collaboratorService;
+        @MockBean
+        private CollaboratorService collaboratorService;
 
-    @Test
-    @WithMockUser
-    void addCollaborator_ReturnsCreated() throws Exception {
-        // Arrange
-        CollaboratorRequestModel request = CollaboratorRequestModel.builder()
-                .userId("user-456")
-                .role(CollaboratorRole.DEVELOPER)
-                .permissions(Set.of(ProjectPermission.READ_PROJECT))
-                .build();
+        @Test
+        @WithMockUser
+        void addCollaborator_ReturnsCreated() throws Exception {
+                // Arrange
+                CollaboratorRequestModel request = CollaboratorRequestModel.builder()
+                                .userId("user-456")
+                                .role(CollaboratorRole.DEVELOPER)
+                                .permissions(Set.of(ProjectPermission.READ_PROJECT))
+                                .build();
 
-        CollaboratorResponseModel response = CollaboratorResponseModel.builder()
-                .id(1)
-                .projectId("project-123")
-                .userId("user-456")
-                .role(CollaboratorRole.DEVELOPER)
-                .status(CollaboratorStatus.ACCEPTED)
-                .build();
+                CollaboratorResponseModel response = CollaboratorResponseModel.builder()
+                                .id(1)
+                                .projectId("project-123")
+                                .userId("user-456")
+                                .role(CollaboratorRole.DEVELOPER)
+                                .status(CollaboratorStatus.ACCEPTED)
+                                .build();
 
-        when(collaboratorService.addCollaborator(any(), anyString())).thenReturn(response);
+                when(collaboratorService.addCollaborator(any(), anyString())).thenReturn(response);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/projects/project-123/collaborators")
-                        .with(jwt().jwt(jwt -> jwt.subject("admin-789")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.projectId").value("project-123"))
-                .andExpect(jsonPath("$.userId").value("user-456"));
+                // Act & Assert
+                mockMvc.perform(post("/api/v1/projects/project-123/collaborators")
+                                .with(jwt().jwt(jwt -> jwt.subject("admin-789")))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").value(1))
+                                .andExpect(jsonPath("$.projectId").value("project-123"))
+                                .andExpect(jsonPath("$.userId").value("user-456"));
 
-        verify(collaboratorService).addCollaborator(any(), eq("admin-789"));
-    }
+                verify(collaboratorService).addCollaborator(any(), eq("admin-789"));
+        }
 
-    @Test
-    @WithMockUser
-    void getProjectCollaborators_ReturnsCollaboratorsList() throws Exception {
-        // Arrange
-        CollaboratorResponseModel collab1 = CollaboratorResponseModel.builder()
-                .id(1)
-                .userId("user-1")
-                .projectId("project-123")
-                .role(CollaboratorRole.OWNER)
-                .build();
+        @Test
+        @WithMockUser
+        void getProjectCollaborators_ReturnsCollaboratorsList() throws Exception {
+                // Arrange
+                CollaboratorResponseModel collab1 = CollaboratorResponseModel.builder()
+                                .id(1)
+                                .userId("user-1")
+                                .projectId("project-123")
+                                .role(CollaboratorRole.OWNER)
+                                .build();
 
-        CollaboratorResponseModel collab2 = CollaboratorResponseModel.builder()
-                .id(2)
-                .userId("user-2")
-                .projectId("project-123")
-                .role(CollaboratorRole.DEVELOPER)
-                .build();
+                CollaboratorResponseModel collab2 = CollaboratorResponseModel.builder()
+                                .id(2)
+                                .userId("user-2")
+                                .projectId("project-123")
+                                .role(CollaboratorRole.DEVELOPER)
+                                .build();
 
-        when(collaboratorService.getProjectCollaborators("project-123"))
-                .thenReturn(Arrays.asList(collab1, collab2));
+                when(collaboratorService.getProjectCollaborators("project-123"))
+                                .thenReturn(Arrays.asList(collab1, collab2));
 
-        // Act & Assert
-        mockMvc.perform(get("/api/v1/projects/project-123/collaborators")
-                        .with(jwt()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].userId").value("user-1"))
-                .andExpect(jsonPath("$[1].userId").value("user-2"));
-    }
+                // Act & Assert
+                mockMvc.perform(get("/api/v1/projects/project-123/collaborators")
+                                .with(jwt()))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$").isArray())
+                                .andExpect(jsonPath("$.length()").value(2))
+                                .andExpect(jsonPath("$[0].userId").value("user-1"))
+                                .andExpect(jsonPath("$[1].userId").value("user-2"));
+        }
 
-    @Test
-    @WithMockUser
-    void updateCollaborator_ReturnsUpdatedCollaborator() throws Exception {
-        // Arrange
-        CollaboratorRequestModel request = CollaboratorRequestModel.builder()
-                .role(CollaboratorRole.ADMIN)
-                .permissions(Set.of(ProjectPermission.MANAGE_COLLABORATORS))
-                .build();
+        @Test
+        @WithMockUser
+        void updateCollaborator_ReturnsUpdatedCollaborator() throws Exception {
+                // Arrange
+                CollaboratorRequestModel request = CollaboratorRequestModel.builder()
+                                .role(CollaboratorRole.ADMIN)
+                                .permissions(Set.of(ProjectPermission.MANAGE_COLLABORATORS))
+                                .build();
 
-        CollaboratorResponseModel response = CollaboratorResponseModel.builder()
-                .id(1)
-                .projectId("project-123")
-                .userId("user-456")
-                .role(CollaboratorRole.ADMIN)
-                .build();
+                CollaboratorResponseModel response = CollaboratorResponseModel.builder()
+                                .id(1)
+                                .projectId("project-123")
+                                .userId("user-456")
+                                .role(CollaboratorRole.ADMIN)
+                                .build();
 
-        when(collaboratorService.updateCollaborator(anyString(), anyString(), any()))
-                .thenReturn(response);
+                when(collaboratorService.updateCollaborator(anyString(), anyString(), any(), anyString()))
+                                .thenReturn(response);
 
-        // Act & Assert
-        mockMvc.perform(put("/api/v1/projects/project-123/collaborators/user-456")
-                        .with(jwt())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                // Act & Assert
+                mockMvc.perform(put("/api/v1/projects/project-123/collaborators/user-456")
+                                .with(jwt().jwt(jwt -> jwt.subject("admin-789")))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.role").value("ADMIN"));
 
-        verify(collaboratorService).updateCollaborator(eq("project-123"), eq("user-456"), any());
-    }
+                verify(collaboratorService).updateCollaborator(eq("project-123"), eq("user-456"), any(),
+                                eq("admin-789"));
+        }
 
-    @Test
-    @WithMockUser
-    void removeCollaborator_ReturnsNoContent() throws Exception {
-        // Act & Assert
-        mockMvc.perform(delete("/api/v1/projects/project-123/collaborators/user-456")
-                        .with(jwt()))
-                .andExpect(status().isNoContent());
+        @Test
+        @WithMockUser
+        void removeCollaborator_ReturnsNoContent() throws Exception {
+                // Act & Assert
+                mockMvc.perform(delete("/api/v1/projects/project-123/collaborators/user-456")
+                                .with(jwt().jwt(jwt -> jwt.subject("admin-789"))))
+                                .andExpect(status().isNoContent());
 
-        verify(collaboratorService).removeCollaborator("project-123", "user-456");
-    }
+                verify(collaboratorService).removeCollaborator("project-123", "user-456", "admin-789");
+        }
 }
