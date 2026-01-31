@@ -7,7 +7,7 @@ export function setAccessToken(token: string | null) {
 }
 
 export const client = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080",
+  baseURL: (import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080").replace(/\/$/, ""),
   headers: {
     "Cache-Control": "no-cache, no-store, must-revalidate",
     Pragma: "no-cache",

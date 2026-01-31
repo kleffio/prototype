@@ -35,19 +35,19 @@ public class AuthorizationAspect {
 
     /**
      * Intercept methods annotated with @RequirePermission.
-     * Extract user ID and project ID, check permission, then proceed with execution.
+     * Extract user ID and project ID, check permission, then proceed with
+     * execution.
      */
     @Around("@annotation(requirePermission)")
     public Object checkPermission(
-        ProceedingJoinPoint joinPoint,
-        RequirePermission requirePermission
-    ) throws Throwable {
+            ProceedingJoinPoint joinPoint,
+            RequirePermission requirePermission) throws Throwable {
 
         // Extract user ID from JWT parameter
         String userId = extractUserId(joinPoint);
         if (userId == null) {
             log.warn("No authenticated user found for permission check on method: {}",
-                joinPoint.getSignature().getName());
+                    joinPoint.getSignature().getName());
             // In shadow mode, this will be logged but allowed
             // In future: could enforce authentication requirement
             return joinPoint.proceed();
@@ -57,22 +57,22 @@ public class AuthorizationAspect {
         String projectId = extractProjectId(joinPoint, requirePermission.projectIdExpression());
         if (projectId == null) {
             log.warn("No projectId found for permission check on method: {} with expression: {}",
-                joinPoint.getSignature().getName(), requirePermission.projectIdExpression());
+                    joinPoint.getSignature().getName(), requirePermission.projectIdExpression());
             return joinPoint.proceed();
         }
 
         // Determine action name (use annotation value or method name)
         String action = requirePermission.action().isEmpty()
-            ? joinPoint.getSignature().getName()
-            : requirePermission.action();
+                ? joinPoint.getSignature().getName()
+                : requirePermission.action();
 
         // Check permission (shadow mode: logs but doesn't throw)
         authorizationService.requirePermission(
-            projectId,
-            userId,
-            requirePermission.value(),
-            action
-        );
+                projectId,
+                userId,
+                requirePermission.value(),
+                action,
+                requirePermission.resourceType());
 
         // Proceed with method execution
         return joinPoint.proceed();
@@ -120,7 +120,7 @@ public class AuthorizationAspect {
 
         } catch (Exception e) {
             log.error("Error extracting projectId from expression '{}': {}",
-                expression, e.getMessage());
+                    expression, e.getMessage());
             return null;
         }
     }

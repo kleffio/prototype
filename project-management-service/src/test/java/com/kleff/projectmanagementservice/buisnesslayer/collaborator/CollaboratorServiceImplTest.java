@@ -34,307 +34,359 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CollaboratorServiceImplTest {
 
-    @Mock
-    private collaboratorRepository collaboratorRepo;
+        @Mock
+        private collaboratorRepository collaboratorRepo;
 
-    @Mock
-    private CustomRoleRepository customRoleRepo;
+        @Mock
+        private CustomRoleRepository customRoleRepo;
 
-    @Mock
-    private CollaboratorRequestMapper requestMapper;
+        @Mock
+        private CollaboratorRequestMapper requestMapper;
 
-    @Mock
-    private CollaboratorResponseMapper responseMapper;
+        @Mock
+        private CollaboratorResponseMapper responseMapper;
 
-    @InjectMocks
-    private CollaboratorServiceImpl collaboratorService;
+        @Mock
+        private com.kleff.projectmanagementservice.authorization.repository.AuthorizationAuditRepository auditRepository;
 
-    private String testProjectId;
-    private String testUserId;
-    private String invitedBy;
-    private CollaboratorRequestModel testRequest;
-    private Collaborator testCollaborator;
-    private CollaboratorResponseModel testResponse;
+        @InjectMocks
+        private CollaboratorServiceImpl collaboratorService;
 
-    @BeforeEach
-    void setUp() {
-        testProjectId = "project-123";
-        testUserId = "user-456";
-        invitedBy = "admin-789";
+        private String testProjectId;
+        private String testUserId;
+        private String invitedBy;
+        private CollaboratorRequestModel testRequest;
+        private Collaborator testCollaborator;
+        private CollaboratorResponseModel testResponse;
 
-        testRequest = CollaboratorRequestModel.builder()
-                .projectId(testProjectId)
-                .userId(testUserId)
-                .role(CollaboratorRole.DEVELOPER)
-                .permissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY))
-                .build();
+        @BeforeEach
+        void setUp() {
+                testProjectId = "project-123";
+                testUserId = "user-456";
+                invitedBy = "admin-789";
 
-        testCollaborator = new Collaborator();
-        testCollaborator.setProjectId(testProjectId);
-        testCollaborator.setUserId(testUserId);
-        testCollaborator.setRole(CollaboratorRole.DEVELOPER);
-        testCollaborator.setPermissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY));
+                testRequest = CollaboratorRequestModel.builder()
+                                .projectId(testProjectId)
+                                .userId(testUserId)
+                                .role(CollaboratorRole.DEVELOPER)
+                                .permissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY))
+                                .build();
 
-        testResponse = CollaboratorResponseModel.builder()
-                .projectId(testProjectId)
-                .userId(testUserId)
-                .role(CollaboratorRole.DEVELOPER)
-                .permissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY))
-                .build();
-    }
+                testCollaborator = new Collaborator();
+                testCollaborator.setProjectId(testProjectId);
+                testCollaborator.setUserId(testUserId);
+                testCollaborator.setRole(CollaboratorRole.DEVELOPER);
+                testCollaborator.setPermissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY));
 
-    // ============ addCollaborator Tests ============
+                testResponse = CollaboratorResponseModel.builder()
+                                .projectId(testProjectId)
+                                .userId(testUserId)
+                                .role(CollaboratorRole.DEVELOPER)
+                                .permissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.DEPLOY))
+                                .build();
+        }
 
-    @Test
-    void addCollaborator_WithValidRequest_SavesAndReturnsCollaborator() {
-        // Arrange
-        when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(testCollaborator)).thenReturn(testResponse);
+        // ============ addCollaborator Tests ============
 
-        // Act
-        CollaboratorResponseModel result = collaboratorService.addCollaborator(testRequest, invitedBy);
+        @Test
+        void addCollaborator_WithValidRequest_SavesAndReturnsCollaborator() {
+                // Arrange
+                when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(testCollaborator)).thenReturn(testResponse);
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getProjectId()).isEqualTo(testProjectId);
-        assertThat(result.getUserId()).isEqualTo(testUserId);
-        verify(collaboratorRepo).save(any(Collaborator.class));
-    }
+                // Act
+                CollaboratorResponseModel result = collaboratorService.addCollaborator(testRequest, invitedBy);
 
-    @Test
-    void addCollaborator_SetsStatusToAccepted() {
-        // Arrange
-        when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+                // Assert
+                assertThat(result).isNotNull();
+                assertThat(result.getProjectId()).isEqualTo(testProjectId);
+                assertThat(result.getUserId()).isEqualTo(testUserId);
+                verify(collaboratorRepo).save(any(Collaborator.class));
+        }
 
-        // Act
-        collaboratorService.addCollaborator(testRequest, invitedBy);
+        @Test
+        void addCollaborator_SetsStatusToAccepted() {
+                // Arrange
+                when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
 
-        // Assert
-        ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
-        verify(collaboratorRepo).save(captor.capture());
-        assertThat(captor.getValue().getCollaboratorStatus()).isEqualTo(CollaboratorStatus.ACCEPTED);
-    }
+                // Act
+                collaboratorService.addCollaborator(testRequest, invitedBy);
 
-    @Test
-    void addCollaborator_SetsInvitedBy() {
-        // Arrange
-        when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+                // Assert
+                ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
+                verify(collaboratorRepo).save(captor.capture());
+                assertThat(captor.getValue().getCollaboratorStatus()).isEqualTo(CollaboratorStatus.ACCEPTED);
+        }
 
-        // Act
-        collaboratorService.addCollaborator(testRequest, invitedBy);
+        @Test
+        void addCollaborator_SetsInvitedBy() {
+                // Arrange
+                when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
 
-        // Assert
-        ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
-        verify(collaboratorRepo).save(captor.capture());
-        assertThat(captor.getValue().getInvitedBy()).isEqualTo(invitedBy);
-    }
+                // Act
+                collaboratorService.addCollaborator(testRequest, invitedBy);
 
-    @Test
-    void addCollaborator_SetsInvitedAtAndAcceptedAt() {
-        // Arrange
-        when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+                // Assert
+                ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
+                verify(collaboratorRepo).save(captor.capture());
+                assertThat(captor.getValue().getInvitedBy()).isEqualTo(invitedBy);
+        }
 
-        // Act
-        collaboratorService.addCollaborator(testRequest, invitedBy);
+        @Test
+        void addCollaborator_SetsInvitedAtAndAcceptedAt() {
+                // Arrange
+                when(requestMapper.requestToEntity(testRequest)).thenReturn(testCollaborator);
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
 
-        // Assert
-        ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
-        verify(collaboratorRepo).save(captor.capture());
-        assertThat(captor.getValue().getInvitedAt()).isNotNull();
-        assertThat(captor.getValue().getAcceptedAt()).isNotNull();
-    }
+                // Act
+                collaboratorService.addCollaborator(testRequest, invitedBy);
 
-    // ============ updateCollaborator Tests ============
+                // Assert
+                ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
+                verify(collaboratorRepo).save(captor.capture());
+                assertThat(captor.getValue().getInvitedAt()).isNotNull();
+                assertThat(captor.getValue().getAcceptedAt()).isNotNull();
+        }
 
-    @Test
-    void updateCollaborator_WithValidData_UpdatesAndReturns() {
-        // Arrange
-        CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
-                .role(CollaboratorRole.ADMIN)
-                .permissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.MANAGE_COLLABORATORS))
-                .build();
+        // ============ updateCollaborator Tests ============
 
-        when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.of(testCollaborator));
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(testCollaborator)).thenReturn(testResponse);
+        @Test
+        void updateCollaborator_WithValidData_UpdatesAndReturns() {
+                // Arrange
+                CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
+                                .role(CollaboratorRole.ADMIN)
+                                .permissions(Set.of(ProjectPermission.READ_PROJECT,
+                                                ProjectPermission.MANAGE_COLLABORATORS))
+                                .build();
 
-        // Act
-        CollaboratorResponseModel result = collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest);
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(testCollaborator));
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(testCollaborator)).thenReturn(testResponse);
 
-        // Assert
-        assertThat(result).isNotNull();
-        verify(collaboratorRepo).save(any(Collaborator.class));
-    }
+                // Act
+                CollaboratorResponseModel result = collaboratorService.updateCollaborator(testProjectId, testUserId,
+                                updateRequest, "test-actor");
 
-    @Test
-    void updateCollaborator_UpdatesRoleAndPermissions() {
-        // Arrange
-        CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
-                .role(CollaboratorRole.ADMIN)
-                .permissions(Set.of(ProjectPermission.MANAGE_COLLABORATORS))
-                .build();
+                // Assert
+                assertThat(result).isNotNull();
+                verify(collaboratorRepo).save(any(Collaborator.class));
+        }
 
-        when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.of(testCollaborator));
-        when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
-        when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+        @Test
+        void updateCollaborator_UpdatesRoleAndPermissions() {
+                // Arrange
+                CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
+                                .role(CollaboratorRole.ADMIN)
+                                .permissions(Set.of(ProjectPermission.MANAGE_COLLABORATORS))
+                                .build();
 
-        // Act
-        collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest);
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(testCollaborator));
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
 
-        // Assert
-        ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
-        verify(collaboratorRepo).save(captor.capture());
-        assertThat(captor.getValue().getRole()).isEqualTo(CollaboratorRole.ADMIN);
-        assertThat(captor.getValue().getPermissions()).containsExactly(ProjectPermission.MANAGE_COLLABORATORS);
-    }
+                // Act
+                collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest, "test-actor");
 
-    @Test
-    void updateCollaborator_WhenNotFound_ThrowsException() {
-        // Arrange
-        CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
-                .role(CollaboratorRole.ADMIN)
-                .build();
+                // Assert
+                ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
+                verify(collaboratorRepo).save(captor.capture());
+                assertThat(captor.getValue().getRole()).isEqualTo(CollaboratorRole.ADMIN);
+                assertThat(captor.getValue().getPermissions()).containsExactly(ProjectPermission.MANAGE_COLLABORATORS);
+        }
 
-        when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.empty());
+        @Test
+        void updateCollaborator_WhenNotFound_ThrowsException() {
+                // Arrange
+                CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
+                                .role(CollaboratorRole.ADMIN)
+                                .build();
 
-        // Act & Assert
-        assertThatThrownBy(() -> collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Collaborator not found");
-    }
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.empty());
 
-    // ============ getProjectCollaborators Tests ============
+                // Act & Assert
+                assertThatThrownBy(
+                                () -> collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest,
+                                                "test-actor"))
+                                .isInstanceOf(RuntimeException.class)
+                                .hasMessage("Collaborator not found");
+        }
 
-    @Test
-    void getProjectCollaborators_ReturnsListOfCollaborators() {
-        // Arrange
-        Collaborator collab1 = new Collaborator();
-        collab1.setProjectId(testProjectId);
-        collab1.setUserId("user-1");
+        // ============ getProjectCollaborators Tests ============
 
-        Collaborator collab2 = new Collaborator();
-        collab2.setProjectId(testProjectId);
-        collab2.setUserId("user-2");
+        @Test
+        void getProjectCollaborators_ReturnsListOfCollaborators() {
+                // Arrange
+                Collaborator collab1 = new Collaborator();
+                collab1.setProjectId(testProjectId);
+                collab1.setUserId("user-1");
 
-        List<Collaborator> collaborators = Arrays.asList(collab1, collab2);
+                Collaborator collab2 = new Collaborator();
+                collab2.setProjectId(testProjectId);
+                collab2.setUserId("user-2");
 
-        CollaboratorResponseModel response1 = CollaboratorResponseModel.builder()
-                .userId("user-1").build();
-        CollaboratorResponseModel response2 = CollaboratorResponseModel.builder()
-                .userId("user-2").build();
+                List<Collaborator> collaborators = Arrays.asList(collab1, collab2);
 
-        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(collaborators);
-        when(responseMapper.entityListToResponseList(collaborators))
-                .thenReturn(Arrays.asList(response1, response2));
+                CollaboratorResponseModel response1 = CollaboratorResponseModel.builder()
+                                .userId("user-1").build();
+                CollaboratorResponseModel response2 = CollaboratorResponseModel.builder()
+                                .userId("user-2").build();
 
-        // Act
-        List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
+                when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(collaborators);
+                when(responseMapper.entityListToResponseList(collaborators))
+                                .thenReturn(Arrays.asList(response1, response2));
 
-        // Assert
-        assertThat(result).hasSize(2);
-        verify(collaboratorRepo).findByProjectId(testProjectId);
-    }
+                // Act
+                List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
 
-    @Test
-    void getProjectCollaborators_WithCustomRole_LoadsPermissions() {
-        // Arrange
-        Collaborator collabWithCustomRole = new Collaborator();
-        collabWithCustomRole.setProjectId(testProjectId);
-        collabWithCustomRole.setUserId("user-1");
-        collabWithCustomRole.setCustomRoleId(1);
-        collabWithCustomRole.setPermissions(null);
+                // Assert
+                assertThat(result).hasSize(2);
+                verify(collaboratorRepo).findByProjectId(testProjectId);
+        }
 
-        CustomRole customRole = new CustomRole();
-        customRole.setId(1);
-        customRole.setPermissions(Set.of(ProjectPermission.VIEW_LOGS));
+        @Test
+        void getProjectCollaborators_WithCustomRole_LoadsPermissions() {
+                // Arrange
+                Collaborator collabWithCustomRole = new Collaborator();
+                collabWithCustomRole.setProjectId(testProjectId);
+                collabWithCustomRole.setUserId("user-1");
+                collabWithCustomRole.setCustomRoleId(1);
+                collabWithCustomRole.setPermissions(null);
 
-        when(collaboratorRepo.findByProjectId(testProjectId))
-                .thenReturn(Arrays.asList(collabWithCustomRole));
-        when(customRoleRepo.findById(1)).thenReturn(Optional.of(customRole));
-        when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList(testResponse));
+                CustomRole customRole = new CustomRole();
+                customRole.setId(1);
+                customRole.setPermissions(Set.of(ProjectPermission.VIEW_LOGS));
 
-        // Act
-        collaboratorService.getProjectCollaborators(testProjectId);
+                when(collaboratorRepo.findByProjectId(testProjectId))
+                                .thenReturn(Arrays.asList(collabWithCustomRole));
+                when(customRoleRepo.findById(1)).thenReturn(Optional.of(customRole));
+                when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList(testResponse));
 
-        // Assert
-        verify(customRoleRepo, atLeastOnce()).findById(1);
-        assertThat(collabWithCustomRole.getPermissions()).containsExactly(ProjectPermission.VIEW_LOGS);
-    }
+                // Act
+                collaboratorService.getProjectCollaborators(testProjectId);
 
-    @Test
-    void getProjectCollaborators_WithCustomRole_SetsCustomRoleName() {
-        // Arrange
-        Collaborator collabWithCustomRole = new Collaborator();
-        collabWithCustomRole.setCustomRoleId(1);
+                // Assert
+                verify(customRoleRepo, atLeastOnce()).findById(1);
+                assertThat(collabWithCustomRole.getPermissions()).containsExactly(ProjectPermission.VIEW_LOGS);
+        }
 
-        CustomRole customRole = new CustomRole();
-        customRole.setId(1);
-        customRole.setName("Custom Developer");
+        @Test
+        void getProjectCollaborators_WithCustomRole_SetsCustomRoleName() {
+                // Arrange
+                Collaborator collabWithCustomRole = new Collaborator();
+                collabWithCustomRole.setCustomRoleId(1);
 
-        CollaboratorResponseModel response = CollaboratorResponseModel.builder()
-                .customRoleId(1)
-                .build();
+                CustomRole customRole = new CustomRole();
+                customRole.setId(1);
+                customRole.setName("Custom Developer");
 
-        when(collaboratorRepo.findByProjectId(testProjectId))
-                .thenReturn(Arrays.asList(collabWithCustomRole));
-        when(customRoleRepo.findById(1)).thenReturn(Optional.of(customRole));
-        when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList(response));
+                CollaboratorResponseModel response = CollaboratorResponseModel.builder()
+                                .customRoleId(1)
+                                .build();
 
-        // Act
-        List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
+                when(collaboratorRepo.findByProjectId(testProjectId))
+                                .thenReturn(Arrays.asList(collabWithCustomRole));
+                when(customRoleRepo.findById(1)).thenReturn(Optional.of(customRole));
+                when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList(response));
 
-        // Assert
-        assertThat(result.get(0).getCustomRoleName()).isEqualTo("Custom Developer");
-    }
+                // Act
+                List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
 
-    @Test
-    void getProjectCollaborators_WithEmptyList_ReturnsEmptyList() {
-        // Arrange
-        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
-        when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList());
+                // Assert
+                assertThat(result.get(0).getCustomRoleName()).isEqualTo("Custom Developer");
+        }
 
-        // Act
-        List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
+        @Test
+        void getProjectCollaborators_WithEmptyList_ReturnsEmptyList() {
+                // Arrange
+                when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+                when(responseMapper.entityListToResponseList(any())).thenReturn(Arrays.asList());
 
-        // Assert
-        assertThat(result).isEmpty();
-    }
+                // Act
+                List<CollaboratorResponseModel> result = collaboratorService.getProjectCollaborators(testProjectId);
 
-    // ============ removeCollaborator Tests ============
+                // Assert
+                assertThat(result).isEmpty();
+        }
 
-    @Test
-    void removeCollaborator_WhenExists_DeletesCollaborator() {
-        // Arrange
-        when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.of(testCollaborator));
+        // ============ removeCollaborator Tests ============
 
-        // Act
-        collaboratorService.removeCollaborator(testProjectId, testUserId);
+        @Test
+        void removeCollaborator_WhenExists_DeletesCollaboratorAndLogsAudit() {
+                // Arrange
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(testCollaborator));
 
-        // Assert
-        verify(collaboratorRepo).delete(testCollaborator);
-    }
+                // Act
+                collaboratorService.removeCollaborator(testProjectId, testUserId, "test-actor");
 
-    @Test
-    void removeCollaborator_WhenNotExists_DoesNothing() {
-        // Arrange
-        when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
-                .thenReturn(Optional.empty());
+                // Assert
+                verify(collaboratorRepo).delete(testCollaborator);
 
-        // Act
-        collaboratorService.removeCollaborator(testProjectId, testUserId);
+                // Verify Audit Log
+                ArgumentCaptor<com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog> logCaptor = ArgumentCaptor
+                                .forClass(com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog.class);
+                verify(auditRepository).save(logCaptor.capture());
 
-        // Assert
-        verify(collaboratorRepo, never()).delete(any());
-    }
+                com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog log = logCaptor
+                                .getValue();
+                assertThat(log.getAction()).isEqualTo("remove_collaborator");
+                assertThat(log.getResourceType()).isEqualTo("COLLABORATOR");
+                assertThat(log.getResourceId()).isEqualTo(testUserId);
+                assertThat(log.getChanges()).containsEntry("target_user_id", testUserId);
+        }
+
+        @Test
+        void removeCollaborator_WhenNotExists_DoesNothing() {
+                // Arrange
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.empty());
+
+                // Act
+                collaboratorService.removeCollaborator(testProjectId, testUserId, "test-actor");
+
+                // Assert
+                verify(collaboratorRepo, never()).delete(any());
+                verify(auditRepository, never()).save(any());
+        }
+
+        @Test
+        void updateCollaborator_LogsAuditWithRoleChanges() {
+                // Arrange
+                CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
+                                .role(CollaboratorRole.ADMIN)
+                                .build();
+
+                testCollaborator.setRole(CollaboratorRole.DEVELOPER); // Old role
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(testCollaborator));
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+
+                // Act
+                collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest, "test-actor");
+
+                // Assert
+                ArgumentCaptor<com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog> logCaptor = ArgumentCaptor
+                                .forClass(com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog.class);
+                verify(auditRepository).save(logCaptor.capture());
+
+                com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog log = logCaptor
+                                .getValue();
+                assertThat(log.getAction()).isEqualTo("update_collaborator_role");
+                assertThat(log.getResourceType()).isEqualTo("COLLABORATOR");
+                assertThat(log.getChanges())
+                                .containsEntry("target_user_id", testUserId)
+                                .containsEntry("old_role", "DEVELOPER")
+                                .containsEntry("new_role", "ADMIN");
+        }
 }

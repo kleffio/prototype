@@ -16,6 +16,7 @@ import java.util.Map;
 public class ContainerServiceImpl {
 
     private static final Logger log = LoggerFactory.getLogger(ContainerServiceImpl.class);
+    private static final String BASE_URL = "http://webapp-service:8080"; // WebApp/Kubernetes service URL
 
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
@@ -72,6 +73,8 @@ public class ContainerServiceImpl {
             throw new RuntimeException("Container not found with ID: " + containerID);
         }
 
+        String oldName = existingContainer.getName();
+
         existingContainer.setName(request.getName());
         existingContainer.setRepoUrl(request.getRepoUrl());
         existingContainer.setBranch(request.getBranch());
@@ -87,8 +90,16 @@ public class ContainerServiceImpl {
         // FIX: Pass both the request and the containerID
         triggerBuildDeployment(request, containerID);
 
-        sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId,
-                Map.of("repoUrl", request.getRepoUrl()));
+        Map<String, Object> changes = new java.util.HashMap<>();
+        changes.put("name", updatedContainer.getName());
+        if (oldName != null && !oldName.equals(updatedContainer.getName())) {
+            changes.put("previous_name", oldName);
+        }
+        changes.put("repoUrl", updatedContainer.getRepoUrl());
+        changes.put("branch", updatedContainer.getBranch());
+        changes.put("port", updatedContainer.getPort());
+
+        sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
@@ -100,19 +111,69 @@ public class ContainerServiceImpl {
             throw new RuntimeException("Container not found with ID: " + containerID);
         }
 
+        // Capture old env vars safely
+        Map<String, String> oldEnvMap = new java.util.HashMap<>();
+        try {
+            if (container.getEnvVariables() != null) {
+                Map<String, String> parsed = containerMapper.jsonToMap(container.getEnvVariables());
+                if (parsed != null) {
+                    oldEnvMap.putAll(parsed);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse existing env variables for container {}: {}", containerID, e.getMessage());
+        }
+
         container.setEnvVariables(containerMapper.mapToJson(envVariables));
         Container updatedContainer = containerRepository.save(container);
 
         triggerWebAppUpdate(container, envVariables);
 
-        sendAuditLog("update_env_vars", container.getProjectID(), containerID, userId,
-                Map.of("keys_updated", envVariables.keySet()));
+        // Calculate diffs safely
+        try {
+            if (envVariables == null)
+                envVariables = new java.util.HashMap<>();
+            final Map<String, String> finalEnvVars = envVariables; // for lambda
+
+            List<String> added = finalEnvVars.keySet().stream()
+                    .filter(key -> !oldEnvMap.containsKey(key))
+                    .toList();
+
+            List<String> removed = oldEnvMap.keySet().stream()
+                    .filter(key -> !finalEnvVars.containsKey(key))
+                    .toList();
+
+            List<String> updated = finalEnvVars.keySet().stream()
+                    .filter(key -> oldEnvMap.containsKey(key) && oldEnvMap.get(key) != null
+                            && !oldEnvMap.get(key).equals(finalEnvVars.get(key)))
+                    .map(key -> key + ": " + oldEnvMap.get(key) + " -> " + finalEnvVars.get(key))
+                    .toList();
+
+            Map<String, Object> details = new java.util.HashMap<>();
+            details.put("container_name", container.getName());
+            if (!added.isEmpty())
+                details.put("added_vars", added);
+            if (!removed.isEmpty())
+                details.put("deleted_vars", removed);
+
+            log.info("Env Var Update - Container: {}, Old Keys: {}, New Keys: {}", containerID, oldEnvMap.keySet(),
+                    finalEnvVars.keySet());
+            log.info("Calculated Diffs - Added: {}, Removed: {}, Updated: {}", added, removed, updated);
+
+            if (!updated.isEmpty())
+                details.put("updated_vars", updated);
+
+            sendAuditLog("update_env_vars", container.getProjectID(), containerID, userId, details);
+
+        } catch (Exception e) {
+            log.error("Failed to calculate env var diffs or send audit log for {}: {}", containerID, e.getMessage());
+        }
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
 
     private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
-        String deploymentServiceUrl = "http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/build/create"; 
+        String deploymentServiceUrl = "http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/build/create";
 
         GoBuildRequest buildRequest = new GoBuildRequest(
                 containerID,

@@ -398,6 +398,7 @@ export function ProjectDetailPage() {
         isOpen={isActionLogModalOpen}
         onClose={() => setIsActionLogModalOpen(false)}
         projectId={projectId || ""}
+        ownerId={project?.ownerId || ""}
       />
 
       <ContainerDetailModal

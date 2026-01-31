@@ -7,7 +7,8 @@ import java.util.Set;
 
 /**
  * Service for handling authorization checks and permission management.
- * Supports shadow mode for safe deployment without breaking existing functionality.
+ * Supports shadow mode for safe deployment without breaking existing
+ * functionality.
  */
 public interface AuthorizationService {
 
@@ -15,8 +16,8 @@ public interface AuthorizationService {
      * Check if a user has a specific permission on a project.
      * Returns a detailed authorization decision with reason.
      *
-     * @param projectId The project ID being accessed
-     * @param userId The user requesting access
+     * @param projectId  The project ID being accessed
+     * @param userId     The user requesting access
      * @param permission The permission required
      * @return Authorization decision with result and reason
      */
@@ -25,8 +26,8 @@ public interface AuthorizationService {
     /**
      * Simple boolean check if user has permission.
      *
-     * @param projectId The project ID being accessed
-     * @param userId The user requesting access
+     * @param projectId  The project ID being accessed
+     * @param userId     The user requesting access
      * @param permission The permission required
      * @return true if user has permission (or shadow mode is active)
      */
@@ -35,8 +36,8 @@ public interface AuthorizationService {
     /**
      * Check if user has ANY of the specified permissions (OR logic).
      *
-     * @param projectId The project ID being accessed
-     * @param userId The user requesting access
+     * @param projectId   The project ID being accessed
+     * @param userId      The user requesting access
      * @param permissions Variable number of permissions to check
      * @return true if user has at least one of the permissions
      */
@@ -45,8 +46,8 @@ public interface AuthorizationService {
     /**
      * Check if user has ALL of the specified permissions (AND logic).
      *
-     * @param projectId The project ID being accessed
-     * @param userId The user requesting access
+     * @param projectId   The project ID being accessed
+     * @param userId      The user requesting access
      * @param permissions Set of permissions required
      * @return true if user has all specified permissions
      */
@@ -57,7 +58,7 @@ public interface AuthorizationService {
      * Resolves permissions from explicit grants, custom roles, or default roles.
      *
      * @param projectId The project ID
-     * @param userId The user ID
+     * @param userId    The user ID
      * @return Set of all permissions the user has
      */
     Set<ProjectPermission> getUserPermissions(String projectId, String userId);
@@ -67,13 +68,14 @@ public interface AuthorizationService {
      * In shadow mode: logs but doesn't throw exception.
      * In enforce mode: throws ForbiddenException if permission denied.
      *
-     * @param projectId The project ID being accessed
-     * @param userId The user requesting access
+     * @param projectId  The project ID being accessed
+     * @param userId     The user requesting access
      * @param permission The permission required
-     * @param action Action name for audit logging
+     * @param action     Action name for audit logging
      * @throws ForbiddenException if permission denied and enforce mode is active
      */
-    void requirePermission(String projectId, String userId, ProjectPermission permission, String action);
+    void requirePermission(String projectId, String userId, ProjectPermission permission, String action,
+            String resourceType);
 
     /**
      * Check if shadow mode is currently enabled.

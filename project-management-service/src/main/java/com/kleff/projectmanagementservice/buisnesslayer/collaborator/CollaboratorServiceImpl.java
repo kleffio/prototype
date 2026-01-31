@@ -11,6 +11,7 @@ import com.kleff.projectmanagementservice.mappinglayer.collaborator.Collaborator
 import com.kleff.projectmanagementservice.mappinglayer.collaborator.CollaboratorResponseMapper;
 import com.kleff.projectmanagementservice.presentationlayer.collaborator.CollaboratorRequestModel;
 import com.kleff.projectmanagementservice.presentationlayer.collaborator.CollaboratorResponseModel;
+import com.kleff.projectmanagementservice.authorization.repository.AuthorizationAuditRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
 
     private final collaboratorRepository collaboratorRepo;
     private final CustomRoleRepository customRoleRepo;
+    private final AuthorizationAuditRepository auditRepository;
     private final CollaboratorRequestMapper requestMapper;
     private final CollaboratorResponseMapper responseMapper;
 
@@ -40,44 +42,93 @@ public class CollaboratorServiceImpl implements CollaboratorService {
     }
 
     @Override
-    public CollaboratorResponseModel updateCollaborator(String projectId, String userId, CollaboratorRequestModel request) {
+    public CollaboratorResponseModel updateCollaborator(String projectId, String userId,
+            CollaboratorRequestModel request, String actorId) {
         Collaborator collaborator = collaboratorRepo.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new RuntimeException("Collaborator not found"));
+
+        CollaboratorRole oldRole = collaborator.getRole();
 
         collaborator.setRole(request.getRole());
         collaborator.setPermissions(request.getPermissions());
 
         Collaborator updated = collaboratorRepo.save(collaborator);
+
+        try {
+            com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog log = com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog
+                    .builder()
+                    .action("update_collaborator_role")
+                    .projectId(projectId)
+                    .userId(actorId)
+                    .resourceType("COLLABORATOR")
+                    .resourceId(userId)
+                    .changes(java.util.Map.of(
+                            "target_user_id", userId,
+                            "old_role", oldRole != null ? oldRole.name() : "NONE",
+                            "new_role", request.getRole() != null ? request.getRole().name() : "NONE"))
+                    .authorizationResult(
+                            com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult.ALLOW)
+                    .createdAt(new Date())
+                    .permissionChecked("MANAGE_COLLABORATORS")
+                    .build();
+            auditRepository.save(log);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return responseMapper.toResponseModel(updated);
     }
 
     @Override
     public List<CollaboratorResponseModel> getProjectCollaborators(String projectId) {
         List<Collaborator> collaborators = collaboratorRepo.findByProjectId(projectId);
-        
+
         collaborators.forEach(collab -> {
-            if (collab.getCustomRoleId() != null && (collab.getPermissions() == null || collab.getPermissions().isEmpty())) {
+            if (collab.getCustomRoleId() != null
+                    && (collab.getPermissions() == null || collab.getPermissions().isEmpty())) {
                 customRoleRepo.findById(collab.getCustomRoleId())
-                    .ifPresent(customRole -> collab.setPermissions(customRole.getPermissions()));
+                        .ifPresent(customRole -> collab.setPermissions(customRole.getPermissions()));
             }
         });
-        
+
         List<CollaboratorResponseModel> responses = responseMapper.entityListToResponseList(collaborators);
-        
+
         responses.forEach(response -> {
             if (response.getCustomRoleId() != null) {
                 customRoleRepo.findById(response.getCustomRoleId())
-                    .ifPresent(customRole -> response.setCustomRoleName(customRole.getName()));
+                        .ifPresent(customRole -> response.setCustomRoleName(customRole.getName()));
             }
         });
-        
+
         return responses;
     }
 
     @Override
-    public void removeCollaborator(String projectId, String userId) {
+    public void removeCollaborator(String projectId, String userId, String actorId) {
         collaboratorRepo.findByProjectIdAndUserId(projectId, userId)
-                .ifPresent(collaboratorRepo::delete);
+                .ifPresent(collab -> {
+                    collaboratorRepo.delete(collab);
+
+                    // Audit Log for removal
+                    try {
+                        com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog log = com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog
+                                .builder()
+                                .action("remove_collaborator")
+                                .projectId(projectId)
+                                .userId(actorId)
+                                .resourceType("COLLABORATOR")
+                                .resourceId(userId)
+                                .changes(java.util.Map.of("target_user_id", userId))
+                                .authorizationResult(
+                                        com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult.ALLOW)
+                                .createdAt(new Date())
+                                .permissionChecked("MANAGE_COLLABORATORS")
+                                .build();
+                        auditRepository.save(log);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
     }
 
     @Override
@@ -85,7 +136,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
         return collaboratorRepo.findByProjectIdAndUserId(projectId, userId)
                 .map(collaborator -> {
                     Set<ProjectPermission> permissions = collaborator.getPermissions();
-                    
+
                     if (permissions == null || permissions.isEmpty()) {
                         if (collaborator.getCustomRoleId() != null) {
                             return customRoleRepo.findById(collaborator.getCustomRoleId())
@@ -96,48 +147,44 @@ public class CollaboratorServiceImpl implements CollaboratorService {
                         }
                         return getRoleBasedPermissions(collaborator.getRole());
                     }
-                    
+
                     return permissions.stream()
                             .map(Enum::name)
                             .toList();
                 })
                 .orElse(List.<String>of());
     }
-    
+
     private List<String> getRoleBasedPermissions(CollaboratorRole role) {
         return switch (role) {
             case OWNER -> List.of(
-                "READ_PROJECT",
-                "WRITE_PROJECT",
-                "DEPLOY",
-                "MANAGE_ENV_VARS",
-                "VIEW_LOGS",
-                "VIEW_METRICS",
-                "MANAGE_COLLABORATORS",
-                "DELETE_PROJECT",
-                "MANAGE_BILLING"
-            );
+                    "READ_PROJECT",
+                    "WRITE_PROJECT",
+                    "DEPLOY",
+                    "MANAGE_ENV_VARS",
+                    "VIEW_LOGS",
+                    "VIEW_METRICS",
+                    "MANAGE_COLLABORATORS",
+                    "DELETE_PROJECT",
+                    "MANAGE_BILLING");
             case ADMIN -> List.of(
-                "READ_PROJECT",
-                "WRITE_PROJECT",
-                "DEPLOY",
-                "MANAGE_ENV_VARS",
-                "VIEW_LOGS",
-                "VIEW_METRICS",
-                "MANAGE_COLLABORATORS"
-            );
+                    "READ_PROJECT",
+                    "WRITE_PROJECT",
+                    "DEPLOY",
+                    "MANAGE_ENV_VARS",
+                    "VIEW_LOGS",
+                    "VIEW_METRICS",
+                    "MANAGE_COLLABORATORS");
             case DEVELOPER -> List.of(
-                "READ_PROJECT",
-                "WRITE_PROJECT",
-                "DEPLOY",
-                "VIEW_LOGS",
-                "VIEW_METRICS"
-            );
+                    "READ_PROJECT",
+                    "WRITE_PROJECT",
+                    "DEPLOY",
+                    "VIEW_LOGS",
+                    "VIEW_METRICS");
             case VIEWER -> List.of(
-                "READ_PROJECT",
-                "VIEW_LOGS",
-                "VIEW_METRICS"
-            );
+                    "READ_PROJECT",
+                    "VIEW_LOGS",
+                    "VIEW_METRICS");
         };
     }
 }

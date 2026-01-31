@@ -1,4 +1,4 @@
-package com.kleff.projectmanagementservice.presentationlayer;
+package com.kleff.projectmanagementservice.presentationlayer.project;
 
 import com.kleff.projectmanagementservice.authorization.annotation.RequirePermission;
 import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
@@ -96,7 +96,6 @@ public class ProjectController {
     @GetMapping("/{projectId}/activity")
     @RequirePermission(value = ProjectPermission.READ_PROJECT, projectIdExpression = "#projectId", action = "view_activity")
     public ResponseEntity<List<ProjectActivityLogDTO>> getActivityLogs(@PathVariable String projectId,
-            @RequestParam(required = false) String userId,
             @AuthenticationPrincipal Jwt jwt) {
         String currentUserId = jwt.getSubject();
         Project project = projectService.getProjectById(projectId);
@@ -106,7 +105,7 @@ public class ProjectController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<ProjectActivityLogDTO> logs = auditService.getAuditLogsByProject(projectId, userId);
+        List<ProjectActivityLogDTO> logs = auditService.getAuditLogsByProject(projectId);
         return ResponseEntity.ok(logs);
     }
 }

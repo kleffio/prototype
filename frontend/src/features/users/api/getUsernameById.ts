@@ -12,6 +12,12 @@ export function useUsername(userID: string) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!userID) {
+      setUsername("");
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function fetchUsername() {

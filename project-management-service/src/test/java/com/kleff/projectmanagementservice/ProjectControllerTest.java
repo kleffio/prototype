@@ -1,9 +1,9 @@
 package com.kleff.projectmanagementservice;
 
-import com.kleff.projectmanagementservice.buisnesslayer.ProjectService;
+import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
-import com.kleff.projectmanagementservice.presentationlayer.ProjectController;
+import com.kleff.projectmanagementservice.presentationlayer.project.ProjectController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +70,7 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -88,7 +88,7 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(0)));
@@ -108,7 +108,7 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(differentUserId))))
+                .with(jwt().jwt(jwt -> jwt.subject(differentUserId))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].ownerId", is(differentUserId)));
@@ -130,14 +130,12 @@ class ProjectControllerTest {
 
         // Act & Assert - Simulating Authentik JWT with typical claims
         mockMvc.perform(get("/api/v1/projects")
-                        .with(jwt()
-                                .jwt(jwt -> jwt
-                                        .subject(authentikUserId)
-                                        .claim("email", "user@example.com")
-                                        .claim("preferred_username", "testuser")
-                                        .claim("groups", Arrays.asList("users"))
-                                )
-                        ))
+                .with(jwt()
+                        .jwt(jwt -> jwt
+                                .subject(authentikUserId)
+                                .claim("email", "user@example.com")
+                                .claim("preferred_username", "testuser")
+                                .claim("groups", Arrays.asList("users")))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
@@ -163,14 +161,14 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "projectName": "New Project",
-                        "description": "Project description"
-                    }
-                    """))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "projectName": "New Project",
+                            "description": "Project description"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.projectId", is("project-new")))
                 .andExpect(jsonPath("$.name", is("New Project")))
@@ -181,12 +179,12 @@ class ProjectControllerTest {
     void createProject_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
         // Act & Assert
         mockMvc.perform(post("/api/v1/projects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "projectName": "New Project"
-                    }
-                    """))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "projectName": "New Project"
+                        }
+                        """))
                 .andExpect(status().isForbidden());
     }
 
@@ -205,13 +203,13 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(differentUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "projectName": "Different User Project"
-                    }
-                    """))
+                .with(jwt().jwt(jwt -> jwt.subject(differentUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "projectName": "Different User Project"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ownerId", is(differentUserId)));
     }
@@ -231,22 +229,20 @@ class ProjectControllerTest {
 
         // Act & Assert - Simulating Authentik JWT
         mockMvc.perform(post("/api/v1/projects")
-                        .with(jwt()
-                                .jwt(jwt -> jwt
-                                        .subject(authentikUserId)
-                                        .claim("email", "authentik@example.com")
-                                        .claim("preferred_username", "authentikuser")
-                                        .claim("email_verified", true)
-                                        .claim("groups", Arrays.asList("users", "developers"))
-                                )
-                        )
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "projectName": "Authentik User Project",
-                        "description": "Created by Authentik user"
-                    }
-                    """))
+                .with(jwt()
+                        .jwt(jwt -> jwt
+                                .subject(authentikUserId)
+                                .claim("email", "authentik@example.com")
+                                .claim("preferred_username", "authentikuser")
+                                .claim("email_verified", true)
+                                .claim("groups", Arrays.asList("users", "developers"))))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "projectName": "Authentik User Project",
+                            "description": "Created by Authentik user"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ownerId", is(authentikUserId)));
     }
@@ -265,13 +261,13 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "projectName": "Minimal Project"
-                    }
-                    """))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "projectName": "Minimal Project"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name", is("Minimal Project")));
     }
@@ -289,16 +285,17 @@ class ProjectControllerTest {
 
         when(projectService.createProject(any(Project.class))).thenReturn(createdProject);
 
-        // Act & Assert - Even if ownerId is provided in body, JWT subject should be used
+        // Act & Assert - Even if ownerId is provided in body, JWT subject should be
+        // used
         mockMvc.perform(post("/api/v1/projects")
-                        .with(jwt().jwt(jwt -> jwt.subject(actualUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                    {
-                        "name": "Override Test",
-                        "ownerId": "malicious-user-999"
-                    }
-                    """))
+                .with(jwt().jwt(jwt -> jwt.subject(actualUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "name": "Override Test",
+                            "ownerId": "malicious-user-999"
+                        }
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ownerId", is(actualUserId))); // Should be from JWT, not body
     }
@@ -343,9 +340,9 @@ class ProjectControllerTest {
 
         // Act & Assert
         mockMvc.perform(patch("/api/v1/projects/project-1")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
                         {
                             "name": "Updated Project Name"
                         }
@@ -362,9 +359,9 @@ class ProjectControllerTest {
         when(projectService.getProjectById("project-1")).thenReturn(testProject1);
 
         mockMvc.perform(patch("/api/v1/projects/project-1")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
                         {
                             "name": "Updated Project Name"
                         }
@@ -372,33 +369,34 @@ class ProjectControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-//    @Test
-//    void patchProject_WhenProjectDoesNotExist_ReturnsNotFound() throws Exception {
-//        when(projectService.getProjectById("missing-id")).thenReturn(null);
-//
-//        mockMvc.perform(patch("/api/v1/projects/missing-id")
-//                        .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("""
-//                        {
-//                            "name": "Update"
-//                        }
-//                        """))
-//                .andExpect(status().isNotFound());
-//    }
+    // @Test
+    // void patchProject_WhenProjectDoesNotExist_ReturnsNotFound() throws Exception
+    // {
+    // when(projectService.getProjectById("missing-id")).thenReturn(null);
+    //
+    // mockMvc.perform(patch("/api/v1/projects/missing-id")
+    // .with(jwt().jwt(jwt -> jwt.subject(testUserId)))
+    // .contentType(MediaType.APPLICATION_JSON)
+    // .content("""
+    // {
+    // "name": "Update"
+    // }
+    // """))
+    // .andExpect(status().isNotFound());
+    // }
 
     @Test
     void patchProject_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
         mockMvc.perform(patch("/api/v1/projects/project-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
                         {
                             "name": "Updated Name"
                         }
                         """))
                 .andExpect(status().isForbidden());
     }
-// ============ DELETE /api/v1/projects/{projectId} Tests ============
+    // ============ DELETE /api/v1/projects/{projectId} Tests ============
 
     @Test
     void deleteProject_WhenUserIsOwner_DeletesSuccessfully() throws Exception {
@@ -406,7 +404,7 @@ class ProjectControllerTest {
         when(projectService.deleteProject("project-1")).thenReturn(testProject1);
 
         mockMvc.perform(delete("/api/v1/projects/project-1")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.projectId", is("project-1")));
     }
@@ -417,25 +415,24 @@ class ProjectControllerTest {
         when(projectService.getProjectById("project-1")).thenReturn(testProject1);
 
         mockMvc.perform(delete("/api/v1/projects/project-1")
-                        .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
+                .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
                 .andExpect(status().isForbidden());
     }
 
-//    @Test
-//    void deleteProject_WhenProjectDoesNotExist_ReturnsNotFound() throws Exception {
-//        when(projectService.getProjectById("missing-id")).thenReturn(null);
-//
-//        mockMvc.perform(delete("/api/v1/projects/missing-id")
-//                        .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
-//                .andExpect(status().isNotFound());
-//    }
+    // @Test
+    // void deleteProject_WhenProjectDoesNotExist_ReturnsNotFound() throws Exception
+    // {
+    // when(projectService.getProjectById("missing-id")).thenReturn(null);
+    //
+    // mockMvc.perform(delete("/api/v1/projects/missing-id")
+    // .with(jwt().jwt(jwt -> jwt.subject(testUserId))))
+    // .andExpect(status().isNotFound());
+    // }
 
     @Test
     void deleteProject_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
         mockMvc.perform(delete("/api/v1/projects/project-1"))
                 .andExpect(status().isForbidden());
     }
-
-
 
 }
