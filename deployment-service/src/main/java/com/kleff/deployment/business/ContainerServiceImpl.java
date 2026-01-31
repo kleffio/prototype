@@ -3,6 +3,8 @@ package com.kleff.deployment.business;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kleff.deployment.data.container.*;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class ContainerServiceImpl {
 
     private static final Logger log = LoggerFactory.getLogger(ContainerServiceImpl.class);
+    private static final String BASE_URL = "http://deployment-backend-service.kleff-deployment.svc.cluster.local";
 
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
@@ -101,7 +104,7 @@ public class ContainerServiceImpl {
     }
 
     private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
-        String deploymentServiceUrl = "http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/build/create"; 
+        String deploymentServiceUrl = BASE_URL + "/api/v1/build/create";
 
         GoBuildRequest buildRequest = new GoBuildRequest(
                 containerID,
@@ -122,7 +125,7 @@ public class ContainerServiceImpl {
     }
 
     private void triggerWebAppUpdate(Container container, Map<String, String> envVariables) {
-        String updateServiceUrl = "https://api.kleff.io/api/v1/webapp/update";
+        String updateServiceUrl = BASE_URL + "/api/v1/webapp/update";
 
         Map<String, Object> updateRequest = Map.of(
             "projectID", container.getProjectID(),
@@ -140,6 +143,41 @@ public class ContainerServiceImpl {
             log.error("Failed to trigger WebApp update: {}", e.getMessage());
         }
     }
+
+    public void deleteContainer(String containerID) {
+        Container container = containerRepository.findContainerByContainerID(containerID);
+        if (container == null) {
+            throw new RuntimeException("Container not found with ID: " + containerID);
+        }
+
+        try {
+            // Delete from database first
+            containerRepository.delete(container);
+            log.info("Container deleted from database: {}", containerID);
+
+            // Make upstream call to delete the WebApp in Kubernetes
+            triggerWebAppDeletion(container.getProjectID(), containerID);
+
+        } catch (Exception e) {
+            log.error("Failed to delete container {}: {}", containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
+        }
+    }
+
+    private void triggerWebAppDeletion(String projectID, String containerID) {
+
+        String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
+
+        try {
+            restTemplate.delete(deleteServiceUrl);
+            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
+        } catch (Exception e) {
+            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}", 
+                     projectID, containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
+        }
+    }
+
 
     // Static Inner DTO
     private static class GoBuildRequest {

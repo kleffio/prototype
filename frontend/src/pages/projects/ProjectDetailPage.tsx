@@ -24,6 +24,7 @@ import { EditEnvVariablesModal } from "@features/projects/components/EditEnvVari
 import { ContainerStatusCard } from "@features/projects/components/ContainerStatusCard";
 import { ContainerDetailModal } from "@features/projects/components/ContainerDetailModal";
 import updateContainerEnvVariables from "@features/projects/api/updateContainerEnvVariables";
+import deleteContainer from "@features/projects/api/deleteContainer";
 import type { Container } from "@features/projects/types/Container";
 import { ROUTES } from "@app/routes/routes";
 import enTranslations from "@app/locales/en/projects.json";
@@ -51,7 +52,8 @@ export function ProjectDetailPage() {
     containers,
     isLoading: containersLoading,
     error: containersError,
-    reload
+    reload,
+    setContainers
   } = useProjectContainers(projectId || "");
 
   const { role } = usePermissions(projectId);
@@ -69,8 +71,9 @@ export function ProjectDetailPage() {
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
 
-  const id = project?.ownerId || "";
-  const ownerUser = useUsername(id);
+  // Delete flow state
+
+  const ownerUser = useUsername(project?.ownerId || "");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -108,6 +111,52 @@ export function ProjectDetailPage() {
   ) => {
     await updateContainerEnvVariables(containerId, envVariables);
     await reload();
+  };
+
+  // This is kept for the modal usage if needed, though we might use the unified flow
+  const handleDeleteContainer = async (containerId: string) => {
+    // Reuse logic if necessary, but for now the modal handles its own delete via the same API import
+    // or we could refactor to use the same function.
+    // For minimal disruption, leaving the implementation needed by Modal as is if it calls this.
+
+    // However, the ContainerDetailModal takes a prop `onDelete` which is this function.
+    // So validation:
+    const previousContainers = containers;
+    setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
+    try {
+      await deleteContainer(containerId);
+      await reload();
+    } catch (err: unknown) {
+      // Type guard to safely check for status property
+      const hasStatus = (obj: unknown): obj is { status?: number } =>
+        typeof obj === "object" && obj !== null && "status" in obj;
+
+      const hasResponseStatus = (obj: unknown): obj is { response?: { status?: number } } => {
+        if (typeof obj !== "object" || obj === null) {
+          return false;
+        }
+
+        const responseObj = (obj as { response?: unknown }).response;
+        if (typeof responseObj !== "object" || responseObj === null || responseObj === undefined) {
+          return false;
+        }
+
+        return "status" in responseObj;
+      };
+
+      if (hasResponseStatus(err) && err.response?.status === 404) {
+        await reload();
+        return;
+      }
+
+      if (hasStatus(err) && err.status === 404) {
+        await reload();
+        return;
+      }
+
+      setContainers(previousContainers);
+      throw err;
+    }
   };
 
   if (projectLoading) {
@@ -390,6 +439,7 @@ export function ProjectDetailPage() {
         container={selectedContainer}
         onEditEnv={handleEditEnv}
         onEditContainer={handleEditContainer}
+        onDelete={handleDeleteContainer}
       />
 
       <SimpleContainerLogsSheet
@@ -398,6 +448,8 @@ export function ProjectDetailPage() {
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
     </section>
   );
 }
