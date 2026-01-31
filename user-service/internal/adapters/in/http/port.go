@@ -15,4 +15,5 @@ type UserService interface {
 	GetAuditLogs(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, error)
 	GetMyAuditLogs(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, int64, error)
 	DeactivateAccount(ctx context.Context, userID domain.ID) error
+	GetMyPlatformRoles(ctx context.Context, userID domain.ID) ([]domain.PlatformRole, error)
 }

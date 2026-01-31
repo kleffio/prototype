@@ -79,6 +79,27 @@ func buildAuditRepository(cfg *config.Config) (
 	return repo, repo, nil
 }
 
+func buildPlatformRoleRepository(cfg *config.Config) (
+	repository.PlatformRoleRepository,
+	interface{ Close() error },
+	error,
+) {
+	if cfg.PostgresUserDSN == "" {
+		log.Printf("PostgresUserDSN not configured, platform roles will be disabled")
+		return nil, noopCloser{}, nil
+	}
+
+	log.Printf("platform role repository backend: postgresql")
+	repo, err := postgres.NewPostgresPlatformRoleRepository(cfg.PostgresUserDSN)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create postgres platform role repo: %w", err)
+	}
+
+	log.Printf("platform_roles repository initialized")
+
+	return repo, repo, nil
+}
+
 type noopCloser struct{}
 
 func (noopCloser) Close() error { return nil }

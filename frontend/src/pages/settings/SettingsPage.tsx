@@ -197,7 +197,8 @@ export function SettingsPage() {
     setAuditTotal(0);
     setAuditPage(1);
 
-    void loadAuditPage(1);
+    // Disabled audit log loading to reduce API calls
+    // void loadAuditPage(1);
   }, [user, loadAuditPage]);
 
   const handleSubmit = async (e: React.FormEvent) => {

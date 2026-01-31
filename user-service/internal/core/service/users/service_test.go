@@ -13,13 +13,9 @@ import (
 type mockUserRepository struct {
 	getByIDFunc        func(ctx context.Context, id domain.ID) (*domain.User, error)
 	getByUsernameFunc  func(ctx context.Context, username string) (*domain.User, error)
-	getByEmailFunc     func(ctx context.Context, email string) (*domain.User, error)
 	saveFunc           func(ctx context.Context, user *domain.User) error
 	updateProfileFunc  func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) error
-	updateUserIDFunc   func(ctx context.Context, oldID, newID domain.ID) error
 	usernameExistsFunc func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
-	deactivateFunc     func(ctx context.Context, id domain.ID) error
-	deleteFunc         func(ctx context.Context, id domain.ID) error
 }
 
 func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
@@ -32,13 +28,6 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain
 func (m *mockUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	if m.getByUsernameFunc != nil {
 		return m.getByUsernameFunc(ctx, username)
-	}
-	return nil, nil
-}
-
-func (m *mockUserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
-	if m.getByEmailFunc != nil {
-		return m.getByEmailFunc(ctx, email)
 	}
 	return nil, nil
 }
@@ -62,27 +51,6 @@ func (m *mockUserRepository) UsernameExists(ctx context.Context, username string
 		return m.usernameExistsFunc(ctx, username, excludeID)
 	}
 	return false, nil
-}
-
-func (m *mockUserRepository) UpdateUserID(ctx context.Context, oldID, newID domain.ID) error {
-	if m.updateUserIDFunc != nil {
-		return m.updateUserIDFunc(ctx, oldID, newID)
-	}
-	return nil
-}
-
-func (m *mockUserRepository) DeactivateAccount(ctx context.Context, id domain.ID) error {
-	if m.deactivateFunc != nil {
-		return m.deactivateFunc(ctx, id)
-	}
-	return nil
-}
-
-func (m *mockUserRepository) Delete(ctx context.Context, id domain.ID) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, id)
-	}
-	return nil
 }
 
 type mockAuditRepository struct {
@@ -142,6 +110,41 @@ func (m *mockAuthentikManager) ResolveUserID(ctx context.Context, email string) 
 	return "", nil
 }
 
+type mockPlatformRoleRepository struct {
+	getActiveRolesByUserIDFunc func(ctx context.Context, userID string) ([]domain.PlatformRole, error)
+	hasRoleFunc                func(ctx context.Context, userID string, role domain.PlatformRole) (bool, error)
+	grantRoleFunc              func(ctx context.Context, userID string, role domain.PlatformRole, grantedBy *string) error
+	revokeRoleFunc             func(ctx context.Context, userID string, role domain.PlatformRole) error
+}
+
+func (m *mockPlatformRoleRepository) GetActiveRolesByUserID(ctx context.Context, userID string) ([]domain.PlatformRole, error) {
+	if m.getActiveRolesByUserIDFunc != nil {
+		return m.getActiveRolesByUserIDFunc(ctx, userID)
+	}
+	return nil, nil
+}
+
+func (m *mockPlatformRoleRepository) HasRole(ctx context.Context, userID string, role domain.PlatformRole) (bool, error) {
+	if m.hasRoleFunc != nil {
+		return m.hasRoleFunc(ctx, userID, role)
+	}
+	return false, nil
+}
+
+func (m *mockPlatformRoleRepository) GrantRole(ctx context.Context, userID string, role domain.PlatformRole, grantedBy *string) error {
+	if m.grantRoleFunc != nil {
+		return m.grantRoleFunc(ctx, userID, role, grantedBy)
+	}
+	return nil
+}
+
+func (m *mockPlatformRoleRepository) RevokeRole(ctx context.Context, userID string, role domain.PlatformRole) error {
+	if m.revokeRoleFunc != nil {
+		return m.revokeRoleFunc(ctx, userID, role)
+	}
+	return nil
+}
+
 func TestGetMe(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -190,8 +193,10 @@ func TestGetMe(t *testing.T) {
 			svc := NewService(
 				&mockUserRepository{getByIDFunc: tt.repoFunc},
 				&mockAuditRepository{},
+				&mockPlatformRoleRepository{},
 				&mockTokenValidator{validateFunc: tt.validatorFunc},
 				&mockAuthentikManager{},
+				"",
 			)
 
 			user, err := svc.GetMe(context.Background(), tt.token)
@@ -329,7 +334,7 @@ func TestEnsureUserFromToken(t *testing.T) {
 				},
 			}
 
-			svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, authentikMgr)
+			svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, authentikMgr, "")
 
 			user, err := svc.EnsureUserFromToken(context.Background(), tt.claims)
 
@@ -389,8 +394,10 @@ func TestGet(t *testing.T) {
 			svc := NewService(
 				&mockUserRepository{getByIDFunc: tt.repoFunc},
 				&mockAuditRepository{},
+				&mockPlatformRoleRepository{},
 				&mockTokenValidator{},
 				&mockAuthentikManager{},
+				"",
 			)
 
 			user, err := svc.Get(context.Background(), tt.userID)
@@ -454,8 +461,10 @@ func TestGetByHandle(t *testing.T) {
 			svc := NewService(
 				&mockUserRepository{getByUsernameFunc: tt.repoFunc},
 				&mockAuditRepository{},
+				&mockPlatformRoleRepository{},
 				&mockTokenValidator{},
 				&mockAuthentikManager{},
+				"",
 			)
 
 			user, err := svc.GetByHandle(context.Background(), tt.handle)
@@ -629,7 +638,7 @@ func TestUpdateProfile(t *testing.T) {
 				}
 			}
 
-			svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, authentikMgr)
+			svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, authentikMgr, "")
 
 			_, err := svc.UpdateProfile(context.Background(), tt.userID, tt.update)
 
@@ -662,7 +671,7 @@ func TestResolveMany(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, &mockAuthentikManager{})
+	svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
 	result, err := svc.ResolveMany(context.Background(), []domain.ID{"user1", "user2", "user3"})
 
@@ -712,7 +721,7 @@ func TestGetAuditLogs(t *testing.T) {
 				auditRepo = &mockAuditRepository{getUserAuditLogsFunc: tt.repoFunc}
 			}
 
-			svc := NewService(&mockUserRepository{}, auditRepo, &mockTokenValidator{}, &mockAuthentikManager{})
+			svc := NewService(&mockUserRepository{}, auditRepo, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
 			logs, err := svc.GetAuditLogs(context.Background(), "user123", 10, 0)
 
@@ -775,7 +784,7 @@ func TestGetMyAuditLogs(t *testing.T) {
 				countByUserFunc:      tt.countFunc,
 			}
 
-			svc := NewService(&mockUserRepository{}, auditRepo, &mockTokenValidator{}, &mockAuthentikManager{})
+			svc := NewService(&mockUserRepository{}, auditRepo, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
 			logs, total, err := svc.GetMyAuditLogs(context.Background(), "user123", 10, 0)
 
@@ -843,7 +852,7 @@ func TestGenerateUniqueUsername(t *testing.T) {
 				},
 			}
 
-			svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, &mockAuthentikManager{})
+			svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 			username := svc.generateUniqueUsername(context.Background(), tt.claims)
 
 			if username == "" {
@@ -888,7 +897,7 @@ func TestGenerateDisplayName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := NewService(&mockUserRepository{}, &mockAuditRepository{}, &mockTokenValidator{}, &mockAuthentikManager{})
+			svc := NewService(&mockUserRepository{}, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 			result := svc.generateDisplayName(tt.claims)
 
 			if result != tt.expected {
@@ -941,6 +950,8 @@ func TestGenerateDisplayNameFallback(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
+		"",
 	)
 
 	name := svc.generateDisplayName(&port.TokenClaims{})
@@ -970,7 +981,7 @@ func TestEnsureUserFromToken_BackfillAuthentik_SaveErrorIsNonFatal(t *testing.T)
 		},
 	}
 
-	svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, authentikMgr)
+	svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, authentikMgr, "")
 
 	u, err := svc.EnsureUserFromToken(context.Background(), &port.TokenClaims{
 		Sub:   "user123",
@@ -1000,7 +1011,7 @@ func TestEnsureUserFromToken_UpdateExisting_SaveFails(t *testing.T) {
 		},
 	}
 
-	svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, &mockAuthentikManager{})
+	svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
 	_, err := svc.EnsureUserFromToken(context.Background(), &port.TokenClaims{
 		Sub:               "user123",
@@ -1019,7 +1030,7 @@ func TestUsernameExists_WhenRepoErrors_TreatAsExists(t *testing.T) {
 			return false, errors.New("db down")
 		},
 	}
-	svc := NewService(repo, &mockAuditRepository{}, &mockTokenValidator{}, &mockAuthentikManager{})
+	svc := NewService(repo, &mockAuditRepository{}, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
 	if got := svc.usernameExists(context.Background(), "whatever"); got != true {
 		t.Fatalf("expected true when repo errors, got %v", got)
@@ -1057,7 +1068,7 @@ func TestDetectAndLogChanges_RecordsAndHandlesRecordError(t *testing.T) {
 		Bio:         &newBio,
 	}
 
-	svc := NewService(&mockUserRepository{}, auditRepo, &mockTokenValidator{}, &mockAuthentikManager{})
+	svc := NewService(&mockUserRepository{}, auditRepo, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 	svc.detectAndLogChanges(context.Background(), oldUser, newUser)
 
 	if called != 1 {
@@ -1066,114 +1077,203 @@ func TestDetectAndLogChanges_RecordsAndHandlesRecordError(t *testing.T) {
 }
 
 func TestLogAction_NoAuditRepo_NoPanic(t *testing.T) {
-	svc := NewService(&mockUserRepository{}, nil, &mockTokenValidator{}, &mockAuthentikManager{})
+	svc := NewService(&mockUserRepository{}, nil, &mockPlatformRoleRepository{}, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 	svc.logAction(context.Background(), "user123", "anything", map[string]domain.ChangeDetail{
 		"x": {Old: "a", New: "b"},
 	})
 }
 
-func TestDeactivateAccount(t *testing.T) {
+func TestGetMyPlatformRoles(t *testing.T) {
 	tests := []struct {
 		name            string
-		userID          domain.ID
-		existingUser    *domain.User
-		getByIDError    error
-		deactivateError error
+		hasPlatformRepo bool
+		repoFunc        func(ctx context.Context, userID string) ([]domain.PlatformRole, error)
+		expectedRoles   []domain.PlatformRole
 		expectError     bool
-		errorIs         error
 	}{
 		{
-			name:         "user not found - nil user",
-			userID:       "user123",
-			existingUser: nil,
-			expectError:  true,
-			errorIs:      ErrUserNotFound,
+			name:            "no platform role repository",
+			hasPlatformRepo: false,
+			expectedRoles:   []domain.PlatformRole{},
+			expectError:     false,
 		},
 		{
-			name:         "get user fails",
-			userID:       "user123",
-			getByIDError: errors.New("database error"),
-			expectError:  true,
+			name:            "user has admin role",
+			hasPlatformRepo: true,
+			repoFunc: func(ctx context.Context, userID string) ([]domain.PlatformRole, error) {
+				return []domain.PlatformRole{domain.PlatformAdmin}, nil
+			},
+			expectedRoles: []domain.PlatformRole{domain.PlatformAdmin},
+			expectError:   false,
 		},
 		{
-			name:   "user already deactivated",
-			userID: "user123",
-			existingUser: &domain.User{
-				ID:            "user123",
-				Username:      "testuser",
-				IsDeactivated: true,
+			name:            "user has multiple roles",
+			hasPlatformRepo: true,
+			repoFunc: func(ctx context.Context, userID string) ([]domain.PlatformRole, error) {
+				return []domain.PlatformRole{domain.PlatformAdmin, domain.PlatformSupport}, nil
+			},
+			expectedRoles: []domain.PlatformRole{domain.PlatformAdmin, domain.PlatformSupport},
+			expectError:   false,
+		},
+		{
+			name:            "user has no roles",
+			hasPlatformRepo: true,
+			repoFunc: func(ctx context.Context, userID string) ([]domain.PlatformRole, error) {
+				return []domain.PlatformRole{}, nil
+			},
+			expectedRoles: []domain.PlatformRole{},
+			expectError:   false,
+		},
+		{
+			name:            "repository error",
+			hasPlatformRepo: true,
+			repoFunc: func(ctx context.Context, userID string) ([]domain.PlatformRole, error) {
+				return nil, errors.New("database error")
 			},
 			expectError: true,
-		},
-		{
-			name:   "deactivation fails",
-			userID: "user123",
-			existingUser: &domain.User{
-				ID:            "user123",
-				Username:      "testuser",
-				IsDeactivated: false,
-			},
-			deactivateError: errors.New("deactivation failed"),
-			expectError:     true,
-		},
-		{
-			name:   "successful deactivation",
-			userID: "user123",
-			existingUser: &domain.User{
-				ID:            "user123",
-				Username:      "testuser",
-				IsDeactivated: false,
-			},
-			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var auditLogRecorded bool
-			repo := &mockUserRepository{
-				getByIDFunc: func(ctx context.Context, id domain.ID) (*domain.User, error) {
-					if tt.getByIDError != nil {
-						return nil, tt.getByIDError
-					}
-					return tt.existingUser, nil
-				},
-				deleteFunc: func(ctx context.Context, id domain.ID) error {
-					return tt.deactivateError
-				},
+			var platformRepo port.PlatformRoleRepository
+			if tt.hasPlatformRepo {
+				platformRepo = &mockPlatformRoleRepository{
+					getActiveRolesByUserIDFunc: tt.repoFunc,
+				}
 			}
 
-			auditRepo := &mockAuditRepository{
-				recordFunc: func(ctx context.Context, log *domain.AuditLog) error {
-					auditLogRecorded = true
-					if log.Action != "account_permanently_deleted" {
-						t.Errorf("expected action 'account_permanently_deleted', got %s", log.Action)
-					}
-					return nil
-				},
-			}
+			svc := NewService(&mockUserRepository{}, &mockAuditRepository{}, platformRepo, &mockTokenValidator{}, &mockAuthentikManager{}, "")
 
-			svc := NewService(repo, auditRepo, &mockTokenValidator{}, &mockAuthentikManager{})
-
-			err := svc.DeactivateAccount(context.Background(), tt.userID)
+			roles, err := svc.GetMyPlatformRoles(context.Background(), "user123")
 
 			if tt.expectError {
 				if err == nil {
 					t.Error("expected error, got nil")
 				}
-				if tt.errorIs != nil && !errors.Is(err, tt.errorIs) {
-					t.Errorf("expected error %v, got %v", tt.errorIs, err)
-				}
-				if auditLogRecorded {
-					t.Error("expected no audit log when error occurred")
-				}
 			} else {
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				if !auditLogRecorded {
-					t.Error("expected audit log to be recorded on successful deactivation")
+				if len(roles) != len(tt.expectedRoles) {
+					t.Errorf("expected %d roles, got %d", len(tt.expectedRoles), len(roles))
 				}
+				for i, role := range tt.expectedRoles {
+					if i >= len(roles) || roles[i] != role {
+						t.Errorf("expected role %s at index %d, got %s", role, i, roles[i])
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestEnsureUserFromToken_AutoGrantAdmin(t *testing.T) {
+	defaultAdminEmail := "admin@example.com"
+
+	tests := []struct {
+		name              string
+		claims            *port.TokenClaims
+		existingUser      *domain.User
+		hasRole           bool
+		hasRoleError      error
+		grantRoleError    error
+		expectGrantCalled bool
+	}{
+		{
+			name: "auto-grant admin to default admin email",
+			claims: &port.TokenClaims{
+				Sub:   "user123",
+				Email: defaultAdminEmail,
+			},
+			existingUser: &domain.User{
+				ID:       "user123",
+				Email:    defaultAdminEmail,
+				Username: "admin",
+			},
+			hasRole:           false,
+			expectGrantCalled: true,
+		},
+		{
+			name: "admin email already has admin role",
+			claims: &port.TokenClaims{
+				Sub:   "user123",
+				Email: defaultAdminEmail,
+			},
+			existingUser: &domain.User{
+				ID:       "user123",
+				Email:    defaultAdminEmail,
+				Username: "admin",
+			},
+			hasRole:           true,
+			expectGrantCalled: false,
+		},
+		{
+			name: "non-admin email not granted",
+			claims: &port.TokenClaims{
+				Sub:   "user456",
+				Email: "user@example.com",
+			},
+			existingUser: &domain.User{
+				ID:       "user456",
+				Email:    "user@example.com",
+				Username: "regular-user",
+			},
+			hasRole:           false,
+			expectGrantCalled: false,
+		},
+		{
+			name: "case insensitive email match",
+			claims: &port.TokenClaims{
+				Sub:   "user123",
+				Email: "ADMIN@EXAMPLE.COM",
+			},
+			existingUser: &domain.User{
+				ID:       "user123",
+				Email:    "ADMIN@EXAMPLE.COM",
+				Username: "admin",
+			},
+			hasRole:           false,
+			expectGrantCalled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			grantCalled := false
+
+			repo := &mockUserRepository{
+				getByIDFunc: func(ctx context.Context, id domain.ID) (*domain.User, error) {
+					return tt.existingUser, nil
+				},
+				saveFunc: func(ctx context.Context, user *domain.User) error {
+					return nil
+				},
+			}
+
+			platformRepo := &mockPlatformRoleRepository{
+				hasRoleFunc: func(ctx context.Context, userID string, role domain.PlatformRole) (bool, error) {
+					return tt.hasRole, tt.hasRoleError
+				},
+				grantRoleFunc: func(ctx context.Context, userID string, role domain.PlatformRole, grantedBy *string) error {
+					grantCalled = true
+					return tt.grantRoleError
+				},
+			}
+
+			svc := NewService(repo, &mockAuditRepository{}, platformRepo, &mockTokenValidator{}, &mockAuthentikManager{}, defaultAdminEmail)
+
+			user, err := svc.EnsureUserFromToken(context.Background(), tt.claims)
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if user == nil {
+				t.Fatal("expected user, got nil")
+			}
+
+			if grantCalled != tt.expectGrantCalled {
+				t.Errorf("expected grantCalled=%v, got %v", tt.expectGrantCalled, grantCalled)
 			}
 		})
 	}

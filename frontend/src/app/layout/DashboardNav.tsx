@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Menu, Settings, LogOut, X } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import { Button } from "@shared/ui/Button";
 import { UserMenu } from "@shared/ui/UserMenu";
 import { cn } from "@shared/lib/utils";
 import { useUser } from "@features/users/hooks/useUser";
+import { usePlatformAdmin } from "@features/users/hooks/usePlatformRole";
 import { logoutEverywhere } from "@features/users/api/logout";
 import { DASHBOARD_NAV_ITEMS, isNavItemActive } from "@app/navigation/Navigation";
 import { ROUTES } from "@app/routes/routes";
@@ -25,6 +26,18 @@ import LocaleSwitcher from "@app/navigation/components/LocaleSwitcher";
 
 export function DashboardNav() {
   const location = useLocation();
+  const { isPlatformAdmin } = usePlatformAdmin();
+
+  // Filter navigation items based on user's platform role
+  const navItems = useMemo(() => {
+    return DASHBOARD_NAV_ITEMS.filter((item) => {
+      // If item requires admin, only show to platform admins
+      if (item.adminOnly) {
+        return isPlatformAdmin;
+      }
+      return true;
+    });
+  }, [isPlatformAdmin]);
 
   return (
     <>
@@ -38,7 +51,7 @@ export function DashboardNav() {
         </div>
 
         <nav className="flex-1 space-y-1 px-2 py-3">
-          {DASHBOARD_NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavItem
               key={item.to}
               to={item.to}
@@ -64,6 +77,18 @@ function MobileHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const { auth, displayName, email, initial, avatarUrl, isAuthenticated } = useUser();
+  const { isPlatformAdmin } = usePlatformAdmin();
+
+  // Filter navigation items based on user's platform role
+  const navItems = useMemo(() => {
+    return DASHBOARD_NAV_ITEMS.filter((item) => {
+      // If item requires admin, only show to platform admins
+      if (item.adminOnly) {
+        return isPlatformAdmin;
+      }
+      return true;
+    });
+  }, [isPlatformAdmin]);
 
   useEffect(() => {
     if (!open) return;
@@ -125,7 +150,7 @@ function MobileHeader() {
               Navigation
             </p>
             <div className="space-y-2">
-              {DASHBOARD_NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <NavItem
                   key={item.to}
                   to={item.to}

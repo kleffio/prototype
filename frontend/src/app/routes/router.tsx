@@ -4,6 +4,7 @@ import { ProjectDetailPage } from "@pages/projects/ProjectDetailPage";
 import { AppLayout } from "@app/layout/AppLayout";
 import { DashboardLayout } from "@app/layout/DashboardLayout";
 import { ProtectedRoute } from "@app/routing/ProtectedRoute";
+import { AdminRoute } from "@app/routing/AdminRoute";
 import { ProjectsProvider } from "@features/projects/context/ProjectsContext";
 import { DashboardPage } from "@pages/dashboard/DashboardPage";
 import { MetricsDashboard } from "@pages/dashboard/MetricsDashboard";
@@ -99,7 +100,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "systems",
-        element: <MetricsDashboard />
+        element: (
+          <AdminRoute>
+            <MetricsDashboard />
+          </AdminRoute>
+        )
       }
     ]
   },

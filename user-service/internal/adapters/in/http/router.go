@@ -36,6 +36,7 @@ func NewRouter(h *Handler) http.Handler {
 		r.Delete("/me/deactivate", h.DeactivateAccount)
 		r.Get("/me/audit", h.GetMyAuditLogs)
 		r.Get("/status/{userId}", h.GetUserStatus)
+		r.Get("/me/platform-roles", h.GetMyPlatformRoles)
 
 		r.Get("/profile/@{handle}", h.GetPublicProfile)
 
