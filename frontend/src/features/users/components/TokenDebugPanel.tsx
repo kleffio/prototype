@@ -23,7 +23,7 @@ export function TokenDebugPanel() {
     try {
       await Me(auth.user.access_token);
       alert("✅ API call successful! Check console for details.");
-    } catch (error) {
+    } catch {
       alert("❌ API call failed. Check console for details.");
     }
   };

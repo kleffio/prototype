@@ -20,7 +20,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       const data = await getContainerLogs(projectId, containerName);
       setLogs(data);
       setError(null);
-    } catch (err) {
+    } catch {
       setError("Failed to load logs");
       // Error is handled by setting error state
     } finally {
