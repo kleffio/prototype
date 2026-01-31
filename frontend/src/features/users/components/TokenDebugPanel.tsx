@@ -105,7 +105,9 @@ export function TokenDebugPanel() {
                 Test API Call
               </Button>
               <Button
-                onClick={() => {/* Debug functionality removed */}}
+                onClick={() => {
+                  /* Debug functionality removed */
+                }}
                 variant="outline"
                 className="flex-1"
                 disabled
