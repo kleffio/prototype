@@ -39,30 +39,7 @@ interface Notification {
 
 const PAGE_SIZE = 10;
 
-// Mock data for empty state
-const MOCK_AUDIT_LOGS = [
-  {
-    id: "mock-1",
-    action: "Profile updated",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: "mock-2",
-    action: "Password changed",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    timestamp: new Date(Date.now() - 86400000 * 7).toISOString()
-  },
-  {
-    id: "mock-3",
-    action: "Logged in",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
-    timestamp: new Date(Date.now() - 86400000 * 14).toISOString()
-  }
-];
+// Audit logs are loaded from the API
 
 interface AuditPaginationProps {
   currentPage: number;
@@ -325,8 +302,7 @@ export function SettingsPage() {
       })
     : "Unknown";
 
-  const showAuditSkeleton = auditLoading && auditLogs.length === 0;
-  const displayLogs = auditLogs.length > 0 ? auditLogs : MOCK_AUDIT_LOGS;
+  // Use actual audit logs from API
 
   return (
     <div className="bg-kleff-bg text-foreground relative flex min-h-screen flex-col">
@@ -615,7 +591,7 @@ export function SettingsPage() {
                         </p>
                       </div>
 
-                      {showAuditSkeleton && (
+                      {auditLoading && auditLogs.length === 0 && (
                         <div className="space-y-3">
                           {Array.from({ length: 5 }).map((_, idx) => (
                             <Skeleton
@@ -626,19 +602,19 @@ export function SettingsPage() {
                         </div>
                       )}
 
-                      {!showAuditSkeleton && auditError && (
+                      {auditError && (
                         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
                           {auditError}
                         </div>
                       )}
 
-                      {!showAuditSkeleton && !auditError && (
+                      {!auditLoading && !auditError && auditLogs.length > 0 && (
                         <>
                           <div
                             className="space-y-0 divide-y divide-neutral-800/50"
                             data-testid="settings-audit-list"
                           >
-                            {displayLogs.map((log) => (
+                            {auditLogs.map((log) => (
                               <div key={log.id} className="flex items-center justify-between py-4">
                                 <div className="min-w-0 flex-1">
                                   <div className="mb-1 text-sm font-semibold text-neutral-50">
@@ -656,20 +632,18 @@ export function SettingsPage() {
                             ))}
                           </div>
 
-                          {auditLogs.length === 0 && (
+                          {!auditLoading && !auditError && auditLogs.length === 0 && (
                             <p className="mt-6 text-center text-xs text-neutral-500 italic">
-                              Note: Showing example activity data. Real audit logs coming soon.
+                              No audit logs found.
                             </p>
                           )}
 
-                          {auditLogs.length > 0 && (
-                            <AuditPagination
-                              currentPage={auditPage}
-                              totalPages={totalPages}
-                              isLoading={auditLoading}
-                              onPageChange={(page) => void loadAuditPage(page)}
-                            />
-                          )}
+                          <AuditPagination
+                            currentPage={auditPage}
+                            totalPages={totalPages}
+                            isLoading={auditLoading}
+                            onPageChange={(page) => void loadAuditPage(page)}
+                          />
                         </>
                       )}
                     </div>

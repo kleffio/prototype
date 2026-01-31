@@ -22,7 +22,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       setError(null);
     } catch (err) {
       setError("Failed to load logs");
-      console.error(err);
+      // Error is handled by setting error state
     } finally {
       setLoading(false);
     }
