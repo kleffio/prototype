@@ -16,6 +16,7 @@ type UserRepository interface {
 	UsernameExists(ctx context.Context, username string, excludeID domain.ID) (bool, error)
 	DeactivateAccount(ctx context.Context, id domain.ID) error
 	Delete(ctx context.Context, id domain.ID) error
+	IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error)
 }
 
 type TokenClaims struct {

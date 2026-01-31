@@ -20,6 +20,7 @@ type mockUserRepository struct {
 	usernameExistsFunc    func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
 	deactivateAccountFunc func(ctx context.Context, id domain.ID) error
 	deleteFunc            func(ctx context.Context, id domain.ID) error
+	isUserDeletedFunc     func(ctx context.Context, id domain.ID, email string) (bool, error)
 }
 
 func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
@@ -83,6 +84,13 @@ func (m *mockUserRepository) Delete(ctx context.Context, id domain.ID) error {
 		return m.deleteFunc(ctx, id)
 	}
 	return nil
+}
+
+func (m *mockUserRepository) IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error) {
+	if m.isUserDeletedFunc != nil {
+		return m.isUserDeletedFunc(ctx, id, email)
+	}
+	return false, nil
 }
 
 type mockAuditRepository struct {

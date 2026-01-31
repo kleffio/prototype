@@ -370,11 +370,15 @@ func (r *PostgresUserRepository) Close() error {
 }
 
 func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error {
-	query := `DELETE FROM users WHERE id = $1`
+	// Soft delete: mark user as deactivated instead of deleting
+	updateQuery := `
+		UPDATE users 
+		SET is_deactivated = true, deactivated_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND is_deactivated = false`
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.ExecContext(ctx, updateQuery, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return fmt.Errorf("failed to deactivate user: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -383,10 +387,25 @@ func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("user not found: %s", id)
+		return fmt.Errorf("user not found or already deactivated: %s", id)
 	}
 
 	return nil
+}
+
+func (r *PostgresUserRepository) IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error) {
+	query := `SELECT is_deactivated FROM users WHERE id = $1 OR email = $2 LIMIT 1`
+
+	var isDeactivated bool
+	err := r.db.QueryRowContext(ctx, query, id, email).Scan(&isDeactivated)
+	if err == sql.ErrNoRows {
+		return false, nil // User doesn't exist, not deleted
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to check user deactivation status: %w", err)
+	}
+
+	return isDeactivated, nil
 }
 
 // Helper functions

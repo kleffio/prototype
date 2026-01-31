@@ -99,10 +99,11 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
         message?: string;
       };
       const isDeactivated =
-        // Custom deactivated error from axios interceptor
-        (error.status === 403 && error.isDeactivated) ||
-        // Direct axios response check
+        // Custom deactivated error from axios interceptor (403 or 401)
+        ((error.status === 403 || error.status === 401) && error.isDeactivated) ||
+        // Direct axios response check (403 or 401)
         error.response?.status === 403 ||
+        error.response?.status === 401 ||
         // Message-based check
         error.message?.includes("deactivated");
 
