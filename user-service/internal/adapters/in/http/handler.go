@@ -380,7 +380,6 @@ func (h *Handler) GetUserStatus(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, status)
 }
 
-
 // GetMyPlatformRoles returns the authenticated user's platform roles
 func (h *Handler) GetMyPlatformRoles(w http.ResponseWriter, r *http.Request) {
 	token := extractBearerToken(r)
@@ -416,6 +415,7 @@ func (h *Handler) GetMyPlatformRoles(w http.ResponseWriter, r *http.Request) {
 		"roles": roles,
 	})
 }
+
 // ------- Helpers ------- \\
 
 func extractBearerToken(r *http.Request) string {

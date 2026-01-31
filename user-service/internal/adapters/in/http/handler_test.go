@@ -24,6 +24,7 @@ type mockUserService struct {
 	getAuditLogsFunc       func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, error)
 	getMyAuditLogsFunc     func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, int64, error)
 	getMyPlatformRolesFunc func(ctx context.Context, userID domain.ID) ([]domain.PlatformRole, error)
+	deactivateAccountFunc  func(ctx context.Context, userID domain.ID) error
 }
 
 func (m *mockUserService) GetMe(ctx context.Context, token string) (*domain.User, error) {
@@ -80,6 +81,13 @@ func (m *mockUserService) GetMyPlatformRoles(ctx context.Context, userID domain.
 		return m.getMyPlatformRolesFunc(ctx, userID)
 	}
 	return nil, nil
+}
+
+func (m *mockUserService) DeactivateAccount(ctx context.Context, userID domain.ID) error {
+	if m.deactivateAccountFunc != nil {
+		return m.deactivateAccountFunc(ctx, userID)
+	}
+	return nil
 }
 
 func TestHealth(t *testing.T) {

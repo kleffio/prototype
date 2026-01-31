@@ -11,11 +11,15 @@ import (
 
 // Mock repositories and services
 type mockUserRepository struct {
-	getByIDFunc        func(ctx context.Context, id domain.ID) (*domain.User, error)
-	getByUsernameFunc  func(ctx context.Context, username string) (*domain.User, error)
-	saveFunc           func(ctx context.Context, user *domain.User) error
-	updateProfileFunc  func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) error
-	usernameExistsFunc func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
+	getByIDFunc           func(ctx context.Context, id domain.ID) (*domain.User, error)
+	getByUsernameFunc     func(ctx context.Context, username string) (*domain.User, error)
+	getByEmailFunc        func(ctx context.Context, email string) (*domain.User, error)
+	saveFunc              func(ctx context.Context, user *domain.User) error
+	updateProfileFunc     func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) error
+	updateUserIDFunc      func(ctx context.Context, oldID, newID domain.ID) error
+	usernameExistsFunc    func(ctx context.Context, username string, excludeID domain.ID) (bool, error)
+	deactivateAccountFunc func(ctx context.Context, id domain.ID) error
+	deleteFunc            func(ctx context.Context, id domain.ID) error
 }
 
 func (m *mockUserRepository) GetByID(ctx context.Context, id domain.ID) (*domain.User, error) {
@@ -51,6 +55,34 @@ func (m *mockUserRepository) UsernameExists(ctx context.Context, username string
 		return m.usernameExistsFunc(ctx, username, excludeID)
 	}
 	return false, nil
+}
+
+func (m *mockUserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	if m.getByEmailFunc != nil {
+		return m.getByEmailFunc(ctx, email)
+	}
+	return nil, nil
+}
+
+func (m *mockUserRepository) UpdateUserID(ctx context.Context, oldID, newID domain.ID) error {
+	if m.updateUserIDFunc != nil {
+		return m.updateUserIDFunc(ctx, oldID, newID)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) DeactivateAccount(ctx context.Context, id domain.ID) error {
+	if m.deactivateAccountFunc != nil {
+		return m.deactivateAccountFunc(ctx, id)
+	}
+	return nil
+}
+
+func (m *mockUserRepository) Delete(ctx context.Context, id domain.ID) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx, id)
+	}
+	return nil
 }
 
 type mockAuditRepository struct {
