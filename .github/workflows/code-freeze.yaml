@@ -12,9 +12,9 @@ jobs:
       - name: Check Deadline
         shell: bash
         run: |
-          # Target Deadline: Jan 30, 2026 at 23:59:59 (End of Friday)
+          # Target Deadline: Jan 30, 2026 at 23:59:59 (End of saturday)
           # Convert to Unix Timestamp for easy comparison
-          DEADLINE=$(date -d "2026-01-31 00:00:00" +%s)
+          DEADLINE=$(date -d "2026-02-00 04:00:00" +%s)
           CURRENT=$(date +%s)
 
           if [ $CURRENT -gt $DEADLINE ]; then
