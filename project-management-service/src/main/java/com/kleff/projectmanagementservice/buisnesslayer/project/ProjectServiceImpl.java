@@ -22,7 +22,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final CollaboratorService collaboratorService;
     private final collaboratorRepository collaboratorRepo;
 
-    public ProjectServiceImpl(ProjectRepository projectRepository, CollaboratorService collaboratorService, collaboratorRepository collaboratorRepo) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, CollaboratorService collaboratorService,
+            collaboratorRepository collaboratorRepo) {
         this.projectRepository = projectRepository;
         this.collaboratorService = collaboratorService;
         this.collaboratorRepo = collaboratorRepo;
@@ -31,12 +32,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<Project> getAllOwnedProjects(String userId) {
         List<Project> ownedProjects = projectRepository.findByOwnerIdEquals(userId);
-        
+
         List<Collaborator> collaborations = collaboratorRepo.findByUserId(userId);
         List<String> collaboratedProjectIds = collaborations.stream()
                 .map(Collaborator::getProjectId)
                 .collect(Collectors.toList());
-        
+
         List<Project> collaboratedProjects = new ArrayList<>();
         for (String projectId : collaboratedProjectIds) {
             Project project = projectRepository.findByProjectId(projectId);
@@ -44,10 +45,10 @@ public class ProjectServiceImpl implements ProjectService {
                 collaboratedProjects.add(project);
             }
         }
-        
+
         List<Project> allProjects = new ArrayList<>(ownedProjects);
         allProjects.addAll(collaboratedProjects);
-        
+
         return allProjects;
     }
 
@@ -55,17 +56,15 @@ public class ProjectServiceImpl implements ProjectService {
     public Project getProjectById(String projectId) {
         try {
             return projectRepository.findByProjectId(projectId);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return null;
         }
-        }
-
+    }
 
     @Override
     public Project createProject(Project project) {
         Project saved = projectRepository.save(project);
-        
+
         try {
             CollaboratorRequestModel ownerCollab = CollaboratorRequestModel.builder()
                     .projectId(saved.getProjectId())
@@ -73,33 +72,33 @@ public class ProjectServiceImpl implements ProjectService {
                     .role(CollaboratorRole.OWNER)
                     .permissions(null)
                     .build();
-            
+
             collaboratorService.addCollaborator(ownerCollab, "system");
         } catch (Exception e) {
             System.err.println("Failed to create owner collaborator: " + e.getMessage());
         }
-        
+
         return saved;
     }
 
     @Override
     public Project updateProject(String projectId, Project updatedProject) {
-            Project existing = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new RuntimeException("Project not found"));
-            if (updatedProject.getName() != null) {
-                existing.setName(updatedProject.getName());
-            }
-            if (updatedProject.getDescription() != null) {
-                existing.setDescription(updatedProject.getDescription());
-            }
-            if (updatedProject.getOwnerId() != null) {
-                existing.setOwnerId(updatedProject.getOwnerId());
-            }
-            if (updatedProject.getProjectStatus() != null) {
-                existing.setProjectStatus(updatedProject.getProjectStatus());
-            }
-            existing.setUpdatedDate(new Date());
-            return projectRepository.save(existing);
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (updatedProject.getName() != null) {
+            existing.setName(updatedProject.getName());
+        }
+        if (updatedProject.getDescription() != null) {
+            existing.setDescription(updatedProject.getDescription());
+        }
+        if (updatedProject.getOwnerId() != null) {
+            existing.setOwnerId(updatedProject.getOwnerId());
+        }
+        if (updatedProject.getProjectStatus() != null) {
+            existing.setProjectStatus(updatedProject.getProjectStatus());
+        }
+        existing.setUpdatedDate(new Date());
+        return projectRepository.save(existing);
 
     }
 

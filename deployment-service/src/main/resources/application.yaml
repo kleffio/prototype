@@ -16,6 +16,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.kleff.io/application/o/kleff/
+          jwk-set-uri: https://auth.kleff.io/application/o/kleff/jwks/
+
   sql:
     init:
       platform: postgres

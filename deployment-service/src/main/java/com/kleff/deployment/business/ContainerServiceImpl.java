@@ -21,9 +21,9 @@ public class ContainerServiceImpl {
     private final ContainerMapper containerMapper;
     private final RestTemplate restTemplate;
 
-    public ContainerServiceImpl(ContainerRepository containerRepository, 
-                                ContainerMapper containerMapper,
-                                RestTemplateBuilder restTemplateBuilder) {
+    public ContainerServiceImpl(ContainerRepository containerRepository,
+            ContainerMapper containerMapper,
+            RestTemplateBuilder restTemplateBuilder) {
         this.containerRepository = containerRepository;
         this.containerMapper = containerMapper;
         this.restTemplate = restTemplateBuilder.build();
@@ -32,6 +32,7 @@ public class ContainerServiceImpl {
     public List<ContainerResponseModel> getAllContainers() {
         return containerMapper.containerToContainerResponseModel(containerRepository.findAll());
     }
+
     public ContainerResponseModel toResponseModel(Container container) {
         return containerMapper.containerToContainerResponseModel(container);
     }
@@ -49,20 +50,23 @@ public class ContainerServiceImpl {
         return containerRepository.findContainersByProjectID(projectID);
     }
 
-    public ContainerResponseModel createContainer(ContainerRequestModel containerRequestModel) {
+    public ContainerResponseModel createContainer(ContainerRequestModel containerRequestModel, String userId) {
         Container container = containerMapper.containerRequestModelToContainer(containerRequestModel);
-        container.setStatus("Running"); 
+        container.setStatus("Running");
         container.setCreatedAt(LocalDateTime.now());
-        
+
         Container savedContainer = containerRepository.save(container);
 
         // FIX: Pass both the request and the ID from the saved object
         triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
 
+        sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
+                Map.of("name", savedContainer.getName()));
+
         return containerMapper.containerToContainerResponseModel(savedContainer);
     }
 
-    public ContainerResponseModel updateContainer(String containerID, ContainerRequestModel request) {
+    public ContainerResponseModel updateContainer(String containerID, ContainerRequestModel request, String userId) {
         Container existingContainer = containerRepository.findContainerByContainerID(containerID);
         if (existingContainer == null) {
             throw new RuntimeException("Container not found with ID: " + containerID);
@@ -73,7 +77,7 @@ public class ContainerServiceImpl {
         existingContainer.setBranch(request.getBranch());
         existingContainer.setPort(request.getPort());
         existingContainer.setProjectID(request.getProjectID());
-        
+
         if (request.getEnvVariables() != null) {
             existingContainer.setEnvVariables(containerMapper.mapToJson(request.getEnvVariables()));
         }
@@ -83,10 +87,14 @@ public class ContainerServiceImpl {
         // FIX: Pass both the request and the containerID
         triggerBuildDeployment(request, containerID);
 
+        sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId,
+                Map.of("repoUrl", request.getRepoUrl()));
+
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
 
-    public ContainerResponseModel updateContainerEnvVariables(String containerID, Map<String, String> envVariables) {
+    public ContainerResponseModel updateContainerEnvVariables(String containerID, Map<String, String> envVariables,
+            String userId) {
         Container container = containerRepository.findContainerByContainerID(containerID);
         if (container == null) {
             throw new RuntimeException("Container not found with ID: " + containerID);
@@ -96,6 +104,9 @@ public class ContainerServiceImpl {
         Container updatedContainer = containerRepository.save(container);
 
         triggerWebAppUpdate(container, envVariables);
+
+        sendAuditLog("update_env_vars", container.getProjectID(), containerID, userId,
+                Map.of("keys_updated", envVariables.keySet()));
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
@@ -110,8 +121,7 @@ public class ContainerServiceImpl {
                 request.getBranch(),
                 request.getPort(),
                 request.getName(),
-                request.getEnvVariables()
-        );
+                request.getEnvVariables());
 
         try {
             restTemplate.postForObject(deploymentServiceUrl, buildRequest, String.class);
@@ -125,15 +135,16 @@ public class ContainerServiceImpl {
         String updateServiceUrl = "https://api.kleff.io/api/v1/webapp/update";
 
         Map<String, Object> updateRequest = Map.of(
-            "projectID", container.getProjectID(),
-            "containerID", container.getContainerID(),
-            "name", container.getName(),
-            "envVariables", envVariables
-        );
+                "projectID", container.getProjectID(),
+                "containerID", container.getContainerID(),
+                "name", container.getName(),
+                "envVariables", envVariables);
 
         try {
-            // Note: RestTemplate.patchForObject requires a specific HttpComponents client to work correctly 
-            // with some APIs. If this fails, consider using restTemplate.postForObject or exchange.
+            // Note: RestTemplate.patchForObject requires a specific HttpComponents client
+            // to work correctly
+            // with some APIs. If this fails, consider using restTemplate.postForObject or
+            // exchange.
             restTemplate.patchForObject(updateServiceUrl, updateRequest, String.class);
             log.info("WebApp update triggered successfully for: {}", container.getName());
         } catch (Exception e) {
@@ -141,17 +152,127 @@ public class ContainerServiceImpl {
         }
     }
 
+    public void deleteContainer(String containerID, String userId) {
+        Container container = containerRepository.findContainerByContainerID(containerID);
+        if (container == null) {
+            throw new RuntimeException("Container not found with ID: " + containerID);
+        }
+
+        try {
+            // Delete from database first
+            containerRepository.delete(container);
+            log.info("Container deleted from database: {}", containerID);
+
+            // Make upstream call to delete the WebApp in Kubernetes
+            triggerWebAppDeletion(container.getProjectID(), containerID);
+
+            sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
+
+        } catch (Exception e) {
+            log.error("Failed to delete container {}: {}", containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
+        }
+    }
+
+    private void triggerWebAppDeletion(String projectID, String containerID) {
+
+        String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
+
+        try {
+            restTemplate.delete(deleteServiceUrl);
+            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
+        } catch (Exception e) {
+            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}",
+                    projectID, containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
+        }
+    }
+
+    private void sendAuditLog(String action, String projectId, String containerId, String userId,
+            Map<String, Object> changes) {
+        // Build the URL for the project-management-service
+        // Assuming it's reachable via service discovery or Nginx internal routing
+        String auditUrl = "http://project-management-service:8080/api/v1/audit/internal";
+
+        try {
+            ExternalAuditRequest request = new ExternalAuditRequest();
+            request.setAction(action);
+            request.setProjectId(projectId);
+            request.setUserId(userId != null ? userId : "system");
+            request.setResourceType("CONTAINER");
+            request.setResourceId(containerId);
+            request.setChanges(changes);
+
+            restTemplate.postForObject(auditUrl, request, Void.class);
+            log.info("Audit log sent for action: {}", action);
+        } catch (Exception e) {
+            log.error("Failed to send audit log: {}", e.getMessage());
+        }
+    }
+
+    // Inner class for Audit Request
+    private static class ExternalAuditRequest {
+        @JsonProperty("action")
+        private String action;
+        @JsonProperty("projectId")
+        private String projectId;
+        @JsonProperty("userId")
+        private String userId;
+        @JsonProperty("resourceType")
+        private String resourceType;
+        @JsonProperty("resourceId")
+        private String resourceId;
+        @JsonProperty("changes")
+        private Map<String, Object> changes;
+        @JsonProperty("ipAddress")
+        private String ipAddress;
+
+        // Getters and Setters needed for Jackson
+        public void setAction(String action) {
+            this.action = action;
+        }
+
+        public void setProjectId(String projectId) {
+            this.projectId = projectId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public void setResourceType(String resourceType) {
+            this.resourceType = resourceType;
+        }
+
+        public void setResourceId(String resourceId) {
+            this.resourceId = resourceId;
+        }
+
+        public void setChanges(Map<String, Object> changes) {
+            this.changes = changes;
+        }
+
+    }
+
     // Static Inner DTO
     private static class GoBuildRequest {
-        @JsonProperty("containerID") private String containerID;
-        @JsonProperty("projectID") private String projectID;
-        @JsonProperty("repoUrl") private String repoUrl;
-        @JsonProperty("branch") private String branch;
-        @JsonProperty("port") private int port;
-        @JsonProperty("name") private String name;
-        @JsonProperty("envVariables") private Map<String, String> envVariables;
+        @JsonProperty("containerID")
+        private String containerID;
+        @JsonProperty("projectID")
+        private String projectID;
+        @JsonProperty("repoUrl")
+        private String repoUrl;
+        @JsonProperty("branch")
+        private String branch;
+        @JsonProperty("port")
+        private int port;
+        @JsonProperty("name")
+        private String name;
+        @JsonProperty("envVariables")
+        private Map<String, String> envVariables;
 
-        public GoBuildRequest(String containerID, String projectID, String repoUrl, String branch, int port, String name, Map<String, String> envVariables) {
+        public GoBuildRequest(String containerID, String projectID, String repoUrl, String branch, int port,
+                String name, Map<String, String> envVariables) {
             this.containerID = containerID;
             this.projectID = projectID;
             this.repoUrl = repoUrl;

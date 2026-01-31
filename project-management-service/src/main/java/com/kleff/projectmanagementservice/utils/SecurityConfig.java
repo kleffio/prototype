@@ -19,56 +19,57 @@ import java.time.Duration;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults()));
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .cors(Customizer.withDefaults())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                                                .requestMatchers("/api/v1/audit/internal").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2ResourceServer(oauth2 -> oauth2
+                                                .jwt(Customizer.withDefaults()));
 
-        return http.build();
-    }
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        String jwkSetUri = "https://auth.kleff.io/application/o/kleff/jwks/";
-        String issuerUri = "https://auth.kleff.io/application/o/kleff/";
+                return http.build();
+        }
 
-        System.out.println("🔐 Configuring JWT Decoder with increased timeout");
-        System.out.println("   JWKS URI: " + jwkSetUri);
-        System.out.println("   Issuer URI: " + issuerUri);
+        @Bean
+        public JwtDecoder jwtDecoder() {
+                String jwkSetUri = "https://auth.kleff.io/application/o/kleff/jwks/";
+                String issuerUri = "https://auth.kleff.io/application/o/kleff/";
 
-        // Create RestTemplate with increased timeouts
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
-        requestFactory.setReadTimeout(Duration.ofSeconds(10));
+                System.out.println("🔐 Configuring JWT Decoder with increased timeout");
+                System.out.println("   JWKS URI: " + jwkSetUri);
+                System.out.println("   Issuer URI: " + issuerUri);
 
-        RestTemplate restTemplate = new RestTemplate(requestFactory);
+                // Create RestTemplate with increased timeouts
+                SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+                requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+                requestFactory.setReadTimeout(Duration.ofSeconds(10));
 
-        // Create the decoder with custom RestTemplate
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                .restOperations(restTemplate)
-                .build();
+                RestTemplate restTemplate = new RestTemplate(requestFactory);
 
-        // Create validators
-        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
-        OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
+                // Create the decoder with custom RestTemplate
+                NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                                .restOperations(restTemplate)
+                                .build();
 
-        // Combine validators
-        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
-                issuerValidator,
-                timestampValidator
-        );
+                // Create validators
+                OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
+                OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
 
-        jwtDecoder.setJwtValidator(validator);
+                // Combine validators
+                OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
+                                issuerValidator,
+                                timestampValidator);
 
-        System.out.println("✅ JWT Decoder configured successfully with 10s timeouts");
+                jwtDecoder.setJwtValidator(validator);
 
-        return jwtDecoder;
-    }
+                System.out.println("✅ JWT Decoder configured successfully with 10s timeouts");
+
+                return jwtDecoder;
+        }
 }
