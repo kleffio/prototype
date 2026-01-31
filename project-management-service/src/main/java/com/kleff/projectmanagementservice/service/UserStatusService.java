@@ -9,11 +9,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class UserStatusService {
 
     private final RestTemplate restTemplate;
     private final String userServiceUrl;
+    
+    // Cache to store user status for 5 minutes to reduce API calls
+    private final ConcurrentHashMap<String, CacheEntry> statusCache = new ConcurrentHashMap<>(); 
+    private static final long CACHE_DURATION_MS = TimeUnit.MINUTES.toMillis(5);
+    
+    private static class CacheEntry {
+        final boolean isActive;
+        final long timestamp;
+        
+        CacheEntry(boolean isActive) {
+            this.isActive = isActive;
+            this.timestamp = System.currentTimeMillis();
+        }
+        
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_DURATION_MS;
+        }
+    }
 
     public UserStatusService(RestTemplate restTemplate, @Value("${user.service.url:http://user-service:8080}") String userServiceUrl) {
         this.restTemplate = restTemplate;
@@ -21,6 +42,11 @@ public class UserStatusService {
     }
 
     public boolean isUserActive(String userId) {
+        // Check cache first
+        CacheEntry cached = statusCache.get(userId);
+        if (cached != null && !cached.isExpired()) {
+            return cached.isActive;
+        }
         try {
             String url = userServiceUrl + "/api/v1/users/status/" + userId;
             ResponseEntity<UserStatusResponse> response = restTemplate.exchange(
@@ -30,15 +56,25 @@ public class UserStatusService {
                 UserStatusResponse.class
             );
             
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return response.getBody().isActive();
-            }
-            return false;
+            boolean isActive = response.getStatusCode() == HttpStatus.OK && 
+                             response.getBody() != null && 
+                             response.getBody().isActive();
+            
+            // Cache the result
+            statusCache.put(userId, new CacheEntry(isActive));
+            
+            return isActive;
         } catch (Exception e) {
-            // If user service is unavailable, fail secure by blocking access
+            // If user service is unavailable, remove from cache and fail secure
+            statusCache.remove(userId);
             System.err.println("Failed to check user status: " + e.getMessage());
             return false;
         }
+    }
+    
+    // Method to clear cache entry when user is deactivated
+    public void invalidateUserCache(String userId) {
+        statusCache.remove(userId);
     }
 
     public static class UserStatusResponse {

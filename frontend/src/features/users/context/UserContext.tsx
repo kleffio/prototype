@@ -83,6 +83,12 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
 
     setAccessToken(token);
 
+    // Only call API if we don't have settings yet (avoid repeated calls)
+    if (settings !== null) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -110,9 +116,8 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
     authLoading,
     isAuthenticated,
     user?.access_token,
-    location.pathname,
-    navigate,
-    isProtectedRoute
+    isProtectedRoute,
+    settings
   ]);
 
   useEffect(() => {
