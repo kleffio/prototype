@@ -69,10 +69,6 @@ export function ProjectDetailPage() {
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
 
-  // Delete flow state
-
-  const ownerUser = useUsername(project?.ownerId || "");
-
   useEffect(() => {
     const interval = setInterval(() => {
       const currentLocale = getLocale();
