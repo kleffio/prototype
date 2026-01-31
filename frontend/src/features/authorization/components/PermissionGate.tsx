@@ -1,8 +1,8 @@
-import { useParams } from 'react-router-dom';
-import { usePermissions } from '@features/projects/hooks/usePermissions';
-import { useAuthorization } from '../context/AuthorizationContext';
-import type { ReactNode } from 'react';
-import type { ProjectPermission } from '@features/projects/types/permissions';
+import { useParams } from "react-router-dom";
+import { usePermissions } from "@features/projects/hooks/usePermissions";
+import { useAuthorization } from "../context/AuthorizationContext";
+import type { ReactNode } from "react";
+import type { ProjectPermission } from "@features/projects/types/permissions";
 
 interface PermissionGateProps {
   children: ReactNode;
@@ -48,7 +48,7 @@ export function PermissionGate({
   permissions = [],
   requireAll = false,
   fallback = null,
-  showLoading = false,
+  showLoading = false
 }: PermissionGateProps) {
   const { projectId } = useParams<{ projectId?: string }>();
   const { hasPermission, isLoading } = usePermissions(projectId);
@@ -56,9 +56,7 @@ export function PermissionGate({
 
   // Show loading state if requested
   if (isLoading && showLoading) {
-    return (
-      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-10 rounded" />
-    );
+    return <div className="h-10 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />;
   }
 
   // In shadow mode (not enforcing), always show children

@@ -1,5 +1,5 @@
-import { createContext, useContext } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext } from "react";
+import type { ReactNode } from "react";
 
 interface AuthorizationContextValue {
   shadowMode: boolean;
@@ -24,21 +24,17 @@ export function AuthorizationProvider({ children }: AuthorizationProviderProps) 
     shadowMode,
     enforceMode,
     isLoading,
-    error,
+    error
   };
 
-  return (
-    <AuthorizationContext.Provider value={value}>
-      {children}
-    </AuthorizationContext.Provider>
-  );
+  return <AuthorizationContext.Provider value={value}>{children}</AuthorizationContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuthorization(): AuthorizationContextValue {
   const context = useContext(AuthorizationContext);
   if (!context) {
-    throw new Error('useAuthorization must be used within AuthorizationProvider');
+    throw new Error("useAuthorization must be used within AuthorizationProvider");
   }
   return context;
 }
