@@ -7,28 +7,25 @@ export class DeactivationTestUtils {
   constructor(private readonly page: Page) {}
 
   /**
-   * Simulates a deactivated account by setting the localStorage flag
-   */
-  async setDeactivatedAccountFlag() {
-    await this.page.addInitScript(() => {
-      localStorage.setItem("account-deactivated", "true");
-    });
-  }
-
-  /**
-   * Clears the deactivated account flag
-   */
-  async clearDeactivatedAccountFlag() {
-    await this.page.addInitScript(() => {
-      localStorage.removeItem("account-deactivated");
-    });
-  }
-
-  /**
    * Mocks the user API to return 403 for deactivated accounts
    */
   async mockDeactivatedUserAPI() {
     await this.page.route("**/api/v1/users/me", async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "account has been deactivated"
+        })
+      });
+    });
+  }
+
+  /**
+   * Mocks platform roles API for deactivated accounts
+   */
+  async mockDeactivatedPlatformRolesAPI() {
+    await this.page.route("**/api/v1/users/me/platform-roles", async (route) => {
       await route.fulfill({
         status: 403,
         contentType: "application/json",
