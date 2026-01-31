@@ -6,7 +6,11 @@ import com.kleff.deployment.data.container.Container;
 import com.kleff.deployment.data.container.ContainerRequestModel;
 import com.kleff.deployment.data.container.ContainerResponseModel;
 
-import static org.springframework.mock.http.server.reactive.MockServerHttpRequest.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

@@ -26,52 +26,54 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
     const [selectedCollaborator, setSelectedCollaborator] = useState<string>("all");
 
     useEffect(() => {
+        const loadLogs = async () => {
+            try {
+                setLoading(true);
+                const [logsData, collaboratorsData] = await Promise.all([
+                    getProjectActivityLogs(projectId),
+                    getProjectCollaborators(projectId)
+                ]);
+
+                setLogs(logsData);
+                setError(null);
+
+                // Collect all relevant user IDs (both eager actors and current collaborators)
+                const logUserIds = logsData.map(log => log.collaborator);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const collaboratorUserIds = (collaboratorsData as any[]).map(c => c.userId);
+                const allUserIds = Array.from(new Set([...logUserIds, ...collaboratorUserIds]));
+
+                // Fetch usernames for all
+                const nameMap: Record<string, string> = { ...usernames };
+
+                await Promise.all(
+                    allUserIds.map(async (userId) => {
+                        if (!nameMap[userId]) {
+                            try {
+                                const name = await getUsernameById(userId);
+                                nameMap[userId] = name;
+                            } catch (e) {
+                                console.warn(`Failed to fetch username for ${userId}`, e);
+                                nameMap[userId] = userId; // Fallback to ID
+                            }
+                        }
+                    })
+                );
+                setUsernames(nameMap);
+
+            } catch (err) {
+                console.error("Error loading logs or collaborators:", err);
+                setError("Failed to load activity logs.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (isOpen) {
             loadLogs();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, projectId]);
-
-    const loadLogs = async () => {
-        try {
-            setLoading(true);
-            const [logsData, collaboratorsData] = await Promise.all([
-                getProjectActivityLogs(projectId),
-                getProjectCollaborators(projectId)
-            ]);
-
-            setLogs(logsData);
-            setError(null);
-
-            // Collect all relevant user IDs (both eager actors and current collaborators)
-            const logUserIds = logsData.map(log => log.collaborator);
-            const collaboratorUserIds = (collaboratorsData as any[]).map(c => c.userId);
-            const allUserIds = Array.from(new Set([...logUserIds, ...collaboratorUserIds]));
-
-            // Fetch usernames for all
-            const nameMap: Record<string, string> = { ...usernames };
-
-            await Promise.all(
-                allUserIds.map(async (userId) => {
-                    if (!nameMap[userId]) {
-                        try {
-                            const name = await getUsernameById(userId);
-                            nameMap[userId] = name;
-                        } catch (e) {
-                            console.warn(`Failed to fetch username for ${userId}`, e);
-                            nameMap[userId] = userId; // Fallback to ID
-                        }
-                    }
-                })
-            );
-            setUsernames(nameMap);
-
-        } catch (err) {
-            console.error("Error loading logs or collaborators:", err);
-            setError("Failed to load activity logs.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const formatAction = (action: string) => {
         return action
@@ -80,9 +82,11 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             .join(' ');
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formatDetails = (details: any): React.ReactNode => {
         if (!details) return "-";
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let parsedDetails: Record<string, any> = {};
 
         // 1. Try to treat as object if it already is
@@ -198,6 +202,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
     };
 
     const getLogDetails = (log: ActionLog) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let parsedDetails: any = {};
         let resourceName = "";
         let isJson = false;
@@ -249,7 +254,9 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
         .sort((a, b) => {
             if (!sortConfig) return 0;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let aValue: any = a[sortConfig.key as keyof ActionLog];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let bValue: any = b[sortConfig.key as keyof ActionLog];
 
             if (sortConfig.key === 'collaboratorName') {
