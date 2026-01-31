@@ -6,7 +6,6 @@ import { Spinner } from "@shared/ui/Spinner";
 import { Badge } from "@shared/ui/Badge";
 import {
   Hash,
-  User,
   Layers,
   Activity,
   Calendar,
@@ -30,7 +29,6 @@ import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { BillingModal } from "@features/billing/components/viewBillsModal";
-import { useUsername } from "@features/users/api/getUsernameById";
 import InvoiceTable from "@features/billing/components/InvoiceTable";
 import ProjectMetricsCard from "@features/observability/components/ProjectMetricsCard";
 import { usePermissions } from "@features/projects/hooks/usePermissions";
@@ -68,9 +66,6 @@ export function ProjectDetailPage() {
 
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
-
-  const id = project?.ownerId || "";
-  const ownerUser = useUsername(id);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -247,16 +242,6 @@ export function ProjectDetailPage() {
                 <p className="truncate font-mono text-sm font-medium text-neutral-200">
                   {project.projectId}
                 </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-xl bg-white/2 p-3 ring-1 ring-white/5">
-              <div className="rounded-lg bg-neutral-800 p-2">
-                <User className="h-4 w-4 text-neutral-400" />
-              </div>
-              <div>
-                <p className="text-xs text-neutral-500">Owner</p>
-                <p className="text-sm font-medium text-neutral-200">{ownerUser.username || "—"}</p>
               </div>
             </div>
 

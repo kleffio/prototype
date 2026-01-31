@@ -16,3 +16,5 @@ pnpm-debug.log*
 coverage
 .next
 package-lock.json
+yarn.lock
+package.json

@@ -27,21 +27,27 @@ var usernameRegex = regexp.MustCompile(`^[a-z0-9_-]{2,63}$`)
 type Service struct {
 	repo             port.UserRepository
 	auditRepo        port.AuditRepository
+	platformRoleRepo port.PlatformRoleRepository
 	tokenValidator   port.TokenValidator
 	authentikManager port.AuthentikUserManager
+	defaultAdminEmail string
 }
 
 func NewService(
 	repo port.UserRepository,
 	auditRepo port.AuditRepository,
+	platformRoleRepo port.PlatformRoleRepository,
 	tokenValidator port.TokenValidator,
 	authentikManager port.AuthentikUserManager,
+	defaultAdminEmail string,
 ) *Service {
 	return &Service{
 		repo:             repo,
 		auditRepo:        auditRepo,
+		platformRoleRepo: platformRoleRepo,
 		tokenValidator:   tokenValidator,
 		authentikManager: authentikManager,
+		defaultAdminEmail: defaultAdminEmail,
 	}
 }
 
@@ -147,6 +153,22 @@ func (s *Service) EnsureUserFromToken(ctx context.Context, claims *port.TokenCla
 
 		s.detectAndLogChanges(ctx, &oldUser, user)
 		log.Printf("updated user identity: id=%s", user.ID)
+	}
+
+	// Auto-grant platform admin role if email matches DEFAULT_ADMIN_EMAIL
+	if s.defaultAdminEmail != "" && s.platformRoleRepo != nil {
+		if strings.EqualFold(user.Email, s.defaultAdminEmail) {
+			hasRole, err := s.platformRoleRepo.HasRole(ctx, string(user.ID), domain.PlatformAdmin)
+			if err != nil {
+				log.Printf("failed to check platform admin role for %s: %v", user.Email, err)
+			} else if !hasRole {
+				if err := s.platformRoleRepo.GrantRole(ctx, string(user.ID), domain.PlatformAdmin, nil); err != nil {
+					log.Printf("failed to auto-grant platform admin to %s: %v", user.Email, err)
+				} else {
+					log.Printf("auto-granted platform_admin role to %s (DEFAULT_ADMIN_EMAIL)", user.Email)
+				}
+			}
+		}
 	}
 
 	return user, nil
@@ -293,6 +315,20 @@ func (s *Service) GetMyAuditLogs(
 	}
 
 	return logs, total, nil
+}
+
+// GetMyPlatformRoles retrieves the platform roles for a user
+func (s *Service) GetMyPlatformRoles(ctx context.Context, userID domain.ID) ([]domain.PlatformRole, error) {
+	if s.platformRoleRepo == nil {
+		return []domain.PlatformRole{}, nil
+	}
+
+	roles, err := s.platformRoleRepo.GetActiveRolesByUserID(ctx, string(userID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get platform roles: %w", err)
+	}
+
+	return roles, nil
 }
 
 // --- Helpers ---

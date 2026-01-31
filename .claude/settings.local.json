@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go test:*)",
+      "Bash(python3:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew compileTestJava:*)",
+      "Bash(yarn test:run)",
+      "Bash(yarn install)"
+    ]
+  }
+}

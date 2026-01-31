@@ -45,3 +45,7 @@ package-lock.json
 e2e/storage/*
 test-results/
 playwright-report/
+
+# Vitest
+coverage/
+.vitest/

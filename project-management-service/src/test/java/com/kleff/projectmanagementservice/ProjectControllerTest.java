@@ -1,9 +1,10 @@
 package com.kleff.projectmanagementservice;
 
-import com.kleff.projectmanagementservice.buisnesslayer.ProjectService;
+import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
-import com.kleff.projectmanagementservice.presentationlayer.ProjectController;
+import com.kleff.projectmanagementservice.presentationlayer.project.ProjectController;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
