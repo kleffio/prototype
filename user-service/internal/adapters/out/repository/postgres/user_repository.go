@@ -388,7 +388,7 @@ func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error
 		ON CONFLICT (email) DO UPDATE SET 
 			id = EXCLUDED.id, 
 			deleted_at = EXCLUDED.deleted_at`
-	
+
 	if _, err := r.db.ExecContext(ctx, insertDeletedQuery, id, email); err != nil {
 		return fmt.Errorf("failed to record deletion: %w", err)
 	}
@@ -414,7 +414,7 @@ func (r *PostgresUserRepository) Delete(ctx context.Context, id domain.ID) error
 
 func (r *PostgresUserRepository) IsUserDeleted(ctx context.Context, id domain.ID, email string) (bool, error) {
 	query := `SELECT 1 FROM deleted_users WHERE id = $1 OR email = $2 LIMIT 1`
-	
+
 	var exists int
 	err := r.db.QueryRowContext(ctx, query, id, email).Scan(&exists)
 	if err == sql.ErrNoRows {
@@ -423,7 +423,7 @@ func (r *PostgresUserRepository) IsUserDeleted(ctx context.Context, id domain.ID
 	if err != nil {
 		return false, fmt.Errorf("failed to check deleted users: %w", err)
 	}
-	
+
 	return true, nil
 }
 
