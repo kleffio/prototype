@@ -33,10 +33,9 @@ client.interceptors.response.use(
   (error) => {
     // Check for deactivated account errors - can be either 401 or 403
     const status = error.response?.status;
-    const isDeactivatedError = 
-      (status === 403) || 
-      (status === 401 && error.response?.data?.includes?.("deactivated"));
-    
+    const isDeactivatedError =
+      status === 403 || (status === 401 && error.response?.data?.includes?.("deactivated"));
+
     if (isDeactivatedError) {
       const deactivatedError = new Error("Account has been deactivated") as DeactivatedAccountError;
       deactivatedError.status = status;
