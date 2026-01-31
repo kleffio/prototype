@@ -10,6 +10,7 @@ import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
 import com.kleff.projectmanagementservice.authorization.service.AuthorizationService;
 import com.kleff.projectmanagementservice.authorization.domain.AuthorizationDecision;
 import com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult;
+import com.kleff.projectmanagementservice.authorization.aspect.AuthorizationAspect;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,8 @@ class ProjectControllerTest {
         private DeactivationCheckFilter deactivationCheckFilter;
         @MockBean
         private AuthorizationService authorizationService;
+        @MockBean
+        private AuthorizationAspect authorizationAspect;
 
         private Project testProject1;
         private Project testProject2;
