@@ -182,16 +182,16 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
     try {
       setLoading(true);
       const data = await getProjectCollaborators(projectId);
-      
+
       // Fetch usernames for all collaborators
       const usernameMap: Record<string, string> = {};
       await Promise.all(
-        data.map(async (collaborator: { userId: string; }) => {
+        data.map(async (collaborator: { userId: string }) => {
           const username = await getUsernameById(collaborator.userId);
           usernameMap[collaborator.userId] = username;
         })
       );
-      
+
       setCollaborators(data);
       setUsernames(usernameMap);
       setError(null);
@@ -403,7 +403,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
 
             <div>
               <h3 className="text-md mb-3 font-semibold text-neutral-50">{t.team_members}</h3>
-              
+
               <div className="overflow-hidden rounded-lg border border-white/10">
                 <Table>
                   <TableHeader>
@@ -429,10 +429,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                       </TableRow>
                     ) : error ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={canManageTeam ? 5 : 4}
-                          className="py-8 text-center"
-                        >
+                        <TableCell colSpan={canManageTeam ? 5 : 4} className="py-8 text-center">
                           <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
                             {error}
                           </div>
@@ -453,7 +450,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                         if (!username) {
                           return null; // Skip rendering if username not available
                         }
-                        
+
                         return (
                           <TableRow key={collaborator.id} className="hover:bg-white/5">
                             <TableCell className="font-mono text-sm text-neutral-300">
