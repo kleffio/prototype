@@ -380,6 +380,42 @@ func (h *Handler) GetUserStatus(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, status)
 }
 
+
+// GetMyPlatformRoles returns the authenticated user's platform roles
+func (h *Handler) GetMyPlatformRoles(w http.ResponseWriter, r *http.Request) {
+	token := extractBearerToken(r)
+	if token == "" {
+		jsonError(w, http.StatusUnauthorized, "missing or invalid authorization header")
+		return
+	}
+
+	// Get current user from token
+	user, err := h.svc.GetMe(r.Context(), token)
+	if err != nil {
+		if errors.Is(err, coresvc.ErrInvalidToken) {
+			jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+			return
+		}
+		log.Printf("error validating token: %v", err)
+		jsonError(w, http.StatusUnauthorized, "invalid token")
+		return
+	}
+
+	roles, err := h.svc.GetMyPlatformRoles(r.Context(), user.ID)
+	if err != nil {
+		log.Printf("error getting platform roles for user %s: %v", user.ID, err)
+		jsonError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	if roles == nil {
+		roles = []domain.PlatformRole{}
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]any{
+		"roles": roles,
+	})
+}
 // ------- Helpers ------- \\
 
 func extractBearerToken(r *http.Request) string {

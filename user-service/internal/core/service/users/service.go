@@ -411,7 +411,6 @@ func (s *Service) GetMyPlatformRoles(ctx context.Context, userID domain.ID) ([]d
 
 	return roles, nil
 }
-}
 
 // --- Helpers ---
 
