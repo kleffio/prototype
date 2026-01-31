@@ -16,13 +16,14 @@ import (
 
 // Mock UserService
 type mockUserService struct {
-	getMeFunc          func(ctx context.Context, token string) (*domain.User, error)
-	updateProfileFunc  func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) (*domain.User, error)
-	getByHandleFunc    func(ctx context.Context, handle string) (*domain.User, error)
-	getFunc            func(ctx context.Context, id domain.ID) (*domain.User, error)
-	resolveManyFunc    func(ctx context.Context, ids []domain.ID) (map[domain.ID]*domain.User, error)
-	getAuditLogsFunc   func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, error)
-	getMyAuditLogsFunc func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, int64, error)
+	getMeFunc              func(ctx context.Context, token string) (*domain.User, error)
+	updateProfileFunc      func(ctx context.Context, id domain.ID, update *domain.ProfileUpdate) (*domain.User, error)
+	getByHandleFunc        func(ctx context.Context, handle string) (*domain.User, error)
+	getFunc                func(ctx context.Context, id domain.ID) (*domain.User, error)
+	resolveManyFunc        func(ctx context.Context, ids []domain.ID) (map[domain.ID]*domain.User, error)
+	getAuditLogsFunc       func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, error)
+	getMyAuditLogsFunc     func(ctx context.Context, userID domain.ID, limit, offset int) ([]*domain.AuditLog, int64, error)
+	getMyPlatformRolesFunc func(ctx context.Context, userID domain.ID) ([]domain.PlatformRole, error)
 }
 
 func (m *mockUserService) GetMe(ctx context.Context, token string) (*domain.User, error) {
@@ -72,6 +73,13 @@ func (m *mockUserService) GetMyAuditLogs(ctx context.Context, userID domain.ID, 
 		return m.getMyAuditLogsFunc(ctx, userID, limit, offset)
 	}
 	return nil, 0, nil
+}
+
+func (m *mockUserService) GetMyPlatformRoles(ctx context.Context, userID domain.ID) ([]domain.PlatformRole, error) {
+	if m.getMyPlatformRolesFunc != nil {
+		return m.getMyPlatformRolesFunc(ctx, userID)
+	}
+	return nil, nil
 }
 
 func TestHealth(t *testing.T) {

@@ -34,6 +34,7 @@ func NewRouter(h *Handler) http.Handler {
 		r.Get("/me", h.GetMe)
 		r.Patch("/me/profile", h.PatchMeProfile)
 		r.Get("/me/audit", h.GetMyAuditLogs)
+		r.Get("/me/platform-roles", h.GetMyPlatformRoles)
 
 		r.Get("/profile/@{handle}", h.GetPublicProfile)
 
