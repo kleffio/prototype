@@ -34,14 +34,19 @@ export function usePlatformAdmin(): { isPlatformAdmin: boolean; isLoading: boole
         setIsPlatformAdmin(false);
 
         // Check if this is a deactivation error
-        const err = error as { status?: number; isDeactivated?: boolean; response?: { status?: number }; message?: string };
-        const isDeactivated = 
+        const err = error as {
+          status?: number;
+          isDeactivated?: boolean;
+          response?: { status?: number };
+          message?: string;
+        };
+        const isDeactivated =
           // Custom deactivated error from axios interceptor
           (err.status === 403 && err.isDeactivated) ||
           // Direct axios response check
-          (err.response?.status === 403) ||
+          err.response?.status === 403 ||
           // Message-based check
-          (err.message?.includes("deactivated"));
+          err.message?.includes("deactivated");
 
         if (isDeactivated) {
           window.location.href = "/error/deactivated";

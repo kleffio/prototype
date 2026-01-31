@@ -92,18 +92,23 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
       console.error("Failed to load user settings", e);
 
       // Check for deactivated account - handle both axios error and custom error format
-      const error = e as { status?: number; isDeactivated?: boolean; response?: { status?: number }; message?: string };
-      const isDeactivated = 
+      const error = e as {
+        status?: number;
+        isDeactivated?: boolean;
+        response?: { status?: number };
+        message?: string;
+      };
+      const isDeactivated =
         // Custom deactivated error from axios interceptor
         (error.status === 403 && error.isDeactivated) ||
         // Direct axios response check
-        (error.response?.status === 403) ||
+        error.response?.status === 403 ||
         // Message-based check
-        (error.message?.includes("deactivated"));
+        error.message?.includes("deactivated");
 
       if (isDeactivated) {
         // Remember this user is deactivated (per-user caching, not browser-wide)
-        setDeactivatedUsers(prev => new Set(prev).add(userEmail));
+        setDeactivatedUsers((prev) => new Set(prev).add(userEmail));
         navigate("/error/deactivated");
         return;
       }

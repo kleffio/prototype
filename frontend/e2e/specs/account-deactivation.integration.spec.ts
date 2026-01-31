@@ -33,7 +33,7 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
   });
 
   test.skip("deactivated user API response - settings redirect", async ({ page }) => {
-    // This test requires authenticated context - skipping for now  
+    // This test requires authenticated context - skipping for now
     // TODO: Implement with proper auth fixture
     const utils = new DeactivationTestUtils(page);
     await utils.mockDeactivatedUserAPI();
@@ -79,6 +79,8 @@ test.describe("Account Deactivation - Safe Integration Tests", () => {
     await page.waitForLoadState("domcontentloaded");
 
     await expect(page.locator("body")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Account Deactivated" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Account Deactivated" })).toBeVisible({
+      timeout: 10_000
+    });
   });
 });

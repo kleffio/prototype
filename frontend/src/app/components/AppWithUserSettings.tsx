@@ -9,9 +9,7 @@ interface Props {
 export function AppWithUserSettings({ children }: Props) {
   return (
     <UserSettingsProvider>
-      <AuthorizationProvider>
-        {children}
-      </AuthorizationProvider>
+      <AuthorizationProvider>{children}</AuthorizationProvider>
     </UserSettingsProvider>
   );
 }
