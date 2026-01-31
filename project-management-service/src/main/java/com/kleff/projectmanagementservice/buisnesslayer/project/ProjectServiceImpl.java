@@ -1,4 +1,4 @@
-package com.kleff.projectmanagementservice.buisnesslayer;
+package com.kleff.projectmanagementservice.buisnesslayer.project;
 
 import com.kleff.projectmanagementservice.buisnesslayer.collaborator.CollaboratorService;
 import com.kleff.projectmanagementservice.datalayer.collaborator.Collaborator;

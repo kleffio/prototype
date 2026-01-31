@@ -1,4 +1,4 @@
-package com.kleff.projectmanagementservice.buisnesslayer;
+package com.kleff.projectmanagementservice.buisnesslayer.project;
 
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import org.springframework.stereotype.Service;
