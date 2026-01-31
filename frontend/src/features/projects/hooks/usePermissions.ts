@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { CollaboratorRole, ProjectPermission, Collaborator } from "../types/permissions";
 import { getProjectCollaborators } from "../api/collaborators";
 import { useAuth } from "react-oidc-context";
+import { useAuthorization } from "@features/authorization/context/AuthorizationContext";
 
 // Default permissions for each role
 const ROLE_PERMISSIONS: Record<CollaboratorRole, ProjectPermission[]> = {
@@ -31,6 +32,7 @@ const ROLE_PERMISSIONS: Record<CollaboratorRole, ProjectPermission[]> = {
 
 export function usePermissions(projectId: string | undefined) {
   const auth = useAuth();
+  const { shadowMode, enforceMode } = useAuthorization();
   const [role, setRole] = useState<CollaboratorRole | string | null>(null);
   const [permissions, setPermissions] = useState<ProjectPermission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +74,14 @@ export function usePermissions(projectId: string | undefined) {
   }, [projectId, auth.user?.profile.sub]);
 
   const hasPermission = (permission: ProjectPermission): boolean => {
+    // In shadow mode (not enforcing), always return true
+    // Backend will log authorization decisions
+    if (shadowMode && !enforceMode) {
+      console.log(`[SHADOW MODE] Checking permission: ${permission}`);
+      return true;
+    }
+
+    // In enforce mode, check actual permissions
     return permissions.includes(permission);
   };
 
@@ -94,6 +104,8 @@ export function usePermissions(projectId: string | undefined) {
     canManageEnvVars: hasPermission("MANAGE_ENV_VARS"),
     canManageCollaborators: hasPermission("MANAGE_COLLABORATORS"),
     canDeleteProject: hasPermission("DELETE_PROJECT"),
-    canManageBilling: hasPermission("MANAGE_BILLING")
+    canManageBilling: hasPermission("MANAGE_BILLING"),
+    shadowMode, // Expose shadow mode status
+    enforceMode // Expose enforce mode status
   };
 }

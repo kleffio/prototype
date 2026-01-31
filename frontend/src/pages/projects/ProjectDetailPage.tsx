@@ -6,7 +6,6 @@ import { Spinner } from "@shared/ui/Spinner";
 import { Badge } from "@shared/ui/Badge";
 import {
   Hash,
-  User,
   Layers,
   Activity,
   Calendar,
@@ -24,13 +23,13 @@ import { EditEnvVariablesModal } from "@features/projects/components/EditEnvVari
 import { ContainerStatusCard } from "@features/projects/components/ContainerStatusCard";
 import { ContainerDetailModal } from "@features/projects/components/ContainerDetailModal";
 import updateContainerEnvVariables from "@features/projects/api/updateContainerEnvVariables";
+import deleteContainer from "@features/projects/api/deleteContainer";
 import type { Container } from "@features/projects/types/Container";
 import { ROUTES } from "@app/routes/routes";
 import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { BillingModal } from "@features/billing/components/viewBillsModal";
-import { useUsername } from "@features/users/api/getUsernameById";
 import InvoiceTable from "@features/billing/components/InvoiceTable";
 import ProjectMetricsCard from "@features/observability/components/ProjectMetricsCard";
 import { usePermissions } from "@features/projects/hooks/usePermissions";
@@ -52,7 +51,8 @@ export function ProjectDetailPage() {
     containers,
     isLoading: containersLoading,
     error: containersError,
-    reload
+    reload,
+    setContainers
   } = useProjectContainers(projectId || "");
 
   const { role } = usePermissions(projectId);
@@ -70,9 +70,6 @@ export function ProjectDetailPage() {
 
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
-
-  const id = project?.ownerId || "";
-  const ownerUser = useUsername(id);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -110,6 +107,52 @@ export function ProjectDetailPage() {
   ) => {
     await updateContainerEnvVariables(containerId, envVariables);
     await reload();
+  };
+
+  // This is kept for the modal usage if needed, though we might use the unified flow
+  const handleDeleteContainer = async (containerId: string) => {
+    // Reuse logic if necessary, but for now the modal handles its own delete via the same API import
+    // or we could refactor to use the same function.
+    // For minimal disruption, leaving the implementation needed by Modal as is if it calls this.
+
+    // However, the ContainerDetailModal takes a prop `onDelete` which is this function.
+    // So validation:
+    const previousContainers = containers;
+    setContainers((prev) => prev.filter((c) => c.containerId !== containerId));
+    try {
+      await deleteContainer(containerId);
+      await reload();
+    } catch (err: unknown) {
+      // Type guard to safely check for status property
+      const hasStatus = (obj: unknown): obj is { status?: number } =>
+        typeof obj === "object" && obj !== null && "status" in obj;
+
+      const hasResponseStatus = (obj: unknown): obj is { response?: { status?: number } } => {
+        if (typeof obj !== "object" || obj === null) {
+          return false;
+        }
+
+        const responseObj = (obj as { response?: unknown }).response;
+        if (typeof responseObj !== "object" || responseObj === null || responseObj === undefined) {
+          return false;
+        }
+
+        return "status" in responseObj;
+      };
+
+      if (hasResponseStatus(err) && err.response?.status === 404) {
+        await reload();
+        return;
+      }
+
+      if (hasStatus(err) && err.status === 404) {
+        await reload();
+        return;
+      }
+
+      setContainers(previousContainers);
+      throw err;
+    }
   };
 
   if (projectLoading) {
@@ -265,16 +308,6 @@ export function ProjectDetailPage() {
 
             <div className="flex items-center gap-3 rounded-xl bg-white/2 p-3 ring-1 ring-white/5">
               <div className="rounded-lg bg-neutral-800 p-2">
-                <User className="h-4 w-4 text-neutral-400" />
-              </div>
-              <div>
-                <p className="text-xs text-neutral-500">Owner</p>
-                <p className="text-sm font-medium text-neutral-200">{ownerUser.username || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-xl bg-white/2 p-3 ring-1 ring-white/5">
-              <div className="rounded-lg bg-neutral-800 p-2">
                 <Calendar className="h-4 w-4 text-neutral-400" />
               </div>
               <div>
@@ -410,6 +443,7 @@ export function ProjectDetailPage() {
         container={selectedContainer}
         onEditEnv={handleEditEnv}
         onEditContainer={handleEditContainer}
+        onDelete={handleDeleteContainer}
       />
 
       <SimpleContainerLogsSheet
@@ -418,6 +452,8 @@ export function ProjectDetailPage() {
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
     </section>
   );
 }

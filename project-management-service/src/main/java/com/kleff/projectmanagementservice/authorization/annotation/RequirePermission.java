@@ -9,14 +9,12 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to mark methods that require specific project permissions.
- * Used with AuthorizationAspect to automatically check permissions before
- * method execution.
+ * Used with AuthorizationAspect to automatically check permissions before method execution.
  *
  * Example usage:
- * 
  * <pre>
  * {@code
- * &#64;GetMapping("/{projectId}")
+ * @GetMapping("/{projectId}")
  * @RequirePermission(value = ProjectPermission.READ_PROJECT, projectIdExpression = "#projectId")
  * public ResponseEntity<Project> getProject(@PathVariable String projectId, @AuthenticationPrincipal Jwt jwt) {
  *     return ResponseEntity.ok(projectService.getProjectById(projectId));

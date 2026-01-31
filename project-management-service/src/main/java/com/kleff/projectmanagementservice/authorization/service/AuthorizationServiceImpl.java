@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of authorization service with shadow mode support.
@@ -78,6 +77,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
                     .findByProjectIdAndUserId(projectId, userId)
                     .stream()
                     .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
+                    .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
                     .findFirst();
 
             if (collaboratorOpt.isEmpty()) {
@@ -144,6 +144,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
                 .findByProjectIdAndUserId(projectId, userId)
                 .stream()
                 .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
+                .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
                 .findFirst();
 
         if (collaboratorOpt.isEmpty()) {

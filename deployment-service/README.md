@@ -83,6 +83,27 @@ Create a new container.
 }
 ```
 
+### DELETE /api/v1/containers/{containerID}
+Delete a container by its ID.
+
+**Path Parameters:**
+- `containerID` (string): The unique identifier of the container to delete
+
+**Response:**
+- `204 No Content` on successful deletion
+- `404 Not Found` if container does not exist
+- `500 Internal Server Error` if external service deletion fails
+
+**Process:**
+This endpoint implements a two-phase deletion process:
+1. **External Service Deletion**: First calls the deployment service at `http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/{projectID}/{containerID}` to delete the actual container
+2. **Database Cleanup**: Only after successful external deletion, removes the container record from the database
+
+**Error Handling:**
+- If the container is not found in the database, throws `RuntimeException` with "Container not found" message
+- If external service deletion fails, throws `RuntimeException` and does not delete from database (rollback behavior)
+- If database deletion fails after successful external deletion, the container record remains in database but external container is deleted
+
 Request/Response models are defined in the `data.container` package.
 
 ## Configuration
@@ -147,6 +168,27 @@ When a container is created via POST `/api/v1/containers`:
 1. Container entity is saved to database with status "Running" and current timestamp
 2. External build service is triggered at `https://api.kleff.io/api/v1/deployment/build`
 3. Build request includes repository URL, branch, image name, and application port
+
+### Container Deletion Flow
+
+When a container is deleted via the service layer:
+
+1. **Container Lookup**: Service retrieves container from database using `containerID`
+2. **External Service Deletion**: Calls deployment service at `http://deployment-backend-service.kleff-deployment.svc.cluster.local/api/v1/webapp/{projectID}/{containerID}`
+3. **Database Cleanup**: Only after successful external deletion, removes container record from database
+4. **Error Handling**: If external deletion fails, throws exception and does not delete from database (ensures consistency)
+
+### Service Layer Methods
+
+The `ContainerServiceImpl` provides the following key methods:
+
+- `getAllContainers()`: Retrieves all containers from database
+- `getContainersByProjectID(String projectID)`: Retrieves containers filtered by project
+- `createContainer(ContainerRequestModel request)`: Creates new container and triggers build
+- `updateContainer(String containerID, ContainerRequestModel request)`: Updates container and triggers rebuild
+- `updateContainerEnvVariables(String containerID, Map<String, String> envVariables)`: Updates environment variables
+- `deleteContainer(String containerID)`: Deletes container (two-phase process)
+- `triggerWebAppDelete(String projectID, String containerID)`: Internal method for external service deletion
 
 ### External Dependencies
 
