@@ -1085,11 +1085,11 @@ func TestLogAction_NoAuditRepo_NoPanic(t *testing.T) {
 
 func TestGetMyPlatformRoles(t *testing.T) {
 	tests := []struct {
-		name              string
-		hasPlatformRepo   bool
-		repoFunc          func(ctx context.Context, userID string) ([]domain.PlatformRole, error)
-		expectedRoles     []domain.PlatformRole
-		expectError       bool
+		name            string
+		hasPlatformRepo bool
+		repoFunc        func(ctx context.Context, userID string) ([]domain.PlatformRole, error)
+		expectedRoles   []domain.PlatformRole
+		expectError     bool
 	}{
 		{
 			name:            "no platform role repository",
@@ -1172,13 +1172,13 @@ func TestEnsureUserFromToken_AutoGrantAdmin(t *testing.T) {
 	defaultAdminEmail := "admin@example.com"
 
 	tests := []struct {
-		name               string
-		claims             *port.TokenClaims
-		existingUser       *domain.User
-		hasRole            bool
-		hasRoleError       error
-		grantRoleError     error
-		expectGrantCalled  bool
+		name              string
+		claims            *port.TokenClaims
+		existingUser      *domain.User
+		hasRole           bool
+		hasRoleError      error
+		grantRoleError    error
+		expectGrantCalled bool
 	}{
 		{
 			name: "auto-grant admin to default admin email",

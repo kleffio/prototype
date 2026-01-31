@@ -25,11 +25,11 @@ var (
 var usernameRegex = regexp.MustCompile(`^[a-z0-9_-]{2,63}$`)
 
 type Service struct {
-	repo             port.UserRepository
-	auditRepo        port.AuditRepository
-	platformRoleRepo port.PlatformRoleRepository
-	tokenValidator   port.TokenValidator
-	authentikManager port.AuthentikUserManager
+	repo              port.UserRepository
+	auditRepo         port.AuditRepository
+	platformRoleRepo  port.PlatformRoleRepository
+	tokenValidator    port.TokenValidator
+	authentikManager  port.AuthentikUserManager
 	defaultAdminEmail string
 }
 
@@ -42,11 +42,11 @@ func NewService(
 	defaultAdminEmail string,
 ) *Service {
 	return &Service{
-		repo:             repo,
-		auditRepo:        auditRepo,
-		platformRoleRepo: platformRoleRepo,
-		tokenValidator:   tokenValidator,
-		authentikManager: authentikManager,
+		repo:              repo,
+		auditRepo:         auditRepo,
+		platformRoleRepo:  platformRoleRepo,
+		tokenValidator:    tokenValidator,
+		authentikManager:  authentikManager,
 		defaultAdminEmail: defaultAdminEmail,
 	}
 }
