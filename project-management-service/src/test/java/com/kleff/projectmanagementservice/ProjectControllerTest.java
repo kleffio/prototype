@@ -5,11 +5,19 @@ import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
 import com.kleff.projectmanagementservice.presentationlayer.project.ProjectController;
+import com.kleff.projectmanagementservice.service.UserStatusService;
+import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
+import com.kleff.projectmanagementservice.authorization.service.AuthorizationService;
+import com.kleff.projectmanagementservice.authorization.domain.AuthorizationDecision;
+import com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult;
+import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,7 +34,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ProjectController.class)
+@WebMvcTest(controllers = ProjectController.class, excludeAutoConfiguration = {})
+@Import({}) // Exclude AOP configuration that might interfere with authorization aspect
 class ProjectControllerTest {
 
         @Autowired
@@ -38,6 +47,12 @@ class ProjectControllerTest {
         private ProjectRepository projectRepository;
         @MockBean
         private AuditService auditService;
+        @MockBean
+        private UserStatusService userStatusService;
+        @MockBean
+        private DeactivationCheckFilter deactivationCheckFilter;
+        @MockBean
+        private AuthorizationService authorizationService;
 
         private Project testProject1;
         private Project testProject2;
@@ -61,6 +76,19 @@ class ProjectControllerTest {
                 testProject2.setOwnerId(testUserId);
                 testProject2.setCreatedDate(now);
                 testProject2.setUpdatedDate(now);
+
+                // Set up authorization service mocks to allow all permissions by default
+                AuthorizationDecision allowDecision = AuthorizationDecision.builder()
+                                .result(AuthorizationResult.ALLOW)
+                                .userId(testUserId)
+                                .permission("READ_PROJECT")
+                                .reason("User is project owner")
+                                .build();
+
+                when(authorizationService.checkPermission(any(), any(), any()))
+                                .thenReturn(allowDecision);
+                when(authorizationService.hasPermission(any(), any(), any()))
+                                .thenReturn(true);
         }
 
         // ============ GET /api/v1/projects Tests ============

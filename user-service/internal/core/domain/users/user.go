@@ -17,6 +17,9 @@ type User struct {
 	AvatarURL   *string `json:"avatarUrl"`
 	Bio         *string `json:"bio"`
 
+	IsDeactivated bool       `json:"isDeactivated"`
+	DeactivatedAt *time.Time `json:"deactivatedAt"`
+
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

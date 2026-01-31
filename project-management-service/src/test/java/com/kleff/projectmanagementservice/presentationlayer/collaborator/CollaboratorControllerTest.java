@@ -5,6 +5,7 @@ import com.kleff.projectmanagementservice.buisnesslayer.collaborator.Collaborato
 import com.kleff.projectmanagementservice.datalayer.collaborator.CollaboratorRole;
 import com.kleff.projectmanagementservice.datalayer.collaborator.CollaboratorStatus;
 import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
+import com.kleff.projectmanagementservice.service.UserStatusService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -37,9 +39,17 @@ class CollaboratorControllerTest {
         @MockBean
         private CollaboratorService collaboratorService;
 
+        @MockBean
+        private UserStatusService userStatusService;
+
+        @MockBean
+        private RestTemplate restTemplate;
+
         @Test
         @WithMockUser
         void addCollaborator_ReturnsCreated() throws Exception {
+                // Mock UserStatusService to return true for active users
+                when(userStatusService.isUserActive(anyString())).thenReturn(true);
                 // Arrange
                 CollaboratorRequestModel request = CollaboratorRequestModel.builder()
                                 .userId("user-456")
@@ -73,6 +83,8 @@ class CollaboratorControllerTest {
         @Test
         @WithMockUser
         void getProjectCollaborators_ReturnsCollaboratorsList() throws Exception {
+                // Mock UserStatusService to return true for active users
+                when(userStatusService.isUserActive(anyString())).thenReturn(true);
                 // Arrange
                 CollaboratorResponseModel collab1 = CollaboratorResponseModel.builder()
                                 .id(1)
@@ -104,6 +116,8 @@ class CollaboratorControllerTest {
         @Test
         @WithMockUser
         void updateCollaborator_ReturnsUpdatedCollaborator() throws Exception {
+                // Mock UserStatusService to return true for active users
+                when(userStatusService.isUserActive(anyString())).thenReturn(true);
                 // Arrange
                 CollaboratorRequestModel request = CollaboratorRequestModel.builder()
                                 .role(CollaboratorRole.ADMIN)
@@ -135,6 +149,8 @@ class CollaboratorControllerTest {
         @Test
         @WithMockUser
         void removeCollaborator_ReturnsNoContent() throws Exception {
+                // Mock UserStatusService to return true for active users
+                when(userStatusService.isUserActive(anyString())).thenReturn(true);
                 // Act & Assert
                 mockMvc.perform(delete("/api/v1/projects/project-123/collaborators/user-456")
                                 .with(jwt().jwt(jwt -> jwt.subject("admin-789"))))

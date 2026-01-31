@@ -26,10 +26,6 @@ export const oidcConfig = {
     window.history.replaceState({}, document.title, window.location.pathname);
   },
 
-  onSigninSilentCallback: () => {
-    console.log("Silent sign-in callback completed");
-  },
-
   metadata: {
     issuer: "https://auth.kleff.io/application/o/kleff/",
     authorization_endpoint: "https://auth.kleff.io/application/o/authorize/",
@@ -39,16 +35,3 @@ export const oidcConfig = {
     jwks_uri: "https://auth.kleff.io/application/o/kleff/jwks/"
   }
 } as const;
-
-if (env.DEV) {
-  console.log("OIDC Config loaded:", {
-    authority: oidcConfig.authority,
-    client_id: oidcConfig.client_id ? "✓ Set" : "✗ Missing",
-    redirect_uri: oidcConfig.redirect_uri,
-    silent_redirect_uri: oidcConfig.silent_redirect_uri
-  });
-
-  if (!oidcConfig.client_id) {
-    console.error("❌ VITE_AUTH_CLIENT_ID is not set! Check your .env file.");
-  }
-}

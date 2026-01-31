@@ -56,6 +56,10 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, http.StatusNotFound, "user not found")
 			return
 		}
+		if errors.Is(err, coresvc.ErrAccountDeactivated) {
+			jsonError(w, http.StatusForbidden, "account has been deactivated")
+			return
+		}
 		log.Printf("error getting current user: %v", err)
 		jsonError(w, http.StatusInternalServerError, "internal server error")
 		return
@@ -78,6 +82,14 @@ func (h *Handler) PatchMeProfile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, coresvc.ErrInvalidToken) {
 			jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+			return
+		}
+		if errors.Is(err, coresvc.ErrAccountDeactivated) {
+			jsonError(w, http.StatusForbidden, "account has been deactivated")
+			return
+		}
+		if errors.Is(err, coresvc.ErrUserNotFound) {
+			jsonError(w, http.StatusNotFound, "user not found")
 			return
 		}
 		log.Printf("error validating token: %v", err)
@@ -176,7 +188,8 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, user)
+	// Return only public-facing information
+	jsonResponse(w, http.StatusOK, user.PublicProfile())
 }
 
 type resolveRequest struct {
@@ -214,7 +227,7 @@ func (h *Handler) ResolveMany(w http.ResponseWriter, r *http.Request) {
 
 	out := make(map[string]any, len(users))
 	for id, u := range users {
-		out[string(id)] = u
+		out[string(id)] = u.PublicProfile()
 	}
 
 	jsonResponse(w, http.StatusOK, out)
@@ -262,6 +275,10 @@ func (h *Handler) GetMyAuditLogs(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, http.StatusUnauthorized, "invalid or expired token")
 			return
 		}
+		if errors.Is(err, coresvc.ErrAccountDeactivated) {
+			jsonError(w, http.StatusForbidden, "account has been deactivated")
+			return
+		}
 		log.Printf("error validating token: %v", err)
 		jsonError(w, http.StatusUnauthorized, "invalid token")
 		return
@@ -291,6 +308,77 @@ func (h *Handler) GetMyAuditLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, http.StatusOK, resp)
+}
+
+func (h *Handler) DeactivateAccount(w http.ResponseWriter, r *http.Request) {
+	token := extractBearerToken(r)
+	if token == "" {
+		jsonError(w, http.StatusUnauthorized, "missing or invalid authorization header")
+		return
+	}
+
+	// Get current user from token to verify identity
+	user, err := h.svc.GetMe(r.Context(), token)
+	if err != nil {
+		if errors.Is(err, coresvc.ErrInvalidToken) {
+			jsonError(w, http.StatusUnauthorized, "invalid or expired token")
+			return
+		}
+		if errors.Is(err, coresvc.ErrAccountDeactivated) {
+			jsonError(w, http.StatusForbidden, "account has been deactivated")
+			return
+		}
+		log.Printf("error validating token for deactivation: %v", err)
+		jsonError(w, http.StatusUnauthorized, "invalid token")
+		return
+	}
+
+	err = h.svc.DeactivateAccount(r.Context(), user.ID)
+	if err != nil {
+		if errors.Is(err, coresvc.ErrUserNotFound) {
+			jsonError(w, http.StatusNotFound, "user not found")
+			return
+		}
+		if errors.Is(err, coresvc.ErrAccountDeactivated) {
+			jsonError(w, http.StatusConflict, "account is already deactivated")
+			return
+		}
+		log.Printf("error deactivating account for user %s: %v", user.ID, err)
+		jsonError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]string{
+		"message": "Account successfully deactivated",
+	})
+}
+
+// GetUserStatus checks if a user account is active (for other services)
+func (h *Handler) GetUserStatus(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "userId")
+	if userID == "" {
+		jsonError(w, http.StatusBadRequest, "missing user ID")
+		return
+	}
+
+	user, err := h.svc.Get(r.Context(), domain.ID(userID))
+	if err != nil {
+		if errors.Is(err, coresvc.ErrUserNotFound) {
+			jsonError(w, http.StatusNotFound, "user not found")
+			return
+		}
+		log.Printf("error getting user status for %s: %v", userID, err)
+		jsonError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	status := map[string]interface{}{
+		"userId":        user.ID,
+		"isDeactivated": user.IsDeactivated,
+		"active":        !user.IsDeactivated,
+	}
+
+	jsonResponse(w, http.StatusOK, status)
 }
 
 // GetMyPlatformRoles returns the authenticated user's platform roles

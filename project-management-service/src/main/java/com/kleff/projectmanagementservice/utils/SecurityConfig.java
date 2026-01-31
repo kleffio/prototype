@@ -1,5 +1,6 @@
 package com.kleff.projectmanagementservice.utils;
 
+import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -11,6 +12,7 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
@@ -20,7 +22,8 @@ import java.time.Duration;
 public class SecurityConfig {
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                        DeactivationCheckFilter deactivationCheckFilter) throws Exception {
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .cors(Customizer.withDefaults())
@@ -31,7 +34,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/audit/internal").permitAll()
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
-                                                .jwt(Customizer.withDefaults()));
+                                                .jwt(Customizer.withDefaults()))
+                                .addFilterAfter(deactivationCheckFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
@@ -71,5 +75,10 @@ public class SecurityConfig {
                 System.out.println("✅ JWT Decoder configured successfully with 10s timeouts");
 
                 return jwtDecoder;
+        }
+
+        @Bean
+        public RestTemplate restTemplate() {
+                return new RestTemplate();
         }
 }

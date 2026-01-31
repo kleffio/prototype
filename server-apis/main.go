@@ -28,27 +28,35 @@ import (
 
 // Server holds dependencies to avoid global state
 type Server struct {
-	KubeClient    kubernetes.Interface
-	DynamicClient dynamic.Interface
-	Logger        *slog.Logger
-	RegistryBase  string // Will default to "kleff.azurecr.io"
+	KubeClient     kubernetes.Interface
+	DynamicClient  dynamic.Interface
+	Logger         *slog.Logger
+	RegistryBase   string // Will default to "kleff.azurecr.io"
+	UserServiceURL string // URL to user-service for auth checking
+}
+
+// UserStatus represents user account status response
+type UserStatus struct {
+	UserID        string `json:"userId"`
+	IsDeactivated bool   `json:"isDeactivated"`
+	Active        bool   `json:"active"`
 }
 
 type BuildRequest struct {
 	ContainerID  string            `json:"containerID"`
 	ProjectID    string            `json:"projectID"`
-	Name         string            `json:"name"`    // App name
-	RepoURL      string            `json:"repoUrl"` // Source Git URL
-	Branch       string            `json:"branch"`  // Git Branch
-	Port         int               `json:"port"`    // Optional: App Port
+	Name         string            `json:"name"`                   // App name
+	RepoURL      string            `json:"repoUrl"`                // Source Git URL
+	Branch       string            `json:"branch"`                 // Git Branch
+	Port         int               `json:"port"`                   // Optional: App Port
 	EnvVariables map[string]string `json:"envVariables,omitempty"` // Environment variables
 }
 
 type UpdateWebAppRequest struct {
 	ProjectID    string            `json:"projectID"`
-	ContainerID  string 		   `json:"containerID"`
-	Name         string            `json:"name"`          // App name
-	EnvVariables map[string]string `json:"envVariables"`  // Environment variables
+	ContainerID  string            `json:"containerID"`
+	Name         string            `json:"name"`         // App name
+	EnvVariables map[string]string `json:"envVariables"` // Environment variables
 }
 
 type Response struct {
@@ -87,6 +95,12 @@ func main() {
 		defaultRegistry = "kleff.azurecr.io"
 	}
 
+	// User service URL for authentication
+	userServiceURL := os.Getenv("USER_SERVICE_URL")
+	if userServiceURL == "" {
+		userServiceURL = "http://user-service:8080" // Default for docker-compose
+	}
+
 	registry := flag.String("registry", defaultRegistry, "The container registry base URL")
 	flag.Parse()
 
@@ -123,18 +137,19 @@ func main() {
 	cleanRegistry := strings.TrimRight(*registry, "/")
 
 	server := &Server{
-		KubeClient:    clientset,
-		DynamicClient: dynClient,
-		Logger:        logger,
-		RegistryBase:  cleanRegistry,
+		KubeClient:     clientset,
+		DynamicClient:  dynClient,
+		Logger:         logger,
+		RegistryBase:   cleanRegistry,
+		UserServiceURL: userServiceURL,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/build/create", enableCors(server.handleCreateBuild))
-	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
-	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
+	mux.HandleFunc("/api/v1/build/create", enableCors(server.authMiddleware(server.handleCreateBuild)))
+	mux.HandleFunc("/api/v1/build/hello", enableCors(server.handleHelloWorld))
+	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.authMiddleware(server.handleUpdateWebApp)))
 
-		srv := &http.Server{
+	srv := &http.Server{
 		Addr:         ":8080",
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
@@ -148,12 +163,18 @@ func main() {
 	}
 }
 
+func (s *Server) handleHelloWorld(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello World, this is a CD test for christine"))
+}
+
 func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Limit request body size (1MB)
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
 	var req BuildRequest
@@ -214,7 +235,7 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 6. Create or Update the WebApp Custom Resource
-	// We pass resourceName ("app-UUID") as the K8s name, 
+	// We pass resourceName ("app-UUID") as the K8s name,
 	// but the original req (containing raw UUID) is stored in the Spec.
 	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, req); err != nil {
 		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
@@ -222,12 +243,12 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Logger.Info("Build and Deployment triggered", 
-		"resourceName", resourceName, 
-		"rawUUID", rawUUID, 
+	s.Logger.Info("Build and Deployment triggered",
+		"resourceName", resourceName,
+		"rawUUID", rawUUID,
 		"image", generatedImage,
 	)
-	
+
 	// 7. Success Response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Response{
@@ -236,75 +257,76 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 		AppName:   req.Name,
 		Image:     generatedImage,
 		// Update message to reflect the new URL format
-		Message:   fmt.Sprintf("Deployment created. URL: https://%s.kleff.io", resourceName),
-		Existed:   existed,
+		Message: fmt.Sprintf("Deployment created. URL: https://%s.kleff.io", resourceName),
+		Existed: existed,
 	})
 }
-// createWebApp uses the Dynamic Client to create or update the Custom Resource
-	func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
-		port := req.Port
-		if port == 0 {
-			port = 8080
-		}
 
-		// Construct the Unstructured object
-		webApp := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": "kleff.kleff.io/v1",
-				"kind":       "WebApp",
-				"metadata": map[string]interface{}{
-					"name":      resourceName, // UUID
-					"namespace": namespace,
-					"labels": map[string]interface{}{
-						"container-id": req.ContainerID,
-					},
-				},
-				"spec": map[string]interface{}{
-					"containerID":  req.ContainerID,
-					"displayName":  req.Name, // User-friendly name
-					"image":        image,
-					"port":         int64(port),
-					"repoURL":      req.RepoURL,
-					"branch":       req.Branch,
-					"envVariables": req.EnvVariables,
+// createWebApp uses the Dynamic Client to create or update the Custom Resource
+func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
+	port := req.Port
+	if port == 0 {
+		port = 8080
+	}
+
+	// Construct the Unstructured object
+	webApp := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "kleff.kleff.io/v1",
+			"kind":       "WebApp",
+			"metadata": map[string]interface{}{
+				"name":      resourceName, // UUID
+				"namespace": namespace,
+				"labels": map[string]interface{}{
+					"container-id": req.ContainerID,
 				},
 			},
-		}
-
-		_, err := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Create(ctx, webApp, metav1.CreateOptions{})
-		if err != nil {
-			if k8serrors.IsAlreadyExists(err) {
-				s.Logger.Info("Updating existing WebApp", "id", resourceName)
-
-				existing, getErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Get(ctx, resourceName, metav1.GetOptions{})
-				if getErr != nil {
-					return getErr
-				}
-
-				spec, ok := existing.Object["spec"].(map[string]interface{})
-				if !ok {
-					spec = make(map[string]interface{})
-				}
-				
-				// Update ALL fields to ensure they reflect the latest UI changes
-				spec["displayName"] = req.Name
-				spec["image"]       = image
-				spec["port"]        = int64(port)
-				spec["branch"]      = req.Branch
-				spec["repoURL"]     = req.RepoURL
-				if req.EnvVariables != nil {
-					spec["envVariables"] = req.EnvVariables
-				}
-				
-				existing.Object["spec"] = spec
-
-				_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
-				return updateErr
-			}
-			return err
-		}
-		return nil
+			"spec": map[string]interface{}{
+				"containerID":  req.ContainerID,
+				"displayName":  req.Name, // User-friendly name
+				"image":        image,
+				"port":         int64(port),
+				"repoURL":      req.RepoURL,
+				"branch":       req.Branch,
+				"envVariables": req.EnvVariables,
+			},
+		},
 	}
+
+	_, err := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Create(ctx, webApp, metav1.CreateOptions{})
+	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			s.Logger.Info("Updating existing WebApp", "id", resourceName)
+
+			existing, getErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Get(ctx, resourceName, metav1.GetOptions{})
+			if getErr != nil {
+				return getErr
+			}
+
+			spec, ok := existing.Object["spec"].(map[string]interface{})
+			if !ok {
+				spec = make(map[string]interface{})
+			}
+
+			// Update ALL fields to ensure they reflect the latest UI changes
+			spec["displayName"] = req.Name
+			spec["image"] = image
+			spec["port"] = int64(port)
+			spec["branch"] = req.Branch
+			spec["repoURL"] = req.RepoURL
+			if req.EnvVariables != nil {
+				spec["envVariables"] = req.EnvVariables
+			}
+
+			existing.Object["spec"] = spec
+
+			_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
+			return updateErr
+		}
+		return err
+	}
+	return nil
+}
 func (s *Server) handleUpdateWebApp(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch && r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -324,10 +346,10 @@ func (s *Server) handleUpdateWebApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	namespaceName, _ := validateAndSanitize(req.ProjectID)
-	
+
 	// Ensure we lookup the resource using the "app-" prefix
-	rawUUID, _      := validateAndSanitize(req.ContainerID)
-	resourceName    := "app-" + rawUUID
+	rawUUID, _ := validateAndSanitize(req.ContainerID)
+	resourceName := "app-" + rawUUID
 
 	// Update the WebApp CRD using the resourceName (app-<UUID>)
 	if err := s.updateWebAppEnvVariables(r.Context(), namespaceName, resourceName, req.EnvVariables); err != nil {
@@ -386,8 +408,8 @@ func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRep
 			Namespace: namespace,
 		},
 		Spec: batchv1.JobSpec{
-			TTLSecondsAfterFinished: &ttl, 
-			BackoffLimit: func(i int32) *int32 { return &i }(2),
+			TTLSecondsAfterFinished: &ttl,
+			BackoffLimit:            func(i int32) *int32 { return &i }(2),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy: corev1.RestartPolicyNever,
@@ -454,58 +476,6 @@ func validateAndSanitize(name string) (string, error) {
 	return name, nil
 }
 
-func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
-	// 1. Extract parameters from the URL path
-	// (Requires Go 1.22+. For older versions, use strings.Split or a router like chi/gorilla)
-	projectID := r.PathValue("projectID")
-	containerID := r.PathValue("containerID")
-
-	// 2. Validation
-	if projectID == "" || containerID == "" {
-		s.Logger.Warn("Delete request missing path parameters", "projectID", projectID, "containerID", containerID)
-		http.Error(w, "projectID and containerID are required in the URL path", http.StatusBadRequest)
-		return
-	}
-
-	// 3. Sanitize and Format (Same logic as before)
-	namespaceName, err := validateAndSanitize(projectID)
-	if err != nil {
-		http.Error(w, "Invalid Project ID", http.StatusBadRequest)
-		return
-	}
-	
-	rawUUID, err := validateAndSanitize(containerID)
-	if err != nil {
-		http.Error(w, "Invalid Container ID", http.StatusBadRequest)
-		return
-	}
-	resourceName := "app-" + rawUUID
-
-	// 4. Delete from Kubernetes
-	err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
-	
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			s.Logger.Warn("WebApp not found for deletion", "resourceName", resourceName, "namespace", namespaceName)
-			http.Error(w, "WebApp not found", http.StatusNotFound)
-			return
-		}
-		s.Logger.Error("Failed to delete WebApp", "resourceName", resourceName, "error", err)
-		http.Error(w, fmt.Sprintf("Failed to delete WebApp: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	s.Logger.Info("WebApp deleted successfully via upstream call", "resourceName", resourceName, "namespace", namespaceName)
-
-	// 5. Success Response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Response{
-		Namespace: namespaceName,
-		AppName:   resourceName,
-		Message:   "WebApp deleted successfully",
-	})
-}
-
 func enableCors(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
@@ -513,7 +483,7 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, DELETE, PATCH")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
@@ -524,8 +494,6 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 	}
 }
-
-
 
 func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name string, envVariables map[string]string) error {
 	// Get existing WebApp
@@ -542,7 +510,7 @@ func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name s
 	if !ok {
 		spec = make(map[string]interface{})
 	}
-	
+
 	spec["envVariables"] = envVariables
 	existing.Object["spec"] = spec
 
@@ -550,4 +518,84 @@ func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name s
 	_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
 	return updateErr
 
+}
+
+// extractUserIDFromJWT extracts user ID from JWT token by calling user-service
+func (s *Server) extractUserIDFromJWT(ctx context.Context, bearerToken string) (string, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, "GET", s.UserServiceURL+"/api/v1/users/me", nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+bearerToken)
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 403 {
+		return "", fmt.Errorf("account has been deactivated")
+	}
+	if resp.StatusCode == 401 {
+		return "", fmt.Errorf("invalid or expired token")
+	}
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("authentication failed with status %d", resp.StatusCode)
+	}
+
+	var userResponse struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
+		return "", fmt.Errorf("failed to decode user response: %w", err)
+	}
+
+	return userResponse.ID, nil
+}
+
+// extractBearerToken extracts the bearer token from Authorization header
+func extractBearerToken(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return ""
+	}
+
+	return parts[1]
+}
+
+// authMiddleware checks if user is authenticated and not deactivated
+func (s *Server) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := extractBearerToken(r)
+		if token == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "missing or invalid authorization header"})
+			return
+		}
+
+		userID, err := s.extractUserIDFromJWT(r.Context(), token)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.Contains(err.Error(), "deactivated") {
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]string{"error": "account has been deactivated"})
+			} else {
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			}
+			return
+		}
+
+		// Store user ID in context for use in handlers
+		ctx := context.WithValue(r.Context(), "userID", userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
 }

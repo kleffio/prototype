@@ -21,14 +21,9 @@ export function TokenDebugPanel() {
     if (!auth.user?.access_token) return;
 
     try {
-      console.log("🧪 Testing API with token...");
-      const response = await Me(auth.user.access_token);
-
-      console.log("📊 API Response:", response);
-
+      await Me(auth.user.access_token);
       alert("✅ API call successful! Check console for details.");
-    } catch (error) {
-      console.error("❌ API Error:", error);
+    } catch {
       alert("❌ API call failed. Check console for details.");
     }
   };
@@ -110,11 +105,14 @@ export function TokenDebugPanel() {
                 Test API Call
               </Button>
               <Button
-                onClick={() => console.log("Full auth object:", auth)}
+                onClick={() => {
+                  /* Debug functionality removed */
+                }}
                 variant="outline"
                 className="flex-1"
+                disabled
               >
-                Log to Console
+                Debug Disabled
               </Button>
             </div>
 
