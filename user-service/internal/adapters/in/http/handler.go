@@ -188,7 +188,8 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, user)
+	// Return only public-facing information
+	jsonResponse(w, http.StatusOK, user.PublicProfile())
 }
 
 type resolveRequest struct {
@@ -226,7 +227,7 @@ func (h *Handler) ResolveMany(w http.ResponseWriter, r *http.Request) {
 
 	out := make(map[string]any, len(users))
 	for id, u := range users {
-		out[string(id)] = u
+		out[string(id)] = u.PublicProfile()
 	}
 
 	jsonResponse(w, http.StatusOK, out)

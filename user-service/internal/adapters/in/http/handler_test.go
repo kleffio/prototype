@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	domain "github.com/kleffio/www/user-service/internal/core/domain/users"
@@ -548,6 +549,90 @@ func TestGetUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetUser_ReturnsOnlyPublicProfile(t *testing.T) {
+	// Mock user with sensitive information
+	mockUser := &domain.User{
+		ID:            "user123",
+		AuthentikID:   "authentik-id-12345",
+		Email:         "sensitive@example.com",
+		EmailVerified: true,
+		LoginUsername: "sensitive@example.com",
+		Username:      "publicuser",
+		DisplayName:   "Public Display Name",
+		AvatarURL:     stringPtr("https://example.com/avatar.png"),
+		Bio:           stringPtr("This is my bio"),
+		CreatedAt:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt:     time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC),
+	}
+
+	mockService := &mockUserService{
+		getFunc: func(ctx context.Context, id domain.ID) (*domain.User, error) {
+			if id == "user123" {
+				return mockUser, nil
+			}
+			return nil, coresvc.ErrUserNotFound
+		},
+	}
+
+	h := NewHandler(mockService)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/user123", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "user123")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.GetUser(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Parse the response
+	var response map[string]interface{}
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	// Verify that only public fields are present
+	expectedFields := map[string]interface{}{
+		"username":    "publicuser",
+		"displayName": "Public Display Name",
+		"avatarUrl":   "https://example.com/avatar.png",
+		"bio":         "This is my bio",
+		"createdAt":   "2023-01-01T00:00:00Z",
+	}
+
+	for field, expected := range expectedFields {
+		actual, exists := response[field]
+		if !exists {
+			t.Errorf("expected field %s to be present", field)
+			continue
+		}
+		if actual != expected {
+			t.Errorf("field %s: expected %v, got %v", field, expected, actual)
+		}
+	}
+
+	// Verify that sensitive fields are NOT present
+	sensitiveFields := []string{"id", "authentikId", "email", "emailVerified", "loginUsername", "updatedAt"}
+	for _, field := range sensitiveFields {
+		if _, exists := response[field]; exists {
+			t.Errorf("sensitive field %s should not be present in public profile response", field)
+		}
+	}
+
+	// Verify only expected fields are present
+	if len(response) != len(expectedFields) {
+		t.Errorf("expected %d fields in response, got %d. Response: %+v", len(expectedFields), len(response), response)
+	}
+}
+
+// Helper function for creating string pointers
+func stringPtr(s string) *string {
+	return &s
 }
 
 func TestResolveMany(t *testing.T) {
