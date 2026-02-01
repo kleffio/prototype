@@ -22,6 +22,7 @@ public class Invoice {
     String projectId;
     Date startDate;
     Date endDate;
+    Date paymentDate;
     InvoiceStatus status;
     BigDecimal totalCPU;
     BigDecimal totalRAM;

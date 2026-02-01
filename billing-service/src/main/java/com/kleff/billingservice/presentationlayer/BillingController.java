@@ -21,6 +21,7 @@ import org.springframework.web.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
@@ -148,8 +149,8 @@ public class BillingController {
                                     )
                                     .build()
                     )
-                    .setSuccessUrl(frontend + "/projects/invoice/" + invoiceId + "?success=true&session_id={CHECKOUT_SESSION_ID}")
-                    .setCancelUrl(frontend + "/projects/invoice/" + invoiceId)
+                    .setSuccessUrl(backendUrl + "api/v1/billing/payment/success?session_id={CHECKOUT_SESSION_ID}")
+                    .setCancelUrl(frontend +  "/projects/" + invoice.getProjectId() )
                     .putMetadata("invoiceId", invoiceId)
                     .build();
 
@@ -176,6 +177,68 @@ public class BillingController {
             logger.error("Unexpected error for invoice {}: {}", invoiceId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Unexpected error: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/payment-success")
+    public ResponseEntity<?> handlePaymentSuccess(
+            @RequestParam("session_id") String sessionId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+
+            // Retrieve the session from Stripe to verify payment
+            Session session = Session.retrieve(sessionId);
+
+            // Check if payment was successful
+            if (!"paid".equals(session.getPaymentStatus())) {
+                logger.warn("Payment not completed for session: {}", sessionId);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(frontend + "/payment/failed"))
+                        .build();
+            }
+
+            String invoiceId = session.getMetadata().get("invoiceId");
+            Invoice invoice = billingService.getInvoiceById(invoiceId);
+
+            // Verify user has permission (optional security check)
+            if (!hasPermission(userId, invoice.getProjectId(), "MANAGE_BILLING", authHeader)) {
+                logger.warn("User {} unauthorized to confirm payment for invoice {}", userId, invoiceId);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(frontend + "/unauthorized"))
+                        .build();
+            }
+
+            // Mark invoice as paid (idempotent)
+            billingService.markInvoiceAsPaid(invoiceId, sessionId);
+
+            logger.info("Payment successful for invoice {}, redirecting to project {}",
+                    invoiceId, invoice.getProjectId());
+
+            // Redirect to project page with success message
+            String redirectUrl = frontend + "/projects/" + invoice.getProjectId() +
+                    "?payment_success=true&invoice_id=" + invoiceId;
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
+
+        } catch (StripeException e) {
+            logger.error("Stripe error retrieving session {}: {}", sessionId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontend + "/payment/error"))
+                    .build();
+        } catch (EntityNotFoundException e) {
+            logger.error("Invoice not found for session {}: {}", sessionId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontend + "/payment/error"))
+                    .build();
+        } catch (Exception e) {
+            logger.error("Unexpected error handling payment success: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontend + "/payment/error"))
+                    .build();
         }
     }
 
@@ -223,5 +286,28 @@ public class BillingController {
         return billingService.getPrices();
     }
 
+    @GetMapping("/notifications/{projectId}")
+    public ResponseEntity<?> getNotificationsForProject(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+
+            // Check if user has MANAGE_BILLING permission
+            if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
+                logger.warn("User {} attempted to view invoices for project {} without MANAGE_BILLING permission", userId, projectId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "You don't have permission to view billing information for this project"));
+            }
+
+            List<Invoice> items = billingService.getNotificationsForProject(projectId);
+            return ResponseEntity.ok(items);
+        } catch (Exception e) {
+            logger.error("Error getting invoices for project {}: {}", projectId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve invoices"));
+        }
+    }
 
 }
