@@ -8,12 +8,16 @@ import {
   FolderGit2,
   Palette,
   Mail,
-  CreditCard
+  CreditCard,
+  Shield,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { updateUserProfile } from "@features/users/api/UpdateUserProfile";
 import { getMyAuditLogs } from "@features/users/api/getMyAuditLogs";
+import { deactivateAccount } from "@features/users/api/deactivateAccount";
 import { useUser } from "@features/users/hooks/useUser";
 
 import { Button } from "@shared/ui/Button";
@@ -35,30 +39,7 @@ interface Notification {
 
 const PAGE_SIZE = 10;
 
-// Mock data for empty state
-const MOCK_AUDIT_LOGS = [
-  {
-    id: "mock-1",
-    action: "Profile updated",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: "mock-2",
-    action: "Password changed",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    timestamp: new Date(Date.now() - 86400000 * 7).toISOString()
-  },
-  {
-    id: "mock-3",
-    action: "Logged in",
-    ipAddress: "192.168.1.1",
-    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
-    timestamp: new Date(Date.now() - 86400000 * 14).toISOString()
-  }
-];
+// Audit logs are loaded from the API
 
 interface AuditPaginationProps {
   currentPage: number;
@@ -128,6 +109,8 @@ function AuditPagination({
 }
 
 export function SettingsPage() {
+  const navigate = useNavigate();
+
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -147,6 +130,9 @@ export function SettingsPage() {
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState<string | null>(null);
+
+  const [showDeactivationModal, setShowDeactivationModal] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(auditTotal / PAGE_SIZE));
 
@@ -188,7 +174,8 @@ export function SettingsPage() {
     setAuditTotal(0);
     setAuditPage(1);
 
-    void loadAuditPage(1);
+    // Disabled audit log loading to reduce API calls
+    // void loadAuditPage(1);
   }, [user, loadAuditPage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -252,6 +239,26 @@ export function SettingsPage() {
     }
   };
 
+  const handleDeactivateAccount = async () => {
+    if (!user) return;
+
+    setIsDeactivating(true);
+    setNotification(null);
+
+    try {
+      await deactivateAccount();
+      localStorage.setItem("account-deactivated", "true");
+      navigate("/error/deactivated");
+    } catch (err) {
+      setNotification({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to deactivate account."
+      });
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-kleff-bg text-foreground relative min-h-screen">
@@ -295,8 +302,7 @@ export function SettingsPage() {
       })
     : "Unknown";
 
-  const showAuditSkeleton = auditLoading && auditLogs.length === 0;
-  const displayLogs = auditLogs.length > 0 ? auditLogs : MOCK_AUDIT_LOGS;
+  // Use actual audit logs from API
 
   return (
     <div className="bg-kleff-bg text-foreground relative flex min-h-screen flex-col">
@@ -354,6 +360,17 @@ export function SettingsPage() {
                   Public profile
                 </button>
                 <button
+                  onClick={() => setActiveTab("account")}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                    activeTab === "account"
+                      ? "bg-neutral-800/50 font-medium text-neutral-50"
+                      : "text-neutral-400 hover:bg-neutral-800/30 hover:text-neutral-200"
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Account
+                </button>
+                <button
                   onClick={() => setActiveTab("projects")}
                   disabled
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
@@ -409,231 +426,329 @@ export function SettingsPage() {
               )}
 
               <div className="space-y-8">
-                {/* Profile Section */}
-                <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
-                  <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                    <h2 className="mb-2 text-xl font-bold text-neutral-50">Public profile</h2>
-                    <p className="text-sm text-neutral-400">
-                      This information will be displayed publicly so be careful what you share.
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Profile Picture */}
-                    <div className="flex items-start gap-8 border-b border-neutral-800/50 pb-8">
-                      <div className="flex-shrink-0">
-                        <UserAvatar initial={initial} size="lg" src={displayAvatar} />
-                        <p className="mt-3 text-center text-xs text-neutral-500">
-                          Member since
-                          <br />
-                          <span className="font-medium text-neutral-400">{createdAtLabel}</span>
+                {/* Profile Tab */}
+                {activeTab === "profile" && (
+                  <>
+                    {/* Profile Section */}
+                    <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                      <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Public profile</h2>
+                        <p className="text-sm text-neutral-400">
+                          This information will be displayed publicly so be careful what you share.
                         </p>
                       </div>
-                      <div className="flex-1">
-                        <Label
-                          htmlFor="avatarUrl"
-                          className="mb-2 block text-sm font-semibold text-neutral-200"
-                        >
-                          Avatar URL
-                        </Label>
-                        <Input
-                          id="avatarUrl"
-                          value={formData.avatarUrl}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))
-                          }
-                          placeholder="https://example.com/avatar.png"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Enter a URL to your profile picture. File uploads coming soon.
+
+                      <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Profile Picture */}
+                        <div className="flex items-start gap-8 border-b border-neutral-800/50 pb-8">
+                          <div className="flex-shrink-0">
+                            <UserAvatar initial={initial} size="lg" src={displayAvatar} />
+                            <p className="mt-3 text-center text-xs text-neutral-500">
+                              Member since
+                              <br />
+                              <span className="font-medium text-neutral-400">{createdAtLabel}</span>
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <Label
+                              htmlFor="avatarUrl"
+                              className="mb-2 block text-sm font-semibold text-neutral-200"
+                            >
+                              Avatar URL
+                            </Label>
+                            <Input
+                              id="avatarUrl"
+                              value={formData.avatarUrl}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))
+                              }
+                              placeholder="https://example.com/avatar.png"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Enter a URL to your profile picture. File uploads coming soon.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Username */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="username"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Username
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="username"
+                              value={formData.username}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, username: e.target.value }))
+                              }
+                              placeholder="your-username"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Used in URLs and mentions. Only lowercase letters, numbers, dashes and
+                              underscores.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Display Name */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="displayName"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Display Name
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="displayName"
+                              value={formData.displayName}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, displayName: e.target.value }))
+                              }
+                              placeholder="How you appear in the app"
+                              className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Email */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="email"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Email
+                          </Label>
+                          <div className="md:col-span-2">
+                            <Input
+                              id="email"
+                              type="email"
+                              value={formData.email}
+                              disabled
+                              className="cursor-not-allowed border-neutral-800 bg-neutral-900/80 text-neutral-500"
+                            />
+                            <p className="mt-3 text-xs text-neutral-500">
+                              Email is managed by Authentik and cannot be changed here.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Bio */}
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                          <Label
+                            htmlFor="bio"
+                            className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
+                          >
+                            Bio
+                          </Label>
+                          <div className="md:col-span-2">
+                            <textarea
+                              id="bio"
+                              value={formData.bio}
+                              onChange={(e) =>
+                                setFormData((prev) => ({ ...prev, bio: e.target.value }))
+                              }
+                              maxLength={512}
+                              rows={5}
+                              className="focus:border-kleff-gold focus:ring-kleff-gold/20 w-full resize-none rounded-lg border border-neutral-800 bg-neutral-950/80 px-4 py-3 text-sm text-neutral-50 transition outline-none focus:ring-2"
+                              placeholder="Tell people a bit about yourself."
+                            />
+                            <div className="mt-3 flex justify-between text-xs text-neutral-500">
+                              <span>
+                                You can @mention other users and organizations to link to them.
+                              </span>
+                              <span className="font-medium">{formData.bio.length}/512</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="flex justify-end border-t border-neutral-800/50 pt-6">
+                          <Button
+                            type="submit"
+                            disabled={isSaving}
+                            className="bg-gradient-kleff shadow-kleff-gold/20 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-neutral-950 shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Save className="h-4 w-4" />
+                            {isSaving ? "Saving..." : "Save"}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Account Activity */}
+                    <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                      <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Account activity</h2>
+                        <p className="text-sm text-neutral-400">
+                          Security-relevant events recorded by the user-service.
                         </p>
                       </div>
+
+                      {auditLoading && auditLogs.length === 0 && (
+                        <div className="space-y-3">
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <Skeleton
+                              key={idx}
+                              className="h-20 w-full rounded-lg border border-neutral-800 bg-neutral-900/70"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {auditError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+                          {auditError}
+                        </div>
+                      )}
+
+                      {!auditLoading && !auditError && auditLogs.length > 0 && (
+                        <>
+                          <div
+                            className="space-y-0 divide-y divide-neutral-800/50"
+                            data-testid="settings-audit-list"
+                          >
+                            {auditLogs.map((log) => (
+                              <div key={log.id} className="flex items-center justify-between py-4">
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-1 text-sm font-semibold text-neutral-50">
+                                    {log.action}
+                                  </div>
+                                  <div className="truncate text-xs text-neutral-500">
+                                    {log.ipAddress ?? "unknown"} ·{" "}
+                                    {log.userAgent?.slice(0, 80) ?? "unknown"}
+                                  </div>
+                                </div>
+                                <div className="ml-4 flex-shrink-0 text-xs text-neutral-500">
+                                  {new Date(log.timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {!auditLoading && !auditError && auditLogs.length === 0 && (
+                            <p className="mt-6 text-center text-xs text-neutral-500 italic">
+                              No audit logs found.
+                            </p>
+                          )}
+
+                          <AuditPagination
+                            currentPage={auditPage}
+                            totalPages={totalPages}
+                            isLoading={auditLoading}
+                            onPageChange={(page) => void loadAuditPage(page)}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Account Tab */}
+                {activeTab === "account" && (
+                  <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
+                    <div className="mb-6 border-b border-neutral-800/50 pb-6">
+                      <h2 className="mb-2 text-xl font-bold text-neutral-50">Account Management</h2>
+                      <p className="text-sm text-neutral-400">
+                        Manage your account settings and preferences.
+                      </p>
                     </div>
 
-                    {/* Username */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="username"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Username
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="username"
-                          value={formData.username}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, username: e.target.value }))
-                          }
-                          placeholder="your-username"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Used in URLs and mentions. Only lowercase letters, numbers, dashes and
-                          underscores.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Display Name */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="displayName"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Display Name
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="displayName"
-                          value={formData.displayName}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, displayName: e.target.value }))
-                          }
-                          placeholder="How you appear in the app"
-                          className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="email"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Email
-                      </Label>
-                      <div className="md:col-span-2">
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          disabled
-                          className="cursor-not-allowed border-neutral-800 bg-neutral-900/80 text-neutral-500"
-                        />
-                        <p className="mt-3 text-xs text-neutral-500">
-                          Email is managed by Authentik and cannot be changed here.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Bio */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                      <Label
-                        htmlFor="bio"
-                        className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
-                      >
-                        Bio
-                      </Label>
-                      <div className="md:col-span-2">
-                        <textarea
-                          id="bio"
-                          value={formData.bio}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, bio: e.target.value }))
-                          }
-                          maxLength={512}
-                          rows={5}
-                          className="focus:border-kleff-gold focus:ring-kleff-gold/20 w-full resize-none rounded-lg border border-neutral-800 bg-neutral-950/80 px-4 py-3 text-sm text-neutral-50 transition outline-none focus:ring-2"
-                          placeholder="Tell people a bit about yourself."
-                        />
-                        <div className="mt-3 flex justify-between text-xs text-neutral-500">
-                          <span>
-                            You can @mention other users and organizations to link to them.
-                          </span>
-                          <span className="font-medium">{formData.bio.length}/512</span>
+                    <div className="space-y-8">
+                      {/* Deactivate Account Section */}
+                      <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <AlertTriangle className="h-6 w-6 text-red-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="mb-2 text-lg font-semibold text-red-300">
+                              Deactivate Account
+                            </h3>
+                            <p className="mb-4 text-sm text-neutral-400">
+                              Deactivating your account will permanently remove all your data and
+                              cannot be undone. This action will immediately log you out and remove
+                              access to all your projects and data.
+                            </p>
+                            <Button
+                              onClick={() => setShowDeactivationModal(true)}
+                              variant="outline"
+                              className="border-yellow-500/50 text-yellow-400 hover:border-yellow-400 hover:bg-yellow-500/10"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Deactivate Account
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end border-t border-neutral-800/50 pt-6">
-                      <Button
-                        type="submit"
-                        disabled={isSaving}
-                        className="bg-gradient-kleff shadow-kleff-gold/20 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-neutral-950 shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <Save className="h-4 w-4" />
-                        {isSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Account Activity */}
-                <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
-                  <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                    <h2 className="mb-2 text-xl font-bold text-neutral-50">Account activity</h2>
-                    <p className="text-sm text-neutral-400">
-                      Security-relevant events recorded by the user-service.
-                    </p>
                   </div>
-
-                  {showAuditSkeleton && (
-                    <div className="space-y-3">
-                      {Array.from({ length: 5 }).map((_, idx) => (
-                        <Skeleton
-                          key={idx}
-                          className="h-20 w-full rounded-lg border border-neutral-800 bg-neutral-900/70"
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {!showAuditSkeleton && auditError && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-                      {auditError}
-                    </div>
-                  )}
-
-                  {!showAuditSkeleton && !auditError && (
-                    <>
-                      <div
-                        className="space-y-0 divide-y divide-neutral-800/50"
-                        data-testid="settings-audit-list"
-                      >
-                        {displayLogs.map((log) => (
-                          <div key={log.id} className="flex items-center justify-between py-4">
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1 text-sm font-semibold text-neutral-50">
-                                {log.action}
-                              </div>
-                              <div className="truncate text-xs text-neutral-500">
-                                {log.ipAddress ?? "unknown"} ·{" "}
-                                {log.userAgent?.slice(0, 80) ?? "unknown"}
-                              </div>
-                            </div>
-                            <div className="ml-4 flex-shrink-0 text-xs text-neutral-500">
-                              {new Date(log.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {auditLogs.length === 0 && (
-                        <p className="mt-6 text-center text-xs text-neutral-500 italic">
-                          Note: Showing example activity data. Real audit logs coming soon.
-                        </p>
-                      )}
-
-                      {auditLogs.length > 0 && (
-                        <AuditPagination
-                          currentPage={auditPage}
-                          totalPages={totalPages}
-                          isLoading={auditLoading}
-                          onPageChange={(page) => void loadAuditPage(page)}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Deactivation Confirmation Modal */}
+      {showDeactivationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isDeactivating && setShowDeactivationModal(false)}
+          />
+
+          {/* Modal content */}
+          <div className="relative z-10 mx-4 w-full max-w-md">
+            <div className="rounded-xl border border-yellow-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-yellow-400" />
+                <h3 className="text-lg font-semibold text-yellow-300">Deactivate Account</h3>
+              </div>
+
+              <div className="mb-6 space-y-3 text-sm text-neutral-300">
+                <p>
+                  <strong>This action cannot be undone.</strong> Deactivating your account will:
+                </p>
+                <ul className="ml-4 list-inside list-disc space-y-1 text-neutral-400">
+                  <li>Permanently delete all your data</li>
+                  <li>Remove access to all projects</li>
+                  <li>Log you out immediately</li>
+                  <li>Cannot be reversed</li>
+                </ul>
+                <p className="font-medium text-yellow-300">
+                  Are you sure you want to deactivate your account?
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  onClick={() => setShowDeactivationModal(false)}
+                  disabled={isDeactivating}
+                  variant="secondary"
+                  className="px-4 py-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeactivateAccount}
+                  disabled={isDeactivating}
+                  className="bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
+                >
+                  {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="relative z-20 border-t border-neutral-800/50 bg-neutral-900/30 backdrop-blur-sm">

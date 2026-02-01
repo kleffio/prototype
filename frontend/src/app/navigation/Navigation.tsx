@@ -23,6 +23,7 @@ export interface DashboardNavItem {
   label: string;
   icon: ElementType;
   exact?: boolean;
+  adminOnly?: boolean; // Only show to platform admins
 }
 
 const translations = {
@@ -42,7 +43,12 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     label: translations.en.dashboardNavItems[1].label,
     icon: FolderKanban
   },
-  { to: ROUTES.DASHBOARD_SYSTEMS, label: translations.en.dashboardNavItems[2].label, icon: Server }
+  {
+    to: ROUTES.DASHBOARD_SYSTEMS,
+    label: translations.en.dashboardNavItems[2].label,
+    icon: Server,
+    adminOnly: true // Platform admin only
+  }
 ];
 
 export function isNavItemActive(pathname: string, item: DashboardNavItem): boolean {

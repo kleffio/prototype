@@ -7,6 +7,7 @@ import com.kleff.deployment.data.container.ContainerResponseModel;
 import com.kleff.deployment.data.container.UpdateEnvVariablesRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,18 +37,55 @@ public class ContainerController {
     
     @PostMapping
     public ContainerResponseModel createContainer(@RequestBody ContainerRequestModel container) {
+        // Basic validation
+        if (container.getName() == null || container.getName().trim().isEmpty()) {
+            throw new RuntimeException("Container name cannot be empty");
+        }
+        if (container.getProjectID() == null || container.getProjectID().trim().isEmpty()) {
+            throw new RuntimeException("Project ID cannot be empty");
+        }
         return containerService.createContainer(container);
     }
 
     @PutMapping("/{containerID}")
     public ContainerResponseModel updateContainer(@PathVariable String containerID, @RequestBody ContainerRequestModel containerRequest) {
-        return containerService.updateContainer(containerID, containerRequest);
+        try {
+            return containerService.updateContainer(containerID, containerRequest);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                throw new RuntimeException("Container not found with ID: " + containerID);
+            } else {
+                throw e;
+            }
+        }
     }
-    
+
     @PatchMapping("/{containerID}/env")
     public ContainerResponseModel updateContainerEnvVariables(
             @PathVariable String containerID,
             @RequestBody UpdateEnvVariablesRequest request) {
-        return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+        try {
+            return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                throw new RuntimeException("Container not found with ID: " + containerID);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    @DeleteMapping("/{containerID}")
+    public ResponseEntity<String> deleteContainer(@PathVariable String containerID) {
+        try {
+            containerService.deleteContainer(containerID);
+            return ResponseEntity.ok("Container deleted successfully");
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            } else {
+                return ResponseEntity.internalServerError().body("Failed to delete container: " + e.getMessage());
+            }
+        }
     }
 }

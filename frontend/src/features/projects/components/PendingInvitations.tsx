@@ -158,14 +158,14 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    
+
     // Get the last day of current month
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
+
     // Check if we're in the last 7 days of the month (excluding the 1st)
     // Days 24-31 depending on month length, but never on the 1st
     const daysUntilEndOfMonth = lastDayOfMonth - currentDay;
-    
+
     return daysUntilEndOfMonth <= 6 && currentDay !== 1;
   };
 
@@ -301,9 +301,7 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
             <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-yellow-400" />
-                <p className="text-sm text-neutral-300">
-                  Your monthly bill is coming soon.
-                </p>
+                <p className="text-sm text-neutral-300">Your monthly bill is coming soon.</p>
               </div>
             </div>
           )}
