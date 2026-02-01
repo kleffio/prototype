@@ -107,6 +107,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
     private List<String> getRoleBasedPermissions(CollaboratorRole role) {
         return switch (role) {
             case OWNER -> List.of(
+                "OWNER",
                 "READ_PROJECT",
                 "WRITE_PROJECT",
                 "DEPLOY",
@@ -118,6 +119,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
                 "MANAGE_BILLING"
             );
             case ADMIN -> List.of(
+                "ADMIN",
                 "READ_PROJECT",
                 "WRITE_PROJECT",
                 "DEPLOY",
@@ -127,6 +129,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
                 "MANAGE_COLLABORATORS"
             );
             case DEVELOPER -> List.of(
+                "DEVELOPER",
                 "READ_PROJECT",
                 "WRITE_PROJECT",
                 "DEPLOY",
@@ -134,6 +137,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
                 "VIEW_METRICS"
             );
             case VIEWER -> List.of(
+                "VIEWER",
                 "READ_PROJECT",
                 "VIEW_LOGS",
                 "VIEW_METRICS"
