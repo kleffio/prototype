@@ -14,8 +14,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 public class BillingServiceImpl implements BillingService {
@@ -138,6 +143,21 @@ public class BillingServiceImpl implements BillingService {
     }
 
 
+    public void markInvoiceAsPaid(String invoiceId, String stripeSessionId) {
+        Invoice invoice = getInvoiceById(invoiceId);
+
+        // Only update if not already paid
+        if (invoice.getStatus() != InvoiceStatus.PAID) {
+            invoice.setStatus(InvoiceStatus.PAID);
+            invoice.setPaymentDate(Date.valueOf(LocalDate.now()));
+            invoiceRepository.save(invoice);
+            log.info("Invoice {} marked as paid", invoiceId);
+        } else {
+            log.info("Invoice {} already paid, skipping update", invoiceId);
+        }
+    }
+
+
     //Bellow is where the price endpoints will be
 
     public Price getPrice(String itemId) {
@@ -147,6 +167,17 @@ public class BillingServiceImpl implements BillingService {
     public List<Price> getPrices() {
 
         return priceRepository.findAll();
+    }
+    // For notifications, we return unpaid invoice and overdue invoices
+    @Override
+    public List<Invoice> getNotificationsForProject(String projectId) {
+        List<Invoice> invoices = invoiceRepository.findByProjectId(projectId);
+        // Filter invoices with OPEN status
+        List<Invoice> notifications = invoices.stream()
+                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN || invoice.getStatus() == InvoiceStatus.OVERDUE)
+                .collect(Collectors.toList());
+
+        return notifications;
     }
 
     // THIS ENDPOINT SHOULD ALWAYS BE RESTRICTED

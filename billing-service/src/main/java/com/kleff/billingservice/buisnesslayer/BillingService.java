@@ -23,5 +23,7 @@ public interface BillingService {
     public List<Price> getPrices();
     public Invoice generateFinalInvoice(String projectId, String username);
 
+    public List<Invoice> getNotificationsForProject(String projectId);
+    public void markInvoiceAsPaid(String invoiceId, String stripeSessionId);
 
 }
