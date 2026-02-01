@@ -31,6 +31,7 @@ import {
   type Invitation
 } from "../api/invitations";
 import { getProjectCustomRoles, createCustomRole, type CustomRole } from "../api/customRoles";
+import { getUsernameById } from "@features/users/api/getUsernameById";
 import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
@@ -172,6 +173,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
   const [success, setSuccess] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<"ADMIN" | "DEVELOPER" | "VIEWER">("DEVELOPER");
+  const [usernames, setUsernames] = useState<Record<string, string>>({});
 
   const canManageTeam = userRole === "OWNER" || userRole === "ADMIN";
   const canViewInvitations = userRole === "OWNER" || userRole === "ADMIN";
@@ -180,11 +182,24 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
     try {
       setLoading(true);
       const data = await getProjectCollaborators(projectId);
+
+      // Fetch usernames for all collaborators
+      const usernameMap: Record<string, string> = {};
+      await Promise.all(
+        data.map(async (collaborator: { userId: string }) => {
+          const username = await getUsernameById(collaborator.userId);
+          usernameMap[collaborator.userId] = username;
+        })
+      );
+
       setCollaborators(data);
+      setUsernames(usernameMap);
       setError(null);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || t.messages.error_loading);
+      setError(error.response?.data?.message || "Failed to fetch team members");
+      setCollaborators([]);
+      setUsernames({});
     } finally {
       setLoading(false);
     }
@@ -386,14 +401,9 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
               </div>
             )}
 
-            {error && (
-              <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-
             <div>
               <h3 className="text-md mb-3 font-semibold text-neutral-50">{t.team_members}</h3>
+
               <div className="overflow-hidden rounded-lg border border-white/10">
                 <Table>
                   <TableHeader>
@@ -417,6 +427,14 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                           {t.loading}
                         </TableCell>
                       </TableRow>
+                    ) : error ? (
+                      <TableRow>
+                        <TableCell colSpan={canManageTeam ? 5 : 4} className="py-8 text-center">
+                          <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+                            {error}
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     ) : collaborators.length === 0 ? (
                       <TableRow>
                         <TableCell
@@ -427,104 +445,111 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                         </TableCell>
                       </TableRow>
                     ) : (
-                      collaborators.map((collaborator) => (
-                        <TableRow key={collaborator.id} className="hover:bg-white/5">
-                          <TableCell className="font-mono text-sm text-neutral-300">
-                            {collaborator.userId.substring(0, 8)}...
-                          </TableCell>
-                          <TableCell>
-                            {editingUserId === collaborator.userId && canManageTeam ? (
-                              <div className="flex items-center gap-2">
-                                <Select
-                                  value={editingRole}
-                                  onValueChange={(value) =>
-                                    setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER")
-                                  }
-                                >
-                                  <SelectTrigger className="h-8 w-32 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
-                                    <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
-                                    <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleUpdateRole(collaborator.userId)}
-                                  className="h-8 bg-green-500/10 px-2 text-xs text-green-400 hover:bg-green-500/20"
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingUserId(null)}
-                                  className="h-8 px-2 text-xs"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <Badge
-                                variant={
-                                  collaborator.role === "OWNER"
-                                    ? "info"
-                                    : collaborator.role === "ADMIN"
-                                      ? "info"
-                                      : collaborator.role === "DEVELOPER"
-                                        ? "success"
-                                        : "secondary"
-                                }
-                                className="text-xs"
-                              >
-                                {collaborator.customRoleName || collaborator.role}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={collaborator.acceptedAt ? "success" : "warning"}
-                              className="text-xs"
-                            >
-                              {collaborator.collaboratorStatus}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-neutral-400">
-                            {collaborator.acceptedAt
-                              ? new Date(collaborator.acceptedAt).toLocaleDateString()
-                              : "Pending"}
-                          </TableCell>
-                          {canManageTeam && (
+                      collaborators.map((collaborator) => {
+                        const username = usernames[collaborator.userId];
+                        if (!username) {
+                          return null; // Skip rendering if username not available
+                        }
+
+                        return (
+                          <TableRow key={collaborator.id} className="hover:bg-white/5">
+                            <TableCell className="font-mono text-sm text-neutral-300">
+                              {username}
+                            </TableCell>
                             <TableCell>
-                              {collaborator.role !== "OWNER" && (
-                                <div className="flex items-center gap-1">
+                              {editingUserId === collaborator.userId && canManageTeam ? (
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={editingRole}
+                                    onValueChange={(value) =>
+                                      setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER")
+                                    }
+                                  >
+                                    <SelectTrigger className="h-8 w-32 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
+                                      <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
+                                      <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => startEditing(collaborator)}
-                                    className="p-2"
-                                    title="Edit role"
+                                    onClick={() => handleUpdateRole(collaborator.userId)}
+                                    className="h-8 bg-green-500/10 px-2 text-xs text-green-400 hover:bg-green-500/20"
                                   >
-                                    <Edit2 className="h-4 w-4 text-blue-400" />
+                                    Save
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleRemove(collaborator.userId)}
-                                    className="p-2"
-                                    title="Remove collaborator"
+                                    onClick={() => setEditingUserId(null)}
+                                    className="h-8 px-2 text-xs"
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-400" />
+                                    Cancel
                                   </Button>
                                 </div>
+                              ) : (
+                                <Badge
+                                  variant={
+                                    collaborator.role === "OWNER"
+                                      ? "info"
+                                      : collaborator.role === "ADMIN"
+                                        ? "info"
+                                        : collaborator.role === "DEVELOPER"
+                                          ? "success"
+                                          : "secondary"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {collaborator.customRoleName || collaborator.role}
+                                </Badge>
                               )}
                             </TableCell>
-                          )}
-                        </TableRow>
-                      ))
+                            <TableCell>
+                              <Badge
+                                variant={collaborator.acceptedAt ? "success" : "warning"}
+                                className="text-xs"
+                              >
+                                {collaborator.collaboratorStatus}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-neutral-400">
+                              {collaborator.acceptedAt
+                                ? new Date(collaborator.acceptedAt).toLocaleDateString()
+                                : "Pending"}
+                            </TableCell>
+                            {canManageTeam && (
+                              <TableCell>
+                                {collaborator.role !== "OWNER" && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => startEditing(collaborator)}
+                                      className="p-2"
+                                      title="Edit role"
+                                    >
+                                      <Edit2 className="h-4 w-4 text-blue-400" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemove(collaborator.userId)}
+                                      className="p-2"
+                                      title="Remove collaborator"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-400" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

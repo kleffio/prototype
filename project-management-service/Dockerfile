@@ -6,7 +6,7 @@ RUN ["gradle", "bootJar"]
 
 EXPOSE 8080
 
-FROM eclipse-temurin:17
+FROM eclipse-temurin:17-jre
 ARG JAR_FILE=build/libs/*.jar
 COPY --from=builder /usr/src/app/${JAR_FILE} app.jar
 #RUN apt-get update; apt-get -y install curl
