@@ -174,7 +174,7 @@ public class BillingServiceImpl implements BillingService {
         List<Invoice> invoices = invoiceRepository.findByProjectId(projectId);
         // Filter invoices with OPEN status
         List<Invoice> notifications = invoices.stream()
-                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN)
+                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN || invoice.getStatus() == InvoiceStatus.OVERDUE)
                 .collect(Collectors.toList());
 
         return notifications;

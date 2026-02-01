@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@shared/ui/Button";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Badge } from "@shared/ui/Badge";
-import { Mail, Check, X, FileText, DollarSign } from "lucide-react";
+import { Mail, Check, X, FileText, DollarSign, AlertCircle } from "lucide-react";
 import { getMyInvitations, acceptInvitation, rejectInvitation } from "../api/invitations";
 import fetchProject from "../api/getProject";
 import type { Invoice } from "@features/billing/types/Invoice";
@@ -152,6 +152,25 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
     return new Date(date).toLocaleDateString();
   };
 
+  // Check if we're a week before the 1st of next month (excluding the 1st itself)
+  const isUpcomingBillWeek = () => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Get the last day of current month
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Check if we're in the last 7 days of the month (excluding the 1st)
+    // Days 24-31 depending on month length, but never on the 1st
+    const daysUntilEndOfMonth = lastDayOfMonth - currentDay;
+    
+    return daysUntilEndOfMonth <= 6 && currentDay !== 1;
+  };
+
+  const showUpcomingBillNotification = isUpcomingBillWeek() && activeTab === "bills";
+
   if (loading) {
     return (
       <SoftPanel>
@@ -191,9 +210,9 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
         >
           <DollarSign className="h-4 w-4" />
           Pending Bills
-          {bills.length > 0 && (
+          {(bills.length > 0 || isUpcomingBillWeek()) && (
             <Badge variant="warning" className="text-xs">
-              {bills.length}
+              {bills.length + (isUpcomingBillWeek() ? 1 : 0)}
             </Badge>
           )}
         </button>
@@ -277,11 +296,23 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
             <h3 className="text-lg font-semibold text-neutral-50">Pending Bills</h3>
           </div>
 
+          {/* Upcoming Bill Notification - Shows 7 days before end of month */}
+          {showUpcomingBillNotification && (
+            <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+                <p className="text-sm text-neutral-300">
+                  Your monthly bill is coming soon.
+                </p>
+              </div>
+            </div>
+          )}
+
           {!projectId ? (
             <div className="flex min-h-[300px] items-center justify-center py-8 text-center">
               <div>
                 <FileText className="mx-auto mb-3 h-12 w-12 text-neutral-600" />
-                <p className="text-sm text-neutral-400">Please select a project to view bills</p>
+                <p className="text-sm text-neutral-400">No open bill currently available</p>
               </div>
             </div>
           ) : bills.length === 0 ? (

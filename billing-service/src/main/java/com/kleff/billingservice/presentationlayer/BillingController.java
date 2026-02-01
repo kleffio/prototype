@@ -183,7 +183,8 @@ public class BillingController {
     @GetMapping("/payment-success")
     public ResponseEntity<?> handlePaymentSuccess(
             @RequestParam("session_id") String sessionId,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
         try {
             String userId = getUserIdFromAuth(authentication);
 
