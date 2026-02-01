@@ -28,11 +28,10 @@ import (
 
 // Server holds dependencies to avoid global state
 type Server struct {
-	KubeClient     kubernetes.Interface
-	DynamicClient  dynamic.Interface
-	Logger         *slog.Logger
-	RegistryBase   string // Will default to "kleff.azurecr.io"
-	UserServiceURL string // URL to user-service for auth checking
+	KubeClient    kubernetes.Interface
+	DynamicClient dynamic.Interface
+	Logger        *slog.Logger
+	RegistryBase  string // Will default to "kleff.azurecr.io"
 }
 
 type DeleteTarget struct {
@@ -50,13 +49,6 @@ type BatchDeleteResponse struct {
 		ContainerID string `json:"containerID"`
 		Reason      string `json:"reason"`
 	} `json:"failed"`
-}
-
-// UserStatus represents user account status response
-type UserStatus struct {
-	UserID        string `json:"userId"`
-	IsDeactivated bool   `json:"isDeactivated"`
-	Active        bool   `json:"active"`
 }
 
 type BuildRequest struct {
@@ -112,12 +104,6 @@ func main() {
 		defaultRegistry = "kleff.azurecr.io"
 	}
 
-	// User service URL for authentication
-	userServiceURL := os.Getenv("USER_SERVICE_URL")
-	if userServiceURL == "" {
-		userServiceURL = "http://user-service:8080" // Default for docker-compose
-	}
-
 	registry := flag.String("registry", defaultRegistry, "The container registry base URL")
 	flag.Parse()
 
@@ -154,20 +140,20 @@ func main() {
 	cleanRegistry := strings.TrimRight(*registry, "/")
 
 	server := &Server{
-		KubeClient:     clientset,
-		DynamicClient:  dynClient,
-		Logger:         logger,
-		RegistryBase:   cleanRegistry,
-		UserServiceURL: userServiceURL,
+		KubeClient:    clientset,
+		DynamicClient: dynClient,
+		Logger:        logger,
+		RegistryBase:  cleanRegistry,
 	}
 
 	mux := http.NewServeMux()
-	
-	mux.HandleFunc("POST /api/v1/build/create", enableCors(server.authMiddleware(server.handleCreateBuild)))
+
+	// Auth middleware removed, handlers wrapped only with enableCors
+	mux.HandleFunc("POST /api/v1/build/create", enableCors(server.handleCreateBuild))
 	mux.HandleFunc("GET /api/v1/build/hello", enableCors(server.handleHelloWorld))
-	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.authMiddleware(server.handleDeleteWebApp)))
-	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.authMiddleware(server.handleUpdateWebApp)))
-	mux.HandleFunc("POST /api/v1/webapp/batch-delete", enableCors(server.authMiddleware(server.handleBatchDeleteWebApps)))
+	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
+	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
+	mux.HandleFunc("POST /api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
 
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -352,6 +338,7 @@ func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request
 	// You could return 207 Multi-Status, but 200 is easier for most frontends to handle.
 	json.NewEncoder(w).Encode(response)
 }
+
 // createWebApp uses the Dynamic Client to create or update the Custom Resource
 func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
 	port := req.Port
@@ -661,84 +648,4 @@ func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name s
 	_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
 	return updateErr
 
-}
-
-// extractUserIDFromJWT extracts user ID from JWT token by calling user-service
-func (s *Server) extractUserIDFromJWT(ctx context.Context, bearerToken string) (string, error) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, "GET", s.UserServiceURL+"/api/v1/users/me", nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+bearerToken)
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to validate token: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 403 {
-		return "", fmt.Errorf("account has been deactivated")
-	}
-	if resp.StatusCode == 401 {
-		return "", fmt.Errorf("invalid or expired token")
-	}
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("authentication failed with status %d", resp.StatusCode)
-	}
-
-	var userResponse struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
-		return "", fmt.Errorf("failed to decode user response: %w", err)
-	}
-
-	return userResponse.ID, nil
-}
-
-// extractBearerToken extracts the bearer token from Authorization header
-func extractBearerToken(r *http.Request) string {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return ""
-	}
-
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return ""
-	}
-
-	return parts[1]
-}
-
-// authMiddleware checks if user is authenticated and not deactivated
-func (s *Server) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		token := extractBearerToken(r)
-		if token == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "missing or invalid authorization header"})
-			return
-		}
-
-		userID, err := s.extractUserIDFromJWT(r.Context(), token)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			if strings.Contains(err.Error(), "deactivated") {
-				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(map[string]string{"error": "account has been deactivated"})
-			} else {
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			}
-			return
-		}
-
-		// Store user ID in context for use in handlers
-		ctx := context.WithValue(r.Context(), "userID", userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
 }
