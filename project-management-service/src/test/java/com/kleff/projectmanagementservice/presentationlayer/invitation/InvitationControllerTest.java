@@ -5,6 +5,7 @@ import com.kleff.projectmanagementservice.buisnesslayer.invitation.InvitationSer
 import com.kleff.projectmanagementservice.datalayer.collaborator.CollaboratorRole;
 import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
 import com.kleff.projectmanagementservice.datalayer.invitation.InviteStatus;
+import com.kleff.projectmanagementservice.service.UserStatusService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -29,15 +31,24 @@ class InvitationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockBean
     private InvitationService invitationService;
+
+    @MockBean
+    private UserStatusService userStatusService;
+
+    @MockBean
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     @WithMockUser
     void createInvitation_ReturnsCreated() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
+        
         // Arrange
         InvitationRequestModel request = InvitationRequestModel.builder()
                 .inviteeEmail("user@example.com")
@@ -72,6 +83,8 @@ class InvitationControllerTest {
     @Test
     @WithMockUser
     void getProjectInvitations_ReturnsInvitationsList() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         InvitationResponseModel inv1 = InvitationResponseModel.builder()
                 .id(1)
@@ -103,6 +116,8 @@ class InvitationControllerTest {
     @Test
     @WithMockUser
     void getPendingInvitationsForCurrentUser_ReturnsUserInvitations() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         InvitationResponseModel inv1 = InvitationResponseModel.builder()
                 .id(1)
@@ -128,6 +143,8 @@ class InvitationControllerTest {
     @Test
     @WithMockUser
     void acceptInvitation_ReturnsAcceptedInvitation() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         InvitationResponseModel response = InvitationResponseModel.builder()
                 .id(1)
@@ -153,6 +170,8 @@ class InvitationControllerTest {
     @Test
     @WithMockUser
     void rejectInvitation_ReturnsRejectedInvitation() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         InvitationResponseModel response = InvitationResponseModel.builder()
                 .id(1)
@@ -175,6 +194,8 @@ class InvitationControllerTest {
     @Test
     @WithMockUser
     void cancelInvitation_ReturnsNoContent() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Act & Assert
         mockMvc.perform(delete("/api/v1/invitations/1")
                         .with(jwt().jwt(jwt -> jwt.subject("admin-789"))))

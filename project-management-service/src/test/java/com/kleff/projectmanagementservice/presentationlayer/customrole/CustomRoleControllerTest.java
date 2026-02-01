@@ -3,6 +3,7 @@ package com.kleff.projectmanagementservice.presentationlayer.customrole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kleff.projectmanagementservice.buisnesslayer.customrole.CustomRoleService;
 import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
+import com.kleff.projectmanagementservice.service.UserStatusService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -35,9 +37,18 @@ class CustomRoleControllerTest {
     @MockBean
     private CustomRoleService customRoleService;
 
+    @MockBean
+    private UserStatusService userStatusService;
+
+    @MockBean
+    private RestTemplate restTemplate;
+
     @Test
     @WithMockUser
     void createCustomRole_ReturnsCreated() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
+        
         // Arrange
         CustomRoleRequestModel request = CustomRoleRequestModel.builder()
                 .name("Custom Developer")
@@ -71,6 +82,8 @@ class CustomRoleControllerTest {
     @Test
     @WithMockUser
     void getProjectCustomRoles_ReturnsRolesList() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         CustomRoleResponseModel role1 = CustomRoleResponseModel.builder()
                 .id(1)
@@ -100,6 +113,8 @@ class CustomRoleControllerTest {
     @Test
     @WithMockUser
     void updateCustomRole_ReturnsUpdatedRole() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Arrange
         CustomRoleRequestModel request = CustomRoleRequestModel.builder()
                 .name("Updated Role")
@@ -129,6 +144,8 @@ class CustomRoleControllerTest {
     @Test
     @WithMockUser
     void deleteCustomRole_ReturnsNoContent() throws Exception {
+        // Mock UserStatusService to return true for active users
+        when(userStatusService.isUserActive(anyString())).thenReturn(true);
         // Act & Assert
         mockMvc.perform(delete("/api/v1/custom-roles/1")
                         .with(jwt()))

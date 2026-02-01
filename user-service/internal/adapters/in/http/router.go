@@ -20,7 +20,7 @@ func NewRouter(h *Handler) http.Handler {
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://kleff.io", "https://api.kleff.io", "http://localhost:5173", "http://localhost:8080", "http://localhost:3000"},
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
@@ -33,7 +33,10 @@ func NewRouter(h *Handler) http.Handler {
 	r.Route("/api/v1/users", func(r chi.Router) {
 		r.Get("/me", h.GetMe)
 		r.Patch("/me/profile", h.PatchMeProfile)
+		r.Delete("/me/deactivate", h.DeactivateAccount)
 		r.Get("/me/audit", h.GetMyAuditLogs)
+		r.Get("/status/{userId}", h.GetUserStatus)
+		r.Get("/me/platform-roles", h.GetMyPlatformRoles)
 
 		r.Get("/profile/@{handle}", h.GetPublicProfile)
 

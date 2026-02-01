@@ -1,12 +1,13 @@
 import React from "react";
 import { Button } from "@shared/ui/Button";
 import { Badge } from "@shared/ui/Badge";
-import { Box, ExternalLink, FileText } from "lucide-react";
+import { Box, ExternalLink, FileText, Trash2 } from "lucide-react";
 import type { Container } from "@features/projects/types/Container";
 import { SecureComponent } from "@app/components/SecureComponent";
 import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
+import { useWebsiteStatus } from "@features/projects/hooks/useWebsiteStatus";
 
 const translations = {
   en: enTranslations,
@@ -17,12 +18,19 @@ interface ContainerStatusCardProps {
   container: Container;
   onManage: (container: Container) => void;
   onViewLogs?: (container: Container) => void;
+  onDelete?: (container: Container) => void;
 }
 
-export function ContainerStatusCard({ container, onManage, onViewLogs }: ContainerStatusCardProps) {
+export function ContainerStatusCard({
+  container,
+  onManage,
+  onViewLogs,
+  onDelete
+}: ContainerStatusCardProps) {
   const appUrl = `https://app-${container.containerId}.kleff.io`;
   const [locale, setLocale] = React.useState(getLocale());
   const t = translations[locale].projectDetail.containerDetail;
+  const { status } = useWebsiteStatus(appUrl);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -43,6 +51,13 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
     onManage(container);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(container);
+    }
+  };
+
   return (
     <button
       onClick={handleCardClick}
@@ -56,36 +71,29 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
 
       {/* Center: Status Badge */}
       <Badge
-        variant={
-          container.status?.toLowerCase().includes("running")
-            ? "success"
-            : container.status?.toLowerCase().includes("stopped")
-              ? "secondary"
-              : "warning"
-        }
+        variant={status === "up" ? "success" : status === "down" ? "secondary" : "warning"}
         className="justify-self-center text-xs"
       >
-        {container.status || t.unknown}
+        {status === "up" ? "Up" : status === "down" ? "Down" : "Checking..."}
       </Badge>
 
       {/* Right side: Actions */}
       <div className="flex items-center justify-end gap-2">
-        {onViewLogs && (
-          <SecureComponent requiredPermission="VIEW_LOGS">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewLogs(container);
-              }}
-              className="h-8 px-3 text-xs text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
-            >
-              <FileText className="mr-1 h-3 w-3" />
-              {t.view_logs}
-            </Button>
-          </SecureComponent>
-        )}
+        <SecureComponent requiredPermission="VIEW_LOGS">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewLogs) onViewLogs(container);
+            }}
+            className="h-8 px-3 text-xs text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
+          >
+            <FileText className="mr-1 h-3 w-3" />
+            {t.view_logs}
+          </Button>
+        </SecureComponent>
+
         <Button
           size="sm"
           variant="ghost"
@@ -95,6 +103,20 @@ export function ContainerStatusCard({ container, onManage, onViewLogs }: Contain
           <ExternalLink className="mr-1 h-3 w-3" />
           {t.visit_app}
         </Button>
+
+        <SecureComponent requiredPermission="DELETE_PROJECT">
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDelete}
+              className="h-8 px-3 text-xs text-red-400 transition-all duration-200 hover:bg-red-500/20 hover:text-red-300"
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              {t.delete}
+            </Button>
+          )}
+        </SecureComponent>
       </div>
     </button>
   );

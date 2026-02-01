@@ -6,7 +6,7 @@
       "self_hosted": "Self-hosted or fully managed"
     },
     "hero": {
-      "title_line1": "Deploy in decades,",
+      "title_line1": "Deploy in minutes,",
       "title_line2": "scale without lock-in.",
       "subtitle": "Kleff is an open-source hosting platform for modern teams. From a single service to fleets of applications, ship with Vercel-level DX while keeping full control over your infrastructure.",
       "get_started": "Get started for free",

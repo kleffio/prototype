@@ -616,7 +616,6 @@ func (c *prometheusClient) GetUptimeMetrics(ctx context.Context, duration string
 }
 
 func (c *prometheusClient) GetAllMetrics(ctx context.Context, duration string) (*domain.AggregatedMetrics, error) {
-	startTime := time.Now()
 	result := &domain.AggregatedMetrics{}
 
 	var wg sync.WaitGroup
@@ -789,14 +788,6 @@ func (c *prometheusClient) GetAllMetrics(ctx context.Context, duration string) (
 	}()
 
 	wg.Wait()
-
-	elapsed := time.Since(startTime)
-
-	if len(errors) > 0 {
-		fmt.Printf("GetAllMetrics completed in %v with %d errors: %v\n", elapsed, len(errors), errors)
-	} else {
-		fmt.Printf("GetAllMetrics completed successfully in %v\n", elapsed)
-	}
 
 	return result, nil
 }

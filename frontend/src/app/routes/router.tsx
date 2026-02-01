@@ -1,8 +1,10 @@
 import { ErrorPage } from "@app/error/ErrorPage";
+import { DeactivatedAccountError } from "@app/error/DeactivatedAccountError";
 import { ProjectDetailPage } from "@pages/projects/ProjectDetailPage";
 import { AppLayout } from "@app/layout/AppLayout";
 import { DashboardLayout } from "@app/layout/DashboardLayout";
 import { ProtectedRoute } from "@app/routing/ProtectedRoute";
+import { AdminRoute } from "@app/routing/AdminRoute";
 import { ProjectsProvider } from "@features/projects/context/ProjectsContext";
 import { DashboardPage } from "@pages/dashboard/DashboardPage";
 import { MetricsDashboard } from "@pages/dashboard/MetricsDashboard";
@@ -18,11 +20,16 @@ import { TermsOfServicePage } from "@pages/legal/TermsOfServicePage";
 import { AuthPage } from "@pages/auth/AuthPage";
 import PricingPage from "@pages/legal/PricingPage";
 import { StatusPage } from "@pages/landing/StatusPage";
+import { AppWithUserSettings } from "@app/components/AppWithUserSettings";
 
 export const router = createBrowserRouter([
   {
-    path: ROUTES.HOME,
-    element: <AppLayout />,
+    path: "/",
+    element: (
+      <AppWithUserSettings>
+        <AppLayout />
+      </AppWithUserSettings>
+    ),
     errorElement: <ErrorPage />,
     children: [
       {
@@ -36,6 +43,13 @@ export const router = createBrowserRouter([
       { path: "pricing", element: <PricingPage /> },
 
       { path: "status", element: <StatusPage /> },
+
+      // Error routes
+      {
+        path: "error/deactivated",
+        element: <DeactivatedAccountError />
+      },
+
       // Auth routes
       {
         path: "auth",
@@ -60,9 +74,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.DASHBOARD,
     element: (
-      <ProtectedRoute>
-        <DashboardLayout />
-      </ProtectedRoute>
+      <AppWithUserSettings>
+        <ProtectedRoute>
+          <DashboardLayout />
+        </ProtectedRoute>
+      </AppWithUserSettings>
     ),
     errorElement: <ErrorPage />,
     children: [
@@ -84,16 +100,22 @@ export const router = createBrowserRouter([
       },
       {
         path: "systems",
-        element: <MetricsDashboard />
+        element: (
+          <AdminRoute>
+            <MetricsDashboard />
+          </AdminRoute>
+        )
       }
     ]
   },
   {
     path: ROUTES.SETTINGS,
     element: (
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
+      <AppWithUserSettings>
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      </AppWithUserSettings>
     ),
     errorElement: <ErrorPage />
   }

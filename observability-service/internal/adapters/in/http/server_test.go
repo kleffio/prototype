@@ -8,8 +8,58 @@ import (
 
 	"prometheus-metrics-api/internal/core/domain"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
+
+// SetupTestRouter creates a router without auth middleware for testing
+func SetupTestRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Add CORS configuration like in the real router
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://kleff.io", "https://api.kleff.io", "http://localhost:5173", "http://localhost:8080", "http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires"},
+		AllowCredentials: true,
+	}))
+
+	// Add API routes without JWT middleware for testing
+	api := router.Group("/api/v1/systems")
+	{
+		api.GET("/metrics", handler.GetAllMetrics)
+		api.GET("/overview", handler.GetOverview)
+
+		api.GET("/requests-metric", handler.GetRequestsMetric)
+		api.GET("/pods-metric", handler.GetPodsMetric)
+		api.GET("/nodes-metric", handler.GetNodesMetric)
+		api.GET("/tenants-metric", handler.GetTenantsMetric)
+
+		api.GET("/cpu", handler.GetCPUUtilization)
+		api.GET("/memory", handler.GetMemoryUtilization)
+
+		api.GET("/nodes", handler.GetNodes)
+		api.GET("/namespaces", handler.GetNamespaces)
+
+		api.GET("/database-io", handler.GetDatabaseIOMetrics)
+
+		api.POST("/project-metrics", handler.GetProjectUsageMetrics)
+
+		api.POST("/logs/project-containers", logsHandler.GetProjectContainerLogs)
+		api.GET("/projects/:projectID/usage/:days", handler.GetProjectUsageMetricsWithDays)
+		api.GET("/projects/:projectID/usage", handler.GetProjectUsageMetrics)
+		api.GET("/projects/:projectID/totalusage", handler.GetProjectTotalUsageMetrics)
+
+		api.GET("/uptime", handler.GetUptimeMetrics)
+	}
+
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
+
+	return router
+}
 
 func TestSetupRouter(t *testing.T) {
 	mockService := &mockMetricsService{
@@ -20,7 +70,7 @@ func TestSetupRouter(t *testing.T) {
 
 	handler := NewMetricsHandler(mockService)
 	logsHandler := &LogsHandler{}
-	router := SetupRouter(handler, logsHandler)
+	router := SetupTestRouter(handler, logsHandler)
 
 	if router == nil {
 		t.Fatal("Expected router to be created, got nil")
@@ -36,7 +86,7 @@ func TestHealthEndpoint(t *testing.T) {
 	mockService := &mockMetricsService{}
 	handler := NewMetricsHandler(mockService)
 	logsHandler := &LogsHandler{}
-	router := SetupRouter(handler, logsHandler)
+	router := SetupTestRouter(handler, logsHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -67,7 +117,7 @@ func TestRouteGroupSetup(t *testing.T) {
 
 	handler := NewMetricsHandler(mockService)
 	logsHandler := &LogsHandler{}
-	router := SetupRouter(handler, logsHandler)
+	router := SetupTestRouter(handler, logsHandler)
 
 	// Test that the /api/v1/systems group is working
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/systems/overview", nil)
@@ -84,7 +134,7 @@ func TestCORSConfiguration(t *testing.T) {
 	mockService := &mockMetricsService{}
 	handler := NewMetricsHandler(mockService)
 	logsHandler := &LogsHandler{}
-	router := SetupRouter(handler, logsHandler)
+	router := SetupTestRouter(handler, logsHandler)
 
 	// Test OPTIONS request (preflight)
 	req := httptest.NewRequest(http.MethodOptions, "/api/v1/systems/overview", nil)
@@ -134,7 +184,7 @@ func TestAllRoutes(t *testing.T) {
 
 	handler := NewMetricsHandler(mockService)
 	logsHandler := &LogsHandler{}
-	router := SetupRouter(handler, logsHandler)
+	router := SetupTestRouter(handler, logsHandler)
 
 	routes := []string{
 		"/api/v1/systems/requests-metric",

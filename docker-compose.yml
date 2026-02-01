@@ -88,6 +88,7 @@ services:
       - AUTHENTIK_API_TOKEN=${AUTHENTIK_API_TOKEN}
       - POSTGRES_USER_DSN=postgres://user:pass@user-service-postgres:5432/userservice?sslmode=disable
       - POSTGRES_AUDIT_DSN=postgres://user:pass@user-service-postgres:5432/userservice?sslmode=disable
+      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL}
     depends_on:
       user-service-postgres:
         condition: service_healthy

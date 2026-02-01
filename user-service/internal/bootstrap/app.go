@@ -17,10 +17,11 @@ import (
 )
 
 type App struct {
-	Config    *config.Config
-	Router    http.Handler
-	UserRepo  interface{ Close() error }
-	AuditRepo interface{ Close() error }
+	Config           *config.Config
+	Router           http.Handler
+	UserRepo         interface{ Close() error }
+	AuditRepo        interface{ Close() error }
+	PlatformRoleRepo interface{ Close() error }
 }
 
 func NewApp() (*App, error) {
@@ -39,20 +40,26 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("failed to build audit repository: %w", err)
 	}
 
+	platformRoleRepo, platformRoleCloser, err := buildPlatformRoleRepository(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build platform role repository: %w", err)
+	}
+
 	tokenValidator := authentik.NewTokenValidator(cfg.AuthentikBaseURL)
 	authentikManager := authentik.NewAuthentikManager(cfg.AuthentikBaseURL)
 
-	svc := usersvc.NewService(userRepo, auditRepo, tokenValidator, authentikManager)
+	svc := usersvc.NewService(userRepo, auditRepo, platformRoleRepo, tokenValidator, authentikManager, cfg.DefaultAdminEmail)
 
 	handler := httphandler.NewHandler(svc)
 	root := chi.NewRouter()
 	root.Mount("/", httphandler.NewRouter(handler))
 
 	return &App{
-		Config:    cfg,
-		Router:    root,
-		UserRepo:  userRepoCloser,
-		AuditRepo: auditCloser,
+		Config:           cfg,
+		Router:           root,
+		UserRepo:         userRepoCloser,
+		AuditRepo:        auditCloser,
+		PlatformRoleRepo: platformRoleCloser,
 	}, nil
 }
 
@@ -67,6 +74,12 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	if a.AuditRepo != nil {
 		if err := a.AuditRepo.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	if a.PlatformRoleRepo != nil {
+		if err := a.PlatformRoleRepo.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
