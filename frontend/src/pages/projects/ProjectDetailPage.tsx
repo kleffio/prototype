@@ -37,6 +37,7 @@ import { TeamModal } from "@features/projects/components/TeamModal";
 import { SecureComponent } from "@app/components/SecureComponent";
 import { SimpleContainerLogsSheet } from "@features/projects/components/SimpleContainerLogsSheet";
 import ProjectBillingEstimatesCard from "@features/billing/components/getEstimateBilling";
+import { ActionLogModal } from "@features/projects/components/ActionLogModal";
 
 const translations = {
   en: enTranslations,
@@ -62,6 +63,7 @@ export function ProjectDetailPage() {
   const [isEnvModalOpen, setIsEnvModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isActionLogModalOpen, setIsActionLogModalOpen] = useState(false);
   const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
   const [locale, setLocaleState] = useState(getLocale());
   const t = translations[locale].projectDetail;
@@ -238,6 +240,17 @@ export function ProjectDetailPage() {
                   {t.team}
                 </Button>
 
+                {role === "OWNER" && (
+                  <Button
+                    onClick={() => setIsActionLogModalOpen(true)}
+                    variant="ghost"
+                    className="rounded-xl border border-white/10 px-4 py-2"
+                  >
+                    <Activity className="mr-2 h-4 w-4" />
+                    Activity
+                  </Button>
+                )}
+
                 <SecureComponent requiredPermission="DEPLOY">
                   <Button
                     onClick={handleCreateNew}
@@ -412,6 +425,13 @@ export function ProjectDetailPage() {
         onClose={() => setIsTeamModalOpen(false)}
         projectId={projectId || ""}
         userRole={(role as "OWNER" | "ADMIN" | "DEVELOPER" | "VIEWER") || "VIEWER"}
+      />
+
+      <ActionLogModal
+        isOpen={isActionLogModalOpen}
+        onClose={() => setIsActionLogModalOpen(false)}
+        projectId={projectId || ""}
+        ownerId={project?.ownerId || ""}
       />
 
       <ContainerDetailModal

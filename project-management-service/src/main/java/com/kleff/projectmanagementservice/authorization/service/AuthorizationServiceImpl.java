@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of authorization service with shadow mode support.
@@ -38,39 +37,34 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     // Default permissions for built-in roles
     private static final Map<CollaboratorRole, Set<ProjectPermission>> DEFAULT_ROLE_PERMISSIONS = Map.of(
-        CollaboratorRole.OWNER, EnumSet.of(
-            ProjectPermission.READ_PROJECT,
-            ProjectPermission.WRITE_PROJECT,
-            ProjectPermission.DEPLOY,
-            ProjectPermission.MANAGE_ENV_VARS,
-            ProjectPermission.VIEW_LOGS,
-            ProjectPermission.VIEW_METRICS,
-            ProjectPermission.MANAGE_COLLABORATORS,
-            ProjectPermission.DELETE_PROJECT,
-            ProjectPermission.MANAGE_BILLING
-        ),
-        CollaboratorRole.ADMIN, EnumSet.of(
-            ProjectPermission.READ_PROJECT,
-            ProjectPermission.WRITE_PROJECT,
-            ProjectPermission.DEPLOY,
-            ProjectPermission.MANAGE_ENV_VARS,
-            ProjectPermission.VIEW_LOGS,
-            ProjectPermission.VIEW_METRICS,
-            ProjectPermission.MANAGE_COLLABORATORS
-        ),
-        CollaboratorRole.DEVELOPER, EnumSet.of(
-            ProjectPermission.READ_PROJECT,
-            ProjectPermission.WRITE_PROJECT,
-            ProjectPermission.DEPLOY,
-            ProjectPermission.VIEW_LOGS,
-            ProjectPermission.VIEW_METRICS
-        ),
-        CollaboratorRole.VIEWER, EnumSet.of(
-            ProjectPermission.READ_PROJECT,
-            ProjectPermission.VIEW_LOGS,
-            ProjectPermission.VIEW_METRICS
-        )
-    );
+            CollaboratorRole.OWNER, EnumSet.of(
+                    ProjectPermission.READ_PROJECT,
+                    ProjectPermission.WRITE_PROJECT,
+                    ProjectPermission.DEPLOY,
+                    ProjectPermission.MANAGE_ENV_VARS,
+                    ProjectPermission.VIEW_LOGS,
+                    ProjectPermission.VIEW_METRICS,
+                    ProjectPermission.MANAGE_COLLABORATORS,
+                    ProjectPermission.DELETE_PROJECT,
+                    ProjectPermission.MANAGE_BILLING),
+            CollaboratorRole.ADMIN, EnumSet.of(
+                    ProjectPermission.READ_PROJECT,
+                    ProjectPermission.WRITE_PROJECT,
+                    ProjectPermission.DEPLOY,
+                    ProjectPermission.MANAGE_ENV_VARS,
+                    ProjectPermission.VIEW_LOGS,
+                    ProjectPermission.VIEW_METRICS,
+                    ProjectPermission.MANAGE_COLLABORATORS),
+            CollaboratorRole.DEVELOPER, EnumSet.of(
+                    ProjectPermission.READ_PROJECT,
+                    ProjectPermission.WRITE_PROJECT,
+                    ProjectPermission.DEPLOY,
+                    ProjectPermission.VIEW_LOGS,
+                    ProjectPermission.VIEW_METRICS),
+            CollaboratorRole.VIEWER, EnumSet.of(
+                    ProjectPermission.READ_PROJECT,
+                    ProjectPermission.VIEW_LOGS,
+                    ProjectPermission.VIEW_METRICS));
 
     @Override
     @Transactional(readOnly = true)
@@ -80,21 +74,20 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         try {
             // Find active collaborator for this user-project combination
             Optional<Collaborator> collaboratorOpt = collaboratorRepo
-                .findByProjectIdAndUserId(projectId, userId)
-                .stream()
-                .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
-                .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
-                .findFirst();
+                    .findByProjectIdAndUserId(projectId, userId)
+                    .stream()
+                    .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
+                    .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
+                    .findFirst();
 
             if (collaboratorOpt.isEmpty()) {
                 return buildDecision(
-                    shadowMode ? AuthorizationResult.SHADOW_DENY : AuthorizationResult.DENY,
-                    userId,
-                    projectId,
-                    permission.name(),
-                    "User is not an active collaborator on this project",
-                    shadowMode
-                );
+                        shadowMode ? AuthorizationResult.SHADOW_DENY : AuthorizationResult.DENY,
+                        userId,
+                        projectId,
+                        permission.name(),
+                        "User is not an active collaborator on this project",
+                        shadowMode);
             }
 
             Collaborator collaborator = collaboratorOpt.get();
@@ -105,22 +98,21 @@ public class AuthorizationServiceImpl implements AuthorizationService {
             AuthorizationResult result = determineResult(hasPermission, shadowMode);
 
             String reason = hasPermission
-                ? String.format("User has permission via role %s", collaborator.getRole())
-                : String.format("User lacks permission %s (role: %s)", permission.name(), collaborator.getRole());
+                    ? String.format("User has permission via role %s", collaborator.getRole())
+                    : String.format("User lacks permission %s (role: %s)", permission.name(), collaborator.getRole());
 
             return buildDecision(result, userId, projectId, permission.name(), reason, shadowMode);
 
         } catch (Exception e) {
             log.error("Error checking permission for user={}, project={}, permission={}",
-                userId, projectId, permission, e);
+                    userId, projectId, permission, e);
             return buildDecision(
-                shadowMode ? AuthorizationResult.SHADOW_DENY : AuthorizationResult.DENY,
-                userId,
-                projectId,
-                permission.name(),
-                "Error checking permission: " + e.getMessage(),
-                shadowMode
-            );
+                    shadowMode ? AuthorizationResult.SHADOW_DENY : AuthorizationResult.DENY,
+                    userId,
+                    projectId,
+                    permission.name(),
+                    "Error checking permission: " + e.getMessage(),
+                    shadowMode);
         }
     }
 
@@ -149,11 +141,11 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     @Override
     public Set<ProjectPermission> getUserPermissions(String projectId, String userId) {
         Optional<Collaborator> collaboratorOpt = collaboratorRepo
-            .findByProjectIdAndUserId(projectId, userId)
-            .stream()
-            .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
-            .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
-            .findFirst();
+                .findByProjectIdAndUserId(projectId, userId)
+                .stream()
+                .filter(c -> c.getCollaboratorStatus() == CollaboratorStatus.ACCEPTED)
+                .filter(c -> c.getExpiresAt() == null || c.getExpiresAt().after(new Date()))
+                .findFirst();
 
         if (collaboratorOpt.isEmpty()) {
             return Collections.emptySet();
@@ -164,11 +156,12 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     @Transactional
-    public void requirePermission(String projectId, String userId, ProjectPermission permission, String action) {
+    public void requirePermission(String projectId, String userId, ProjectPermission permission, String action,
+            String resourceType) {
         AuthorizationDecision decision = checkPermission(projectId, userId, permission);
 
         // Log to audit
-        logAuditDecision(decision, action);
+        logAuditDecision(decision, action, resourceType);
 
         boolean shadowMode = isShadowModeEnabled();
         boolean enforceMode = isEnforceModeEnabled();
@@ -177,10 +170,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         if (shadowMode && !enforceMode) {
             if (decision.isDenied()) {
                 log.warn("[SHADOW MODE] Would deny: user={}, project={}, permission={}, action={}, reason={}",
-                    userId, projectId, permission, action, decision.getReason());
+                        userId, projectId, permission, action, decision.getReason());
             } else {
                 log.info("[SHADOW MODE] Would allow: user={}, project={}, permission={}, action={}",
-                    userId, projectId, permission, action);
+                        userId, projectId, permission, action);
             }
             return;
         }
@@ -188,25 +181,24 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         // In enforce mode, throw exception on deny
         if (enforceMode && decision.getResult() == AuthorizationResult.DENY) {
             log.warn("Permission denied: user={}, project={}, permission={}, action={}, reason={}",
-                userId, projectId, permission, action, decision.getReason());
+                    userId, projectId, permission, action, decision.getReason());
             throw new ForbiddenException(
-                String.format("Permission denied: %s", decision.getReason())
-            );
+                    String.format("Permission denied: %s", decision.getReason()));
         }
     }
 
     @Override
     public boolean isShadowModeEnabled() {
         return featureFlagRepo.findByFlagKey("authorization.shadow_mode")
-            .map(FeatureFlag::getEnabled)
-            .orElse(false); // Default to NOT shadow mode - enforce by default
+                .map(FeatureFlag::getEnabled)
+                .orElse(false); // Default to NOT shadow mode - enforce by default
     }
 
     @Override
     public boolean isEnforceModeEnabled() {
         return featureFlagRepo.findByFlagKey("authorization.enforce_mode")
-            .map(FeatureFlag::getEnabled)
-            .orElse(true); // Default to enforcing for security
+                .map(FeatureFlag::getEnabled)
+                .orElse(true); // Default to enforcing for security
     }
 
     // ==================== Private Helper Methods ====================
@@ -251,37 +243,37 @@ public class AuthorizationServiceImpl implements AuthorizationService {
      * Build an authorization decision object.
      */
     private AuthorizationDecision buildDecision(
-        AuthorizationResult result,
-        String userId,
-        String projectId,
-        String permission,
-        String reason,
-        boolean shadowMode
-    ) {
+            AuthorizationResult result,
+            String userId,
+            String projectId,
+            String permission,
+            String reason,
+            boolean shadowMode) {
         return AuthorizationDecision.builder()
-            .result(result)
-            .userId(userId)
-            .projectId(projectId)
-            .permission(permission)
-            .reason(reason)
-            .shadowMode(shadowMode)
-            .build();
+                .result(result)
+                .userId(userId)
+                .projectId(projectId)
+                .permission(permission)
+                .reason(reason)
+                .shadowMode(shadowMode)
+                .build();
     }
 
     /**
      * Log authorization decision to audit table.
      */
-    private void logAuditDecision(AuthorizationDecision decision, String action) {
+    private void logAuditDecision(AuthorizationDecision decision, String action, String resourceType) {
         try {
             AuthorizationAuditLog auditLog = AuthorizationAuditLog.builder()
-                .userId(decision.getUserId())
-                .projectId(decision.getProjectId())
-                .action(action)
-                .permissionChecked(decision.getPermission())
-                .authorizationResult(decision.getResult())
-                .shadowMode(decision.isShadowMode())
-                .changes(Map.of("reason", decision.getReason()))
-                .build();
+                    .userId(decision.getUserId())
+                    .projectId(decision.getProjectId())
+                    .action(action)
+                    .resourceType(resourceType)
+                    .permissionChecked(decision.getPermission())
+                    .authorizationResult(decision.getResult())
+                    .shadowMode(decision.isShadowMode())
+                    .changes(Map.of("reason", decision.getReason()))
+                    .build();
 
             auditRepo.save(auditLog);
         } catch (Exception e) {

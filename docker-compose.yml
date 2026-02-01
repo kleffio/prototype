@@ -27,7 +27,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
-      - project-management-db
+      project-management-db:
+        condition: service_healthy
 
   project-management-db:
     image: postgres:16
@@ -41,6 +42,11 @@ services:
       - "5433:5432"
     volumes:
       - project_management_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   billing-service:
     build:
@@ -58,8 +64,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       VITE_BACKEND_URL: http://project-management-service:8080
     depends_on:
-      - billing-db
-      - project-management-service
+      billing-db:
+        condition: service_healthy
+      project-management-service:
+        condition: service_started
 
   billing-db:
     image: postgres:16
@@ -73,6 +81,11 @@ services:
       - "5436:5432"
     volumes:
       - billing_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 
   user-service:
@@ -141,7 +154,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
-      - deployment-db
+      deployment-db:
+        condition: service_healthy
 
   deployment-db:
     image: postgres:16
@@ -155,6 +169,11 @@ services:
       - "5435:5432"
     volumes:
       - deployment_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d deployment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   observability-service:
     build:
       context: ./observability-service

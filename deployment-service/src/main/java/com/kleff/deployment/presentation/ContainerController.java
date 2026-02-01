@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/v1/containers")
@@ -31,9 +33,11 @@ public class ContainerController {
                 .map(container -> containerService.toResponseModel(container))
                 .toList();
     }
-    
+
     @PostMapping
-    public ContainerResponseModel createContainer(@RequestBody ContainerRequestModel container) {
+    public ContainerResponseModel createContainer(@RequestBody ContainerRequestModel container,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : "unknown";
         // Basic validation
         if (container.getName() == null || container.getName().trim().isEmpty()) {
             throw new RuntimeException("Container name cannot be empty");
@@ -41,13 +45,15 @@ public class ContainerController {
         if (container.getProjectID() == null || container.getProjectID().trim().isEmpty()) {
             throw new RuntimeException("Project ID cannot be empty");
         }
-        return containerService.createContainer(container);
+        return containerService.createContainer(container, userId);
     }
 
     @PutMapping("/{containerID}")
-    public ContainerResponseModel updateContainer(@PathVariable String containerID, @RequestBody ContainerRequestModel containerRequest) {
+    public ContainerResponseModel updateContainer(@PathVariable String containerID,
+            @RequestBody ContainerRequestModel containerRequest, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : "unknown";
         try {
-            return containerService.updateContainer(containerID, containerRequest);
+            return containerService.updateContainer(containerID, containerRequest, userId);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {
                 throw new RuntimeException("Container not found with ID: " + containerID);
@@ -60,9 +66,11 @@ public class ContainerController {
     @PatchMapping("/{containerID}/env")
     public ContainerResponseModel updateContainerEnvVariables(
             @PathVariable String containerID,
-            @RequestBody UpdateEnvVariablesRequest request) {
+            @RequestBody UpdateEnvVariablesRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : "unknown";
         try {
-            return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables());
+            return containerService.updateContainerEnvVariables(containerID, request.getEnvVariables(), userId);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {
                 throw new RuntimeException("Container not found with ID: " + containerID);
@@ -73,9 +81,10 @@ public class ContainerController {
     }
 
     @DeleteMapping("/{containerID}")
-    public ResponseEntity<String> deleteContainer(@PathVariable String containerID) {
+    public ResponseEntity<String> deleteContainer(@PathVariable String containerID, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : "unknown";
         try {
-            containerService.deleteContainer(containerID);
+            containerService.deleteContainer(containerID, userId);
             return ResponseEntity.ok("Container deleted successfully");
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {

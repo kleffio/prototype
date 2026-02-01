@@ -49,12 +49,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<Project> getAllOwnedProjects(String userId) {
         List<Project> ownedProjects = projectRepository.findByOwnerIdEquals(userId);
-        
+
         List<Collaborator> collaborations = collaboratorRepo.findByUserId(userId);
         List<String> collaboratedProjectIds = collaborations.stream()
                 .map(Collaborator::getProjectId)
                 .collect(Collectors.toList());
-        
+
         List<Project> collaboratedProjects = new ArrayList<>();
         for (String projectId : collaboratedProjectIds) {
             Project project = projectRepository.findByProjectId(projectId);
@@ -62,10 +62,10 @@ public class ProjectServiceImpl implements ProjectService {
                 collaboratedProjects.add(project);
             }
         }
-        
+
         List<Project> allProjects = new ArrayList<>(ownedProjects);
         allProjects.addAll(collaboratedProjects);
-        
+
         return allProjects;
     }
 
@@ -73,17 +73,15 @@ public class ProjectServiceImpl implements ProjectService {
     public Project getProjectById(String projectId) {
         try {
             return projectRepository.findByProjectId(projectId);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return null;
         }
-        }
-
+    }
 
     @Override
     public Project createProject(Project project) {
         Project saved = projectRepository.save(project);
-        
+
         try {
             CollaboratorRequestModel ownerCollab = CollaboratorRequestModel.builder()
                     .projectId(saved.getProjectId())
@@ -91,33 +89,33 @@ public class ProjectServiceImpl implements ProjectService {
                     .role(CollaboratorRole.OWNER)
                     .permissions(null)
                     .build();
-            
+
             collaboratorService.addCollaborator(ownerCollab, "system");
         } catch (Exception e) {
             System.err.println("Failed to create owner collaborator: " + e.getMessage());
         }
-        
+
         return saved;
     }
 
     @Override
     public Project updateProject(String projectId, Project updatedProject) {
-            Project existing = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new RuntimeException("Project not found"));
-            if (updatedProject.getName() != null) {
-                existing.setName(updatedProject.getName());
-            }
-            if (updatedProject.getDescription() != null) {
-                existing.setDescription(updatedProject.getDescription());
-            }
-            if (updatedProject.getOwnerId() != null) {
-                existing.setOwnerId(updatedProject.getOwnerId());
-            }
-            if (updatedProject.getProjectStatus() != null) {
-                existing.setProjectStatus(updatedProject.getProjectStatus());
-            }
-            existing.setUpdatedDate(new Date());
-            return projectRepository.save(existing);
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (updatedProject.getName() != null) {
+            existing.setName(updatedProject.getName());
+        }
+        if (updatedProject.getDescription() != null) {
+            existing.setDescription(updatedProject.getDescription());
+        }
+        if (updatedProject.getOwnerId() != null) {
+            existing.setOwnerId(updatedProject.getOwnerId());
+        }
+        if (updatedProject.getProjectStatus() != null) {
+            existing.setProjectStatus(updatedProject.getProjectStatus());
+        }
+        existing.setUpdatedDate(new Date());
+        return projectRepository.save(existing);
 
     }
 
@@ -125,45 +123,45 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional(rollbackFor = Exception.class)
     public Project deleteProject(String projectId) {
         log.info("Starting deletion process for project: {}", projectId);
-        
+
         // Verify project exists and get deletion data
         ProjectDeletionData deletionData = getProjectDeletionData(projectId);
         Project project = deletionData.getProject();
-        
+
         if (project == null) {
             throw new RuntimeException("Project not found: " + projectId);
         }
-        
+
         if (project.getProjectStatus() == ProjectStatus.DELETED) {
             log.warn("Project {} is already deleted", projectId);
             return project;
         }
-        
+
         try {
             // Step 1: Cancel pending invitations
             cancelProjectInvitations(deletionData.getInvitationIds());
-            
+
             // Step 2: Remove collaborators
             removeProjectCollaborators(deletionData.getCollaboratorIds());
-            
+
             // Step 3: Delete custom roles
             deleteProjectCustomRoles(deletionData.getCustomRoleIds());
-            
+
             // Step 4: Mark project as deleted
             project.setProjectStatus(ProjectStatus.DELETED);
             project.setUpdatedDate(new Date());
-            
+
             Project deletedProject = projectRepository.save(project);
-            
+
             // Log audit trail for project deletion
             logProjectDeletionAudit(projectId, project.getOwnerId());
-            
-            log.info("Successfully deleted project: {} with transaction status: {}", 
-                    projectId, 
+
+            log.info("Successfully deleted project: {} with transaction status: {}",
+                    projectId,
                     TransactionSynchronizationManager.isActualTransactionActive() ? "COMMITTED" : "NO_TRANSACTION");
-            
+
             return deletedProject;
-            
+
         } catch (Exception e) {
             log.error("Failed to delete project: {}. Rolling back transaction.", projectId, e);
             throw new RuntimeException("Failed to delete project: " + projectId, e);
@@ -203,8 +201,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .map(CustomRole::getId)
                 .collect(Collectors.toList());
 
-        log.debug("Project deletion data for {}: invitations={}, collaborators={}, customRoles={}", 
-                 projectId, invitationIds.size(), collaboratorIds.size(), customRoleIds.size());
+        log.debug("Project deletion data for {}: invitations={}, collaborators={}, customRoles={}",
+                projectId, invitationIds.size(), collaboratorIds.size(), customRoleIds.size());
 
         return new ProjectDeletionData(project, invitationIds, collaboratorIds, customRoleIds);
     }
@@ -219,7 +217,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         log.info("Cancelling {} pending invitations", invitationIds.size());
-        
+
         for (String invitationId : invitationIds) {
             try {
                 int id = Integer.parseInt(invitationId);
@@ -244,16 +242,16 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         log.info("Removing {} collaborators", collaboratorIds.size());
-        
+
         for (Integer collaboratorId : collaboratorIds) {
             try {
                 // Find the collaborator to get projectId and userId
                 Collaborator collaborator = collaboratorRepo.findById(collaboratorId)
                         .orElseThrow(() -> new RuntimeException("Collaborator not found: " + collaboratorId));
-                
-                collaboratorService.removeCollaborator(collaborator.getProjectId(), collaborator.getUserId());
-                log.debug("Removed collaborator: {} from project: {}", 
-                         collaborator.getUserId(), collaborator.getProjectId());
+
+                collaboratorService.removeCollaborator(collaborator.getProjectId(), collaborator.getUserId(), "system");
+                log.debug("Removed collaborator: {} from project: {}",
+                        collaborator.getUserId(), collaborator.getProjectId());
             } catch (Exception e) {
                 log.error("Failed to remove collaborator: {}", collaboratorId, e);
                 throw new RuntimeException("Failed to remove collaborator: " + collaboratorId, e);
@@ -271,7 +269,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         log.info("Deleting {} custom roles", customRoleIds.size());
-        
+
         for (Integer roleId : customRoleIds) {
             try {
                 customRoleService.deleteCustomRole(roleId);
@@ -291,7 +289,7 @@ public class ProjectServiceImpl implements ProjectService {
             String projectName = getProjectName(projectId);
             String reason = "Project deletion initiated by owner";
             String cleanupSteps = "invitations_cancelled,collaborators_removed,custom_roles_deleted";
-            
+
             // Create a safe map without null values
             java.util.Map<String, Object> changes = new java.util.HashMap<>();
             changes.put("reason", reason);
@@ -299,14 +297,14 @@ public class ProjectServiceImpl implements ProjectService {
             changes.put("cleanupSteps", cleanupSteps);
 
             AuthorizationAuditLog auditLog = AuthorizationAuditLog.builder()
-                .userId(ownerId)
-                .projectId(projectId)
-                .action("delete_project")
-                .permissionChecked("DELETE_PROJECT")
-                .authorizationResult(AuthorizationResult.ALLOW)
-                .shadowMode(false)
-                .changes(changes)
-                .build();
+                    .userId(ownerId)
+                    .projectId(projectId)
+                    .action("delete_project")
+                    .permissionChecked("DELETE_PROJECT")
+                    .authorizationResult(AuthorizationResult.ALLOW)
+                    .shadowMode(false)
+                    .changes(changes)
+                    .build();
 
             auditRepo.save(auditLog);
             log.debug("Logged project deletion audit for project: {}", projectId);

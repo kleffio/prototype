@@ -95,7 +95,15 @@ func buildPlatformRoleRepository(cfg *config.Config) (
 		return nil, nil, fmt.Errorf("failed to create postgres platform role repo: %w", err)
 	}
 
-	log.Printf("platform_roles repository initialized")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := repo.CreateTable(ctx); err != nil {
+		_ = repo.Close()
+		return nil, nil, fmt.Errorf("failed to create platform_roles table: %w", err)
+	}
+
+	log.Printf("platform_roles table initialized")
 
 	return repo, repo, nil
 }

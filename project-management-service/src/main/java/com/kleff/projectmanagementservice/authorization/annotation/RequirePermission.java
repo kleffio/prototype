@@ -47,4 +47,10 @@ public @interface RequirePermission {
      * If empty, uses the method name.
      */
     String action() default "";
+
+    /**
+     * Resource type for audit logging.
+     * Default is "PROJECT".
+     */
+    String resourceType() default "PROJECT";
 }

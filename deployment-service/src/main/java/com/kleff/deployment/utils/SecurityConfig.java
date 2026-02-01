@@ -1,6 +1,5 @@
-package com.kleff.projectmanagementservice.utils;
+package com.kleff.deployment.utils;
 
-import com.kleff.projectmanagementservice.filter.DeactivationCheckFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -12,33 +11,30 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                        DeactivationCheckFilter deactivationCheckFilter) throws Exception {
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
                                 .csrf(csrf -> csrf.disable())
-                                .cors(Customizer.withDefaults())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                                                .requestMatchers("/api/v1/projects/audit/internal").permitAll()
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
-                                                .jwt(Customizer.withDefaults()))
-                                .addFilterAfter(deactivationCheckFilter, UsernamePasswordAuthenticationFilter.class);
+                                                .jwt(jwt -> jwt.decoder(jwtDecoder())));
 
                 return http.build();
         }
@@ -46,14 +42,10 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(java.util.List.of(
-                                "http://localhost:5173",
-                                "http://localhost:3000",
-                                "http://localhost:8080",
-                                "https://api.kleff.io",
-                                "https://kleff.io"));
-                configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                configuration.setAllowedHeaders(java.util.List.of("*"));
+                configuration.setAllowedOrigins(
+                                List.of("http://localhost:3000", "http://localhost:8080", "https://kleff.io"));
+                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                configuration.setAllowedHeaders(List.of("*"));
                 configuration.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -65,10 +57,6 @@ public class SecurityConfig {
         public JwtDecoder jwtDecoder() {
                 String jwkSetUri = "https://auth.kleff.io/application/o/kleff/jwks/";
                 String issuerUri = "https://auth.kleff.io/application/o/kleff/";
-
-                System.out.println("🔐 Configuring JWT Decoder with increased timeout");
-                System.out.println("   JWKS URI: " + jwkSetUri);
-                System.out.println("   Issuer URI: " + issuerUri);
 
                 // Create RestTemplate with increased timeouts
                 SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -93,13 +81,6 @@ public class SecurityConfig {
 
                 jwtDecoder.setJwtValidator(validator);
 
-                System.out.println("✅ JWT Decoder configured successfully with 10s timeouts");
-
                 return jwtDecoder;
-        }
-
-        @Bean
-        public RestTemplate restTemplate() {
-                return new RestTemplate();
         }
 }

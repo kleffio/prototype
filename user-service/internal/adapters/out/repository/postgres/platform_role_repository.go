@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	domain "github.com/kleffio/www/user-service/internal/core/domain/users"
 	port "github.com/kleffio/www/user-service/internal/core/ports/users"
@@ -33,6 +34,48 @@ func NewPostgresPlatformRoleRepository(connectionString string) (*PostgresPlatfo
 	db.SetMaxIdleConns(5)
 
 	return &PostgresPlatformRoleRepository{db: db}, nil
+}
+
+func (r *PostgresPlatformRoleRepository) CreateTable(ctx context.Context) error {
+	log.Println("[DEBUG] CreateTable: Starting platform_roles table creation...")
+
+	query := `
+		CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+		CREATE TABLE IF NOT EXISTS platform_roles (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id VARCHAR(255) NOT NULL,
+			role VARCHAR(50) NOT NULL,
+			granted_by VARCHAR(255),
+			granted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			revoked_at TIMESTAMP,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+			CONSTRAINT platform_roles_role_check
+				CHECK (role IN ('platform_admin', 'platform_support', 'platform_user')),
+			CONSTRAINT platform_roles_user_role_unique
+				UNIQUE(user_id, role),
+			CONSTRAINT platform_roles_revoked_check
+				CHECK (revoked_at IS NULL OR revoked_at >= granted_at)
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_platform_roles_user
+			ON platform_roles(user_id)
+			WHERE revoked_at IS NULL;
+
+		CREATE INDEX IF NOT EXISTS idx_platform_roles_active
+			ON platform_roles(role)
+			WHERE revoked_at IS NULL;
+	`
+
+	_, err := r.db.ExecContext(ctx, query)
+	if err != nil {
+		log.Printf("[DEBUG] CreateTable: FAILED with error: %v", err)
+		return err
+	}
+
+	log.Println("[DEBUG] CreateTable: Successfully created (or verified) platform_roles table")
+	return nil
 }
 
 // GetActiveRolesByUserID returns all active (non-revoked) platform roles for a user

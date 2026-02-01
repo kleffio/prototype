@@ -9,11 +9,12 @@ public interface CollaboratorService {
 
     CollaboratorResponseModel addCollaborator(CollaboratorRequestModel request, String invitedBy);
 
-    CollaboratorResponseModel updateCollaborator(String projectId, String userId, CollaboratorRequestModel request);
+    CollaboratorResponseModel updateCollaborator(String projectId, String userId, CollaboratorRequestModel request,
+            String actorId);
 
     List<CollaboratorResponseModel> getProjectCollaborators(String projectId);
 
-    void removeCollaborator(String projectId, String userId);
-    
+    void removeCollaborator(String projectId, String userId, String actorId);
+
     List<String> getUserPermissions(String projectId, String userId);
 }
