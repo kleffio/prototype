@@ -1,18 +1,18 @@
 ---
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_AUTH_CLIENT_ID: ${VITE_AUTH_CLIENT_ID}
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_AUTH_CLIENT_ID=8qNA2sSV88fusOocZcMj6GirTLWYygdAXnmtLUfe
-      - VITE_BACKEND_URL=http://localhost:8080
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #     args:
+  #       VITE_AUTH_CLIENT_ID: ${VITE_AUTH_CLIENT_ID}
+  #       VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+  #   container_name: frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - VITE_AUTH_CLIENT_ID=8qNA2sSV88fusOocZcMj6GirTLWYygdAXnmtLUfe
+  #     - VITE_BACKEND_URL=http://localhost:8080
 
   project-management-service:
     build:
