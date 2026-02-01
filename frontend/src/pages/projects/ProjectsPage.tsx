@@ -302,7 +302,7 @@ export function ProjectsPage() {
                       {t.status.active}
                     </Badge>
                   )}
-                  
+
                   {isOwner && (
                     <button
                       onClick={(e) => {
@@ -313,7 +313,7 @@ export function ProjectsPage() {
                       className="pointer-events-auto opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
                       title="Delete project"
                     >
-                      <div className="rounded-lg bg-red-500/10 p-1.5 ring-1 ring-red-500/20 hover:bg-red-500/20 hover:ring-red-500/30 transition-all">
+                      <div className="rounded-lg bg-red-500/10 p-1.5 ring-1 ring-red-500/20 transition-all hover:bg-red-500/20 hover:ring-red-500/30">
                         <Trash2 className="h-3.5 w-3.5 text-red-400" />
                       </div>
                     </button>
