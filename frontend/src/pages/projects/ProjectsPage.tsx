@@ -5,6 +5,10 @@ import { getLocale } from "@app/locales/locale";
 import { CreateProjectModal } from "@features/projects/components/CreateProjectModal";
 import { PendingInvitations } from "@features/projects/components/PendingInvitations";
 import { useProjects } from "@features/projects/hooks/useProjects";
+import { DeleteProjectModal } from "@features/projects/components/DeleteProjectModal";
+import { useDeleteProject } from "@features/projects/hooks/useDeleteProject";
+import { usePermissions } from "@features/projects/hooks/usePermissions";
+import { Trash2 } from "lucide-react";
 
 import { Button } from "@shared/ui/Button";
 import { SoftPanel } from "@shared/ui/SoftPanel";
@@ -46,6 +50,9 @@ export function ProjectsPage() {
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const auth = useAuth();
 
   useEffect(() => {
@@ -105,10 +112,13 @@ export function ProjectsPage() {
     const collaborated: Project[] = [];
 
     projects.forEach((project) => {
-      if (project.ownerId === currentUserId) {
-        owned.push(project);
-      } else {
-        collaborated.push(project);
+      // Only include active projects (filter out deleted ones)
+      if (project.projectStatus !== "DELETED") {
+        if (project.ownerId === currentUserId) {
+          owned.push(project);
+        } else {
+          collaborated.push(project);
+        }
       }
     });
 
@@ -118,10 +128,20 @@ export function ProjectsPage() {
   const filteredAndSortedProjects = useMemo(() => {
     let filtered = projects;
 
+    // Filter out deleted projects - only exclude projects explicitly marked as DELETED
+    filtered = filtered.filter(p => {
+      // Include all projects except those explicitly marked as deleted
+      return p.projectStatus !== "DELETED";
+    });
+
     if (filterBy === "owned") {
-      filtered = ownedProjects;
+      filtered = ownedProjects.filter(p => 
+        p.projectStatus !== "DELETED"
+      );
     } else if (filterBy === "shared") {
-      filtered = collaboratedProjects;
+      filtered = collaboratedProjects.filter(p => 
+        p.projectStatus !== "DELETED"
+      );
     }
 
     filtered = filtered.filter(
@@ -175,79 +195,127 @@ export function ProjectsPage() {
     setIsModalOpen(false);
   };
 
-  const ProjectCard = ({ project, isOwner }: { project: Project; isOwner: boolean }) => (
-    <Link
-      to={`/dashboard/projects/${project.projectId}`}
-      className="group relative block outline-none focus:outline-none focus-visible:outline-none"
-    >
-      <div className="relative h-full rounded-2xl p-px">
-        <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
-          <div className="from-kleff-primary/70 to-kleff-primary/20 absolute inset-0 rounded-2xl bg-linear-to-br via-amber-400/40" />
-        </div>
+  const { deleteProject } = useDeleteProject();
 
-        <div
-          className={[
-            "relative h-full overflow-hidden rounded-2xl",
-            "bg-linear-to-br from-neutral-900/80 to-neutral-900/45",
-            "transition-all duration-300",
-            "border border-neutral-800/60",
-            "group-hover:border-transparent",
-            "group-hover:-translate-y-0.5",
-            "group-hover:shadow-[0_24px_70px_-45px_rgba(245,158,11,0.55)]",
-            "outline-none focus:outline-none focus-visible:outline-none"
-          ].join(" ")}
-        >
-          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
-            <div className="bg-kleff-primary/12 absolute -top-24 -right-24 h-64 w-64 rounded-full blur-3xl" />
-            <div className="from-kleff-primary/5 absolute inset-0 bg-linear-to-br via-transparent to-transparent" />
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteProject(projectToDelete.projectId);
+      
+      // Optimistically remove the project from the local state
+      // This provides immediate visual feedback without waiting for a reload
+      // The useProjects hook will handle the actual data synchronization
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      // Error handling is done in the hook
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setProjectToDelete(null);
+      
+      // Trigger a reload to ensure data consistency
+      // This will refresh the projects list and update the UI
+      await reload();
+    }
+  };
+
+  const handleOpenDeleteModal = (project: Project) => {
+    setProjectToDelete(project);
+    setIsDeleteModalOpen(true);
+  };
+
+  const ProjectCard = ({ project, isOwner }: { project: Project; isOwner: boolean }) => (
+    <div className="group relative">
+      <Link
+        to={`/dashboard/projects/${project.projectId}`}
+        className="block outline-none focus:outline-none focus-visible:outline-none"
+      >
+        <div className="relative h-full rounded-2xl p-px">
+          <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+            <div className="from-kleff-primary/70 to-kleff-primary/20 absolute inset-0 rounded-2xl bg-linear-to-br via-amber-400/40" />
           </div>
 
-          <div className="via-kleff-primary/45 pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
+          <div
+            className={[
+              "relative h-full overflow-hidden rounded-2xl",
+              "bg-linear-to-br from-neutral-900/80 to-neutral-900/45",
+              "transition-all duration-300",
+              "border border-neutral-800/60",
+              "group-hover:border-transparent",
+              "group-hover:-translate-y-0.5",
+              "group-hover:shadow-[0_24px_70px_-45px_rgba(245,158,11,0.55)]",
+              "outline-none focus:outline-none focus-visible:outline-none"
+            ].join(" ")}
+          >
+            <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+              <div className="bg-kleff-primary/12 absolute -top-24 -right-24 h-64 w-64 rounded-full blur-3xl" />
+              <div className="from-kleff-primary/5 absolute inset-0 bg-linear-to-br via-transparent to-transparent" />
+            </div>
 
-          <div className="relative space-y-4 p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="bg-kleff-primary/10 ring-kleff-primary/20 group-hover:ring-kleff-primary/35 rounded-lg p-2 ring-1 transition-all">
-                  <FolderKanban className="text-kleff-primary h-4 w-4" />
+            <div className="via-kleff-primary/45 pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
+
+            <div className="relative space-y-4 p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="bg-kleff-primary/10 ring-kleff-primary/20 group-hover:ring-kleff-primary/35 rounded-lg p-2 ring-1 transition-all">
+                    <FolderKanban className="text-kleff-primary h-4 w-4" />
+                  </div>
+
+                  <Badge
+                    variant={isOwner ? "gradient" : "outline"}
+                    className="px-2.5 py-0.5 text-[11px] font-semibold"
+                  >
+                    {isOwner ? translations[locale].teamModal.roles.OWNER : t.collaborator_badge}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="group-hover:text-kleff-primary-soft line-clamp-1 text-lg font-bold text-neutral-50 transition-colors">
+                  {project.name}
+                </h3>
+                <p className="mt-1.5 line-clamp-2 min-h-10 text-sm leading-relaxed text-neutral-400">
+                  {project.description || (
+                    <span className="italic opacity-60">{t.no_description}</span>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{getRelativeTime(project.createdDate)}</span>
                 </div>
 
-                <Badge
-                  variant={isOwner ? "gradient" : "outline"}
-                  className="px-2.5 py-0.5 text-[11px] font-semibold"
-                >
-                  {isOwner ? translations[locale].teamModal.roles.OWNER : t.collaborator_badge}
-                </Badge>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="group-hover:text-kleff-primary-soft line-clamp-1 text-lg font-bold text-neutral-50 transition-colors">
-                {project.name}
-              </h3>
-              <p className="mt-1.5 line-clamp-2 min-h-10 text-sm leading-relaxed text-neutral-400">
-                {project.description || (
-                  <span className="italic opacity-60">{t.no_description}</span>
+                {project.projectStatus && (
+                  <Badge variant="success" className="px-2 py-0.5 text-[10px]">
+                    <Zap className="mr-1 h-2.5 w-2.5" />
+                    {t.status.active}
+                  </Badge>
                 )}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-white/5 pt-3">
-              <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                <Clock className="h-3.5 w-3.5" />
-                <span>{getRelativeTime(project.createdDate)}</span>
               </div>
-
-              {project.projectStatus && (
-                <Badge variant="success" className="px-2 py-0.5 text-[10px]">
-                  <Zap className="mr-1 h-2.5 w-2.5" />
-                  {t.status.active}
-                </Badge>
-              )}
             </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {isOwner && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            handleOpenDeleteModal(project);
+          }}
+          className="absolute -top-2 -right-2 opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+          title="Delete project"
+        >
+          <div className="rounded-lg bg-red-500/10 p-2 ring-1 ring-red-500/20 hover:bg-red-500/20">
+            <Trash2 className="h-4 w-4 text-red-400" />
+          </div>
+        </button>
+      )}
+    </div>
   );
 
   const projectCountLabel = (count: number) => {
@@ -311,7 +379,7 @@ export function ProjectsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">{t.stats.total_projects}</p>
-                  <p className="text-xl font-bold text-neutral-50">{projects.length}</p>
+                  <p className="text-xl font-bold text-neutral-50">{filteredAndSortedProjects.length}</p>
                 </div>
               </div>
             </SoftPanel>
@@ -563,6 +631,14 @@ export function ProjectsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleCreateSuccess}
+      />
+
+      <DeleteProjectModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteProject}
+        projectName={projectToDelete?.name || ""}
+        isLoading={isDeleting}
       />
     </section>
   );

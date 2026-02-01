@@ -10,7 +10,7 @@ export function useDeleteProject() {
     async (projectId: string): Promise<void> => {
       try {
         await deleteProject(projectId);
-        navigate(ROUTES.DASHBOARD);
+        // Don't navigate away - let the calling component handle UI updates
       } catch (error) {
         console.error("Failed to delete project:", error);
         throw error;
