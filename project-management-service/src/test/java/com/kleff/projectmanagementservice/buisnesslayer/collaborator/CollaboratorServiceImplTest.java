@@ -200,6 +200,30 @@ class CollaboratorServiceImplTest {
                 verify(collaboratorRepo).save(captor.capture());
                 assertThat(captor.getValue().getRole()).isEqualTo(CollaboratorRole.ADMIN);
                 assertThat(captor.getValue().getPermissions()).containsExactly(ProjectPermission.MANAGE_COLLABORATORS);
+                assertThat(captor.getValue().getCustomRoleId()).isNull();
+        }
+
+        @Test
+        void updateCollaborator_WithCustomRole_UpdatesCustomRoleId() {
+                // Arrange
+                CollaboratorRequestModel updateRequest = CollaboratorRequestModel.builder()
+                                .customRoleId(100)
+                                .build();
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(testCollaborator));
+                when(collaboratorRepo.save(any(Collaborator.class))).thenReturn(testCollaborator);
+                when(responseMapper.toResponseModel(any(Collaborator.class))).thenReturn(testResponse);
+
+                // Act
+                collaboratorService.updateCollaborator(testProjectId, testUserId, updateRequest, "test-actor");
+
+                // Assert
+                ArgumentCaptor<Collaborator> captor = ArgumentCaptor.forClass(Collaborator.class);
+                verify(collaboratorRepo).save(captor.capture());
+                assertThat(captor.getValue().getCustomRoleId()).isEqualTo(100);
+                assertThat(captor.getValue().getRole()).isEqualTo(CollaboratorRole.VIEWER);
+                assertThat(captor.getValue().getPermissions()).isNull();
         }
 
         @Test

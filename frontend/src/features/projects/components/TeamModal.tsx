@@ -172,6 +172,8 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingRoleType, setEditingRoleType] = useState<"builtin" | "custom">("builtin");
+  const [editingCustomRoleId, setEditingCustomRoleId] = useState<number | null>(null);
   const [editingRole, setEditingRole] = useState<"ADMIN" | "DEVELOPER" | "VIEWER">("DEVELOPER");
   const [usernames, setUsernames] = useState<Record<string, string>>({});
 
@@ -365,7 +367,12 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
 
   const handleUpdateRole = async (userId: string) => {
     try {
-      await updateCollaboratorRole(projectId, userId, editingRole);
+      await updateCollaboratorRole(
+        projectId,
+        userId,
+        editingRoleType === "builtin" ? editingRole : "VIEWER",
+        editingRoleType === "custom" ? editingCustomRoleId! : undefined
+      );
       setSuccess(t.messages.role_updated);
       setEditingUserId(null);
       await loadCollaborators();
@@ -379,7 +386,15 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
 
   const startEditing = (collaborator: Collaborator) => {
     setEditingUserId(collaborator.userId);
-    setEditingRole(collaborator.role as "ADMIN" | "DEVELOPER" | "VIEWER");
+    if (collaborator.customRoleId) {
+      setEditingRoleType("custom");
+      setEditingCustomRoleId(collaborator.customRoleId);
+      setEditingRole("VIEWER"); // Default, though unused in custom mode
+    } else {
+      setEditingRoleType("builtin");
+      setEditingRole(collaborator.role as "ADMIN" | "DEVELOPER" | "VIEWER");
+      setEditingCustomRoleId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -492,18 +507,45 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                               {editingUserId === collaborator.userId && canManageTeam ? (
                                 <div className="flex items-center gap-2">
                                   <Select
-                                    value={editingRole}
-                                    onValueChange={(value) =>
-                                      setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER")
+                                    value={
+                                      editingRoleType === "builtin"
+                                        ? editingRole
+                                        : `custom-${editingCustomRoleId}`
                                     }
+                                    onValueChange={(value) => {
+                                      if (value.startsWith("custom-")) {
+                                        setEditingRoleType("custom");
+                                        setEditingCustomRoleId(
+                                          Number(value.replace("custom-", ""))
+                                        );
+                                      } else {
+                                        setEditingRoleType("builtin");
+                                        setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER");
+                                      }
+                                    }}
                                   >
-                                    <SelectTrigger className="h-8 w-32 text-xs">
+                                    <SelectTrigger className="h-8 w-40 text-xs">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <div className="px-2 py-1.5 text-xs font-semibold text-neutral-400">
+                                        {t.inviteModal.builtin}
+                                      </div>
                                       <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
                                       <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
                                       <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
+                                      {customRoles.length > 0 && (
+                                        <>
+                                          <div className="mt-2 border-t border-white/10 px-2 py-1.5 text-xs font-semibold text-neutral-400">
+                                            {t.custom_roles}
+                                          </div>
+                                          {customRoles.map((role) => (
+                                            <SelectItem key={role.id} value={`custom-${role.id}`}>
+                                              {role.name}
+                                            </SelectItem>
+                                          ))}
+                                        </>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <Button
