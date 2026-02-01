@@ -92,7 +92,10 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
   };
 
   const loadBills = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -108,9 +111,10 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
   useEffect(() => {
     if (activeTab === "invitations") {
       loadInvitations();
-    } else if (activeTab === "bills" && projectId) {
+    } else if (activeTab === "bills") {
       loadBills();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, projectId]);
 
   const handleAccept = async (invitationId: number) => {
@@ -148,7 +152,7 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
     }).format(amount);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString();
   };
 
