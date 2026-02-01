@@ -128,19 +128,15 @@ export function ProjectsPage() {
     let filtered = projects;
 
     // Filter out deleted projects - only exclude projects explicitly marked as DELETED
-    filtered = filtered.filter(p => {
+    filtered = filtered.filter((p) => {
       // Include all projects except those explicitly marked as deleted
       return p.projectStatus !== "DELETED";
     });
 
     if (filterBy === "owned") {
-      filtered = ownedProjects.filter(p => 
-        p.projectStatus !== "DELETED"
-      );
+      filtered = ownedProjects.filter((p) => p.projectStatus !== "DELETED");
     } else if (filterBy === "shared") {
-      filtered = collaboratedProjects.filter(p => 
-        p.projectStatus !== "DELETED"
-      );
+      filtered = collaboratedProjects.filter((p) => p.projectStatus !== "DELETED");
     }
 
     filtered = filtered.filter(
@@ -204,17 +200,17 @@ export function ProjectsPage() {
     try {
       setIsDeleting(true);
       const result = await deleteProject(projectToDelete.projectId);
-      
+
       // Handle the generated invoice
       if (result && result.invoice) {
         console.log("Final invoice generated:", result.invoice);
         // The invoice will be available in the billing section
       }
-      
+
       // Optimistically remove the project from the local state
       // This provides immediate visual feedback without waiting for a reload
       // The useProjects hook will handle the actual data synchronization
-      
+
       return result; // Return the result for the modal to handle
     } catch (error) {
       console.error("Failed to delete project:", error);
@@ -224,7 +220,7 @@ export function ProjectsPage() {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
       setProjectToDelete(null);
-      
+
       // Trigger a reload to ensure data consistency
       // This will refresh the projects list and update the UI
       await reload();
@@ -389,7 +385,9 @@ export function ProjectsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">{t.stats.total_projects}</p>
-                  <p className="text-xl font-bold text-neutral-50">{filteredAndSortedProjects.length}</p>
+                  <p className="text-xl font-bold text-neutral-50">
+                    {filteredAndSortedProjects.length}
+                  </p>
                 </div>
               </div>
             </SoftPanel>

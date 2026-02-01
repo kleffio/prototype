@@ -115,27 +115,37 @@ export function DeleteProjectModal({
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-400">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span className="font-medium text-neutral-200">${generatedInvoice.subtotal.toFixed(2)}</span>
+                <span className="font-medium text-neutral-200">
+                  ${generatedInvoice.subtotal.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Taxes:</span>
-                <span className="font-medium text-neutral-200">${generatedInvoice.taxes.toFixed(2)}</span>
+                <span className="font-medium text-neutral-200">
+                  ${generatedInvoice.taxes.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>CPU Usage:</span>
-                <span className="font-medium text-neutral-200">{generatedInvoice.totalCPU.toFixed(2)}</span>
+                <span className="font-medium text-neutral-200">
+                  {generatedInvoice.totalCPU.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>RAM Usage:</span>
-                <span className="font-medium text-neutral-200">{generatedInvoice.totalRAM.toFixed(2)} GB</span>
+                <span className="font-medium text-neutral-200">
+                  {generatedInvoice.totalRAM.toFixed(2)} GB
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Storage:</span>
-                <span className="font-medium text-neutral-200">{generatedInvoice.totalSTORAGE.toFixed(2)} GB</span>
+                <span className="font-medium text-neutral-200">
+                  {generatedInvoice.totalSTORAGE.toFixed(2)} GB
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Status:</span>
@@ -144,11 +154,12 @@ export function DeleteProjectModal({
                 </Badge>
               </div>
             </div>
-            
+
             <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
               <Calendar className="h-3.5 w-3.5" />
               <span>
-                Period: {new Date(generatedInvoice.startDate).toLocaleDateString()} - {new Date(generatedInvoice.endDate).toLocaleDateString()}
+                Period: {new Date(generatedInvoice.startDate).toLocaleDateString()} -{" "}
+                {new Date(generatedInvoice.endDate).toLocaleDateString()}
               </span>
             </div>
           </div>

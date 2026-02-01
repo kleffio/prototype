@@ -19,7 +19,7 @@ export default async function batchDeleteContainers(
   projectId: string,
   containerIds: string[]
 ): Promise<BatchDeleteResponse> {
-  const targets = containerIds.map(containerId => ({
+  const targets = containerIds.map((containerId) => ({
     projectID: projectId,
     containerID: containerId
   }));
@@ -28,6 +28,9 @@ export default async function batchDeleteContainers(
     targets
   };
 
-  const res = await client.post<BatchDeleteResponse>("/api/v1/containers/batch-delete", requestBody);
+  const res = await client.post<BatchDeleteResponse>(
+    "/api/v1/containers/batch-delete",
+    requestBody
+  );
   return res.data;
 }

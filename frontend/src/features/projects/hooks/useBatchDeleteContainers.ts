@@ -3,7 +3,10 @@ import batchDeleteContainers from "@features/projects/api/batchDeleteContainers"
 
 export function useBatchDeleteContainers() {
   const batchDelete = useCallback(
-    async (projectId: string, containerIds: string[]): Promise<{
+    async (
+      projectId: string,
+      containerIds: string[]
+    ): Promise<{
       deleted: string[];
       failed: Array<{ containerID: string; reason: string }>;
     }> => {

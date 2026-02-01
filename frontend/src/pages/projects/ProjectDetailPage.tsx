@@ -107,7 +107,6 @@ export function ProjectDetailPage() {
     await reload();
   };
 
-
   // This is kept for the modal usage if needed, though we might use the unified flow
   const handleDeleteContainer = async (containerId: string) => {
     // Reuse logic if necessary, but for now the modal handles its own delete via the same API import
@@ -382,7 +381,6 @@ export function ProjectDetailPage() {
         <SecureComponent requiredPermission="MANAGE_BILLING">
           <InvoiceTable projectId={project.projectId} />
         </SecureComponent>
-
       </div>
 
       <BillingModal
@@ -434,7 +432,6 @@ export function ProjectDetailPage() {
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
       />
-
     </section>
   );
 }
