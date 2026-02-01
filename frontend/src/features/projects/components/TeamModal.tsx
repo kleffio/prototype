@@ -520,9 +520,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                                         );
                                       } else {
                                         setEditingRoleType("builtin");
-                                        setEditingRole(
-                                          value as "ADMIN" | "DEVELOPER" | "VIEWER"
-                                        );
+                                        setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER");
                                       }
                                     }}
                                   >
@@ -534,9 +532,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                                         {t.inviteModal.builtin}
                                       </div>
                                       <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
-                                      <SelectItem value="DEVELOPER">
-                                        {t.roles.DEVELOPER}
-                                      </SelectItem>
+                                      <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
                                       <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
                                       {customRoles.length > 0 && (
                                         <>
@@ -544,10 +540,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                                             {t.custom_roles}
                                           </div>
                                           {customRoles.map((role) => (
-                                            <SelectItem
-                                              key={role.id}
-                                              value={`custom-${role.id}`}
-                                            >
+                                            <SelectItem key={role.id} value={`custom-${role.id}`}>
                                               {role.name}
                                             </SelectItem>
                                           ))}
@@ -833,7 +826,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                         {(selectedRoleType === "builtin"
                           ? ROLE_DEFAULT_PERMISSIONS[inviteRole]
                           : customRoles.find((r) => r.id === selectedCustomRoleId)?.permissions ||
-                          []
+                            []
                         ).map((permission) => {
                           const perm = AVAILABLE_PERMISSIONS.find((p) => p.value === permission);
                           return perm ? (
