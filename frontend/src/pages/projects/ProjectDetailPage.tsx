@@ -14,9 +14,7 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Crown,
-  Trash2,
-  AlertTriangle
+  Crown
 } from "lucide-react";
 import { useProject } from "@features/projects/hooks/useProject";
 import { useProjectContainers } from "@features/projects/hooks/useProjectContainers";

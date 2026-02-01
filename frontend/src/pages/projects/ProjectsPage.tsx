@@ -7,7 +7,6 @@ import { PendingInvitations } from "@features/projects/components/PendingInvitat
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { DeleteProjectModal } from "@features/projects/components/DeleteProjectModal";
 import { useDeleteProject } from "@features/projects/hooks/useDeleteProject";
-import { usePermissions } from "@features/projects/hooks/usePermissions";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@shared/ui/Button";
