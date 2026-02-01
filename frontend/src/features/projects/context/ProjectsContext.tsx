@@ -7,6 +7,7 @@ type ProjectsState = {
   isLoading: boolean;
   error: string | null;
   reload: () => Promise<void>;
+  refreshInvoices?: () => Promise<void>; // Optional function to refresh invoices
 };
 
 const ProjectsContext = createContext<ProjectsState | undefined>(undefined);

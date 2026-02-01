@@ -6,5 +6,6 @@ public enum InvoiceStatus {
     PAID,
     VOID,
     UNCOLLECTIBLE,
-    OVERDUE
+    OVERDUE,
+    UNPAID
 }

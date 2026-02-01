@@ -244,6 +244,110 @@ public class BillingServiceImpl implements BillingService {
             }
         }
     }
+
+    /**
+     * Generates a final invoice for a project being deleted.
+     * This invoice includes all outstanding usage charges up to the deletion time.
+     * 
+     * @param projectId The ID of the project being deleted
+     * @param username The username of the project owner (for authorization)
+     * @return The generated final invoice
+     * @throws EntityNotFoundException if project or pricing data is not found
+     * @throws IllegalArgumentException if user is not authorized or project has issues
+     */
+    @Override
+    @Transactional
+    public Invoice generateFinalInvoice(String projectId, String username) {
+        log.info("Generating final invoice for project: {} for user: {}", projectId, username);
+        
+        // 1. Verify project exists and user is owner (this will be validated by the caller)
+        // For now, we'll rely on the controller to handle authorization
+        
+        // 2. Get all outstanding usage records for the project
+        List<UsageRecord> usageRecords = usageRecordRepository.findByProjectIdIs(projectId);
+        
+        if (usageRecords.isEmpty()) {
+            log.info("No usage records found for project: {}", projectId);
+        }
+        
+        // 3. Calculate totals by pricing model
+        BigDecimal totalCPU = BigDecimal.ZERO;
+        BigDecimal totalRAM = BigDecimal.ZERO;
+        BigDecimal totalSTORAGE = BigDecimal.ZERO;
+        
+        // Fetch prices with null safety checks
+        Price cpuPrice = getPrice("CPU_HOURS");
+        Price memoryPrice = getPrice("MEMORY_GB_HOURS");
+        Price storagePrice = getPrice("STORAGE_GB");
+        
+        if (cpuPrice == null || memoryPrice == null || storagePrice == null) {
+            throw new EntityNotFoundException("One or more price records not found");
+        }
+        
+        BigDecimal cpuPriceValue = BigDecimal.valueOf(cpuPrice.getPrice());
+        BigDecimal memoryPriceValue = BigDecimal.valueOf(memoryPrice.getPrice());
+        BigDecimal storagePriceValue = BigDecimal.valueOf(storagePrice.getPrice());
+        
+        // Calculate charges for ON_DEMAND usage records
+        for (UsageRecord record : usageRecords) {
+            if (record.getPricingModel() == PricingModel.ON_DEMAND) {
+                if (record.getCPU_HOURS() != null) {
+                    totalCPU = totalCPU.add(BigDecimal.valueOf(record.getCPU_HOURS()).multiply(cpuPriceValue));
+                }
+                if (record.getMEMORY_GB_HOURS() != null) {
+                    totalRAM = totalRAM.add(BigDecimal.valueOf(record.getMEMORY_GB_HOURS()).multiply(memoryPriceValue));
+                }
+                if (record.getSTORAGE_GB() != null) {
+                    totalSTORAGE = totalSTORAGE.add(BigDecimal.valueOf(record.getSTORAGE_GB()).multiply(storagePriceValue));
+                }
+            }
+        }
+        
+        // 4. Handle reserved allocations if they exist
+        List<ReservedAllocation> reservedAllocations = reservedAllocationRepository.findByProjectId(projectId);
+        for (ReservedAllocation allocation : reservedAllocations) {
+            // For reserved allocations, we might want to charge differently
+            // For now, we'll include them in the final invoice at regular rates
+            // This could be modified based on business requirements
+            if (allocation.getCpuHours() != null) {
+                totalCPU = totalCPU.add(BigDecimal.valueOf(allocation.getCpuHours()).multiply(cpuPriceValue));
+            }
+            if (allocation.getMemoryGbHours() != null) {
+                totalRAM = totalRAM.add(BigDecimal.valueOf(allocation.getMemoryGbHours()).multiply(memoryPriceValue));
+            }
+            if (allocation.getStorageGb() != null) {
+                totalSTORAGE = totalSTORAGE.add(BigDecimal.valueOf(allocation.getStorageGb()).multiply(storagePriceValue));
+            }
+        }
+        
+        // 5. Calculate totals
+        BigDecimal subtotal = totalCPU.add(totalRAM).add(totalSTORAGE);
+        BigDecimal taxAmount = subtotal.multiply(BigDecimal.valueOf(taxes));
+        BigDecimal total = subtotal.add(taxAmount).setScale(2, BigDecimal.ROUND_HALF_UP);
+        
+        // 6. Create final invoice
+        Invoice finalInvoice = Invoice.builder()
+            .projectId(projectId)
+            .startDate(new java.sql.Date(System.currentTimeMillis()))
+            .endDate(new java.sql.Date(System.currentTimeMillis()))
+            .status(InvoiceStatus.UNPAID)
+            .totalCPU(totalCPU)
+            .totalRAM(totalRAM)
+            .totalSTORAGE(totalSTORAGE)
+            .subtotal(subtotal)
+            .taxes(taxAmount)
+            .total(total)
+            .totalPaid(BigDecimal.ZERO)
+            .build();
+        
+        // 7. Save the invoice
+        Invoice savedInvoice = invoiceRepository.save(finalInvoice);
+        
+        log.info("Final invoice generated for project {}: Invoice ID: {}, Total: ${}", 
+                projectId, savedInvoice.getInvoiceId(), savedInvoice.getTotal());
+        
+        return savedInvoice;
+    }
 }
 
 

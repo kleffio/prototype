@@ -28,18 +28,27 @@ import (
 
 // Server holds dependencies to avoid global state
 type Server struct {
-	KubeClient     kubernetes.Interface
-	DynamicClient  dynamic.Interface
-	Logger         *slog.Logger
-	RegistryBase   string // Will default to "kleff.azurecr.io"
-	UserServiceURL string // URL to user-service for auth checking
+	KubeClient    kubernetes.Interface
+	DynamicClient dynamic.Interface
+	Logger        *slog.Logger
+	RegistryBase  string // Will default to "kleff.azurecr.io"
 }
 
-// UserStatus represents user account status response
-type UserStatus struct {
-	UserID        string `json:"userId"`
-	IsDeactivated bool   `json:"isDeactivated"`
-	Active        bool   `json:"active"`
+type DeleteTarget struct {
+	ProjectID   string `json:"projectID"`
+	ContainerID string `json:"containerID"`
+}
+
+type BatchDeleteRequest struct {
+	Targets []DeleteTarget `json:"targets"`
+}
+
+type BatchDeleteResponse struct {
+	Deleted []string `json:"deleted"` // List of ContainerIDs successfully deleted
+	Failed  []struct {
+		ContainerID string `json:"containerID"`
+		Reason      string `json:"reason"`
+	} `json:"failed"`
 }
 
 type BuildRequest struct {
@@ -95,12 +104,6 @@ func main() {
 		defaultRegistry = "kleff.azurecr.io"
 	}
 
-	// User service URL for authentication
-	userServiceURL := os.Getenv("USER_SERVICE_URL")
-	if userServiceURL == "" {
-		userServiceURL = "http://user-service:8080" // Default for docker-compose
-	}
-
 	registry := flag.String("registry", defaultRegistry, "The container registry base URL")
 	flag.Parse()
 
@@ -137,17 +140,20 @@ func main() {
 	cleanRegistry := strings.TrimRight(*registry, "/")
 
 	server := &Server{
-		KubeClient:     clientset,
-		DynamicClient:  dynClient,
-		Logger:         logger,
-		RegistryBase:   cleanRegistry,
-		UserServiceURL: userServiceURL,
+		KubeClient:    clientset,
+		DynamicClient: dynClient,
+		Logger:        logger,
+		RegistryBase:  cleanRegistry,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/build/create", enableCors(server.authMiddleware(server.handleCreateBuild)))
-	mux.HandleFunc("/api/v1/build/hello", enableCors(server.handleHelloWorld))
-	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.authMiddleware(server.handleUpdateWebApp)))
+
+	// Auth middleware removed, handlers wrapped only with enableCors
+	mux.HandleFunc("POST /api/v1/build/create", enableCors(server.handleCreateBuild))
+	mux.HandleFunc("GET /api/v1/build/hello", enableCors(server.handleHelloWorld))
+	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
+	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
+	mux.HandleFunc("POST /api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
 
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -169,11 +175,6 @@ func (s *Server) handleHelloWorld(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Limit request body size (1MB)
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
@@ -262,6 +263,82 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request) {
+	var req BatchDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	response := BatchDeleteResponse{
+		Deleted: make([]string, 0),
+		Failed: make([]struct {
+			ContainerID string `json:"containerID"`
+			Reason      string `json:"reason"`
+		}, 0),
+	}
+
+	for _, target := range req.Targets {
+		// 1. Validate inputs
+		if target.ProjectID == "" || target.ContainerID == "" {
+			response.Failed = append(response.Failed, struct {
+				ContainerID string `json:"containerID"`
+				Reason      string `json:"reason"`
+			}{ContainerID: target.ContainerID, Reason: "Missing projectID or containerID"})
+			continue
+		}
+
+		// 2. Sanitize IDs
+		namespaceName, err := validateAndSanitize(target.ProjectID)
+		if err != nil {
+			response.Failed = append(response.Failed, struct {
+				ContainerID string `json:"containerID"`
+				Reason      string `json:"reason"`
+			}{ContainerID: target.ContainerID, Reason: "Invalid ProjectID format"})
+			continue
+		}
+
+		rawUUID, err := validateAndSanitize(target.ContainerID)
+		if err != nil {
+			response.Failed = append(response.Failed, struct {
+				ContainerID string `json:"containerID"`
+				Reason      string `json:"reason"`
+			}{ContainerID: target.ContainerID, Reason: "Invalid ContainerID format"})
+			continue
+		}
+
+		// 3. Construct Resource Name (app-UUID)
+		resourceName := "app-" + rawUUID
+
+		// 4. Delete from Kubernetes
+		err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
+
+		if err != nil {
+			// If it's already gone, we consider that a success (idempotency)
+			if k8serrors.IsNotFound(err) {
+				s.Logger.Info("WebApp not found during batch delete (considered deleted)", "resourceName", resourceName)
+				response.Deleted = append(response.Deleted, target.ContainerID)
+			} else {
+				// Actual error
+				s.Logger.Error("Failed to delete WebApp in batch", "resourceName", resourceName, "error", err)
+				response.Failed = append(response.Failed, struct {
+					ContainerID string `json:"containerID"`
+					Reason      string `json:"reason"`
+				}{ContainerID: target.ContainerID, Reason: err.Error()})
+			}
+		} else {
+			// Success
+			s.Logger.Info("WebApp deleted successfully via batch", "resourceName", resourceName)
+			response.Deleted = append(response.Deleted, target.ContainerID)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	// If partial failures occur, we still return 200 OK, but the client must check the "failed" list.
+	// You could return 207 Multi-Status, but 200 is easier for most frontends to handle.
+	json.NewEncoder(w).Encode(response)
+}
+
 // createWebApp uses the Dynamic Client to create or update the Custom Resource
 func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
 	port := req.Port
@@ -327,6 +404,57 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 	}
 	return nil
 }
+
+func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("projectID")
+	containerID := r.PathValue("containerID")
+
+	// 2. Validation
+	if projectID == "" || containerID == "" {
+		s.Logger.Warn("Delete request missing path parameters", "projectID", projectID, "containerID", containerID)
+		http.Error(w, "projectID and containerID are required in the URL path", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Sanitize and Format (Same logic as before)
+	namespaceName, err := validateAndSanitize(projectID)
+	if err != nil {
+		http.Error(w, "Invalid Project ID", http.StatusBadRequest)
+		return
+	}
+
+	rawUUID, err := validateAndSanitize(containerID)
+	if err != nil {
+		http.Error(w, "Invalid Container ID", http.StatusBadRequest)
+		return
+	}
+	resourceName := "app-" + rawUUID
+
+	// 4. Delete from Kubernetes
+	err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
+
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			s.Logger.Warn("WebApp not found for deletion", "resourceName", resourceName, "namespace", namespaceName)
+			http.Error(w, "WebApp not found", http.StatusNotFound)
+			return
+		}
+		s.Logger.Error("Failed to delete WebApp", "resourceName", resourceName, "error", err)
+		http.Error(w, fmt.Sprintf("Failed to delete WebApp: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	s.Logger.Info("WebApp deleted successfully via upstream call", "resourceName", resourceName, "namespace", namespaceName)
+
+	// 5. Success Response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		Namespace: namespaceName,
+		AppName:   resourceName,
+		Message:   "WebApp deleted successfully",
+	})
+}
+
 func (s *Server) handleUpdateWebApp(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch && r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -367,6 +495,7 @@ func (s *Server) handleUpdateWebApp(w http.ResponseWriter, r *http.Request) {
 		Message:   "Environment variables updated successfully",
 	})
 }
+
 func (s *Server) createNamespace(ctx context.Context, name string) (bool, error) {
 	nsSpec := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -483,7 +612,8 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		// Expanded allowed methods to include DELETE, PATCH, GET
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, DELETE, PATCH")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
@@ -518,84 +648,4 @@ func (s *Server) updateWebAppEnvVariables(ctx context.Context, namespace, name s
 	_, updateErr := s.DynamicClient.Resource(webAppGVR).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
 	return updateErr
 
-}
-
-// extractUserIDFromJWT extracts user ID from JWT token by calling user-service
-func (s *Server) extractUserIDFromJWT(ctx context.Context, bearerToken string) (string, error) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, "GET", s.UserServiceURL+"/api/v1/users/me", nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+bearerToken)
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to validate token: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 403 {
-		return "", fmt.Errorf("account has been deactivated")
-	}
-	if resp.StatusCode == 401 {
-		return "", fmt.Errorf("invalid or expired token")
-	}
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("authentication failed with status %d", resp.StatusCode)
-	}
-
-	var userResponse struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
-		return "", fmt.Errorf("failed to decode user response: %w", err)
-	}
-
-	return userResponse.ID, nil
-}
-
-// extractBearerToken extracts the bearer token from Authorization header
-func extractBearerToken(r *http.Request) string {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return ""
-	}
-
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return ""
-	}
-
-	return parts[1]
-}
-
-// authMiddleware checks if user is authenticated and not deactivated
-func (s *Server) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		token := extractBearerToken(r)
-		if token == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "missing or invalid authorization header"})
-			return
-		}
-
-		userID, err := s.extractUserIDFromJWT(r.Context(), token)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			if strings.Contains(err.Error(), "deactivated") {
-				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(map[string]string{"error": "account has been deactivated"})
-			} else {
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			}
-			return
-		}
-
-		// Store user ID in context for use in handlers
-		ctx := context.WithValue(r.Context(), "userID", userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
 }

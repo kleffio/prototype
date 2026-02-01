@@ -1,10 +1,7 @@
 package com.kleff.deployment.presentation;
 
 import com.kleff.deployment.business.ContainerServiceImpl;
-import com.kleff.deployment.data.container.Container;
-import com.kleff.deployment.data.container.ContainerRequestModel;
-import com.kleff.deployment.data.container.ContainerResponseModel;
-import com.kleff.deployment.data.container.UpdateEnvVariablesRequest;
+import com.kleff.deployment.data.container.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -87,5 +84,10 @@ public class ContainerController {
                 return ResponseEntity.internalServerError().body("Failed to delete container: " + e.getMessage());
             }
         }
+    }
+
+    @PostMapping("/batch-delete")
+    public BatchDeleteResponse batchDeleteContainers(@RequestBody BatchDeleteRequest request) {
+        return containerService.batchDeleteContainers(request);
     }
 }
