@@ -29,6 +29,7 @@ import {
   Zap
 } from "lucide-react";
 import { getMyInvitations } from "@features/projects/api/invitations";
+import { fetchAllNotifications } from "@features/billing/api/getAllNotifications";
 import { Spinner } from "@shared/ui/Spinner";
 
 const translations = {
@@ -69,6 +70,23 @@ export function ProjectsPage() {
   const tNotifications = translations[locale].notifications;
 
   const currentUserId = auth.user?.profile?.sub;
+
+  const refreshNotificationCount = async () => {
+    try {
+      // Load invitation count
+      const invitations = await getMyInvitations();
+      const pendingInvitationCount = (invitations || []).filter((inv) => inv.status === "PENDING").length;
+      
+      // Load bill notifications count
+      const bills = await fetchAllNotifications();
+      const pendingBillCount = bills.filter((bill) => bill.status === "OPEN" || bill.status === "OVERDUE").length;
+      
+      // Update the total count
+      setInvitationCount(pendingInvitationCount + pendingBillCount);
+    } catch (error) {
+      console.error("Failed to refresh notification count:", error);
+    }
+  };
 
   useEffect(() => {
     const loadInvitationCount = async () => {
@@ -540,12 +558,7 @@ export function ProjectsPage() {
                 <div className="max-h-[70vh] overflow-y-auto p-5">
                   <PendingInvitations
                     onUpdate={() => {
-                      getMyInvitations().then((invitations) => {
-                        const pendingCount = (invitations || []).filter(
-                          (inv) => inv.status === "PENDING"
-                        ).length;
-                        setInvitationCount(pendingCount);
-                      });
+                      refreshNotificationCount();
                     }}
                   />
                 </div>
