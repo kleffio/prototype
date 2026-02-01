@@ -146,7 +146,13 @@
       "irreversible_action": "Warning: Irreversible Action",
       "delete_container_warning": "This will permanently delete the container and all its data.",
       "cancel": "Cancel"
-    }
+    },
+    "danger_zone": {
+      "title": "Danger Zone",
+      "subtitle": "Permanently delete this project and all its data."
+    },
+    "delete_project": "Delete Project",
+    "deleting": "Deleting..."
   },
   "containerModal": {
     "create_title": "Create container",

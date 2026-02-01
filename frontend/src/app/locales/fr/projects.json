@@ -131,7 +131,13 @@
       "cancel": "Annuler",
       "irreversible_action": "Action irréversible",
       "delete_container_warning": "La suppression de ce conteneur supprimera toutes les données et configurations associées. Cette action ne peut pas être annulée."
-    }
+    },
+    "danger_zone": {
+      "title": "Zone de Danger",
+      "subtitle": "Supprimer définitivement ce projet et toutes ses données."
+    },
+    "delete_project": "Supprimer le Projet",
+    "deleting": "Suppression..."
   },
   "containerModal": {
     "create_title": "Créer un conteneur",

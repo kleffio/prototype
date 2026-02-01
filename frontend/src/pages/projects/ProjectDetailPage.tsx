@@ -14,14 +14,18 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Crown
+  Crown,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { useProject } from "@features/projects/hooks/useProject";
 import { useProjectContainers } from "@features/projects/hooks/useProjectContainers";
+import { useDeleteProject } from "@features/projects/hooks/useDeleteProject";
 import { ContainerModal } from "@features/projects/components/CreateContainerModal";
 import { EditEnvVariablesModal } from "@features/projects/components/EditEnvVariablesModal";
 import { ContainerStatusCard } from "@features/projects/components/ContainerStatusCard";
 import { ContainerDetailModal } from "@features/projects/components/ContainerDetailModal";
+import { DeleteProjectModal } from "@features/projects/components/DeleteProjectModal";
 import updateContainerEnvVariables from "@features/projects/api/updateContainerEnvVariables";
 import deleteContainer from "@features/projects/api/deleteContainer";
 import type { Container } from "@features/projects/types/Container";
@@ -68,6 +72,10 @@ export function ProjectDetailPage() {
 
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { deleteProject } = useDeleteProject();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -105,6 +113,22 @@ export function ProjectDetailPage() {
   ) => {
     await updateContainerEnvVariables(containerId, envVariables);
     await reload();
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteProject(project.projectId);
+      // Success handling is done in the hook
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      // Error handling is done in the hook
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
   };
 
   // This is kept for the modal usage if needed, though we might use the unified flow
@@ -381,6 +405,31 @@ export function ProjectDetailPage() {
         <SecureComponent requiredPermission="MANAGE_BILLING">
           <InvoiceTable projectId={project.projectId} />
         </SecureComponent>
+
+        {/* Danger Zone - Only show for project owners */}
+        {role === "OWNER" && (
+          <SoftPanel className="border-red-500/20 bg-red-500/5 p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-red-400" />
+              <div>
+                <h2 className="text-lg font-bold text-neutral-50">{t.danger_zone.title}</h2>
+                <p className="text-sm text-neutral-400">{t.danger_zone.subtitle}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="destructive"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="bg-red-600 text-white hover:bg-red-700"
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? t.deleting : t.delete_project}
+              </Button>
+            </div>
+          </SoftPanel>
+        )}
       </div>
 
       <BillingModal
@@ -433,7 +482,13 @@ export function ProjectDetailPage() {
         onOpenChange={setIsLogsOpen}
       />
 
-      {/* Delete Confirmation Dialog */}
+      <DeleteProjectModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteProject}
+        projectName={project.name}
+        isLoading={isDeleting}
+      />
     </section>
   );
 }
