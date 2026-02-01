@@ -12,7 +12,8 @@ export async function deleteCollaborator(projectId: string, userId: string): Pro
 export async function updateCollaboratorRole(
   projectId: string,
   userId: string,
-  role: "ADMIN" | "DEVELOPER" | "VIEWER"
+  role: "ADMIN" | "DEVELOPER" | "VIEWER",
+  customRoleId?: number
 ): Promise<void> {
-  await client.put(`/api/v1/projects/${projectId}/collaborators/${userId}`, { role });
+  await client.put(`/api/v1/projects/${projectId}/collaborators/${userId}`, { role, customRoleId });
 }

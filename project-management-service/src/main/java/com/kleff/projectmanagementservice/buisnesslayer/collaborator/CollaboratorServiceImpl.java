@@ -49,8 +49,15 @@ public class CollaboratorServiceImpl implements CollaboratorService {
 
         CollaboratorRole oldRole = collaborator.getRole();
 
-        collaborator.setRole(request.getRole());
-        collaborator.setPermissions(request.getPermissions());
+        if (request.getCustomRoleId() != null) {
+            collaborator.setCustomRoleId(request.getCustomRoleId());
+            collaborator.setRole(CollaboratorRole.VIEWER); // Set a base role
+            collaborator.setPermissions(null); // Clear permissions to use custom role's permissions
+        } else {
+            collaborator.setCustomRoleId(null);
+            collaborator.setRole(request.getRole());
+            collaborator.setPermissions(request.getPermissions());
+        }
 
         Collaborator updated = collaboratorRepo.save(collaborator);
 
@@ -65,7 +72,9 @@ public class CollaboratorServiceImpl implements CollaboratorService {
                     .changes(java.util.Map.of(
                             "target_user_id", userId,
                             "old_role", oldRole != null ? oldRole.name() : "NONE",
-                            "new_role", request.getRole() != null ? request.getRole().name() : "NONE"))
+                            "new_role", request.getRole() != null ? request.getRole().name() : "NONE",
+                            "custom_role_id",
+                            request.getCustomRoleId() != null ? request.getCustomRoleId().toString() : "NONE"))
                     .authorizationResult(
                             com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult.ALLOW)
                     .createdAt(new Date())
