@@ -65,9 +65,9 @@ services:
       VITE_BACKEND_URL: http://project-management-service:8080
     depends_on:
       billing-db:
-         condition: service_healthy
+        condition: service_healthy
       project-management-service:
-         condition: service_started
+        condition: service_started
 
   billing-db:
     image: postgres:16
