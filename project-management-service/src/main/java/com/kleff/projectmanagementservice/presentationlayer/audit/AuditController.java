@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/audit/internal")
+@RequestMapping("/api/v1/projects/audit/internal")
 @RequiredArgsConstructor
 public class AuditController {
 

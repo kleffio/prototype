@@ -23,63 +23,64 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder())));
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2ResourceServer(oauth2 -> oauth2
+                                                .jwt(jwt -> jwt.decoder(jwtDecoder())));
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+                configuration.setAllowedOrigins(
+                                List.of("http://localhost:3000", "http://localhost:8080", "https://kleff.io"));
+                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                configuration.setAllowedHeaders(List.of("*"));
+                configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        String jwkSetUri = "https://auth.kleff.io/application/o/kleff/jwks/";
-        String issuerUri = "https://auth.kleff.io/application/o/kleff/";
+        @Bean
+        public JwtDecoder jwtDecoder() {
+                String jwkSetUri = "https://auth.kleff.io/application/o/kleff/jwks/";
+                String issuerUri = "https://auth.kleff.io/application/o/kleff/";
 
-        // Create RestTemplate with increased timeouts
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
-        requestFactory.setReadTimeout(Duration.ofSeconds(10));
+                // Create RestTemplate with increased timeouts
+                SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+                requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+                requestFactory.setReadTimeout(Duration.ofSeconds(10));
 
-        RestTemplate restTemplate = new RestTemplate(requestFactory);
+                RestTemplate restTemplate = new RestTemplate(requestFactory);
 
-        // Create the decoder with custom RestTemplate
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-                .restOperations(restTemplate)
-                .build();
+                // Create the decoder with custom RestTemplate
+                NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                                .restOperations(restTemplate)
+                                .build();
 
-        // Create validators
-        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
-        OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
+                // Create validators
+                OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
+                OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
 
-        // Combine validators
-        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
-                issuerValidator,
-                timestampValidator);
+                // Combine validators
+                OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
+                                issuerValidator,
+                                timestampValidator);
 
-        jwtDecoder.setJwtValidator(validator);
+                jwtDecoder.setJwtValidator(validator);
 
-        return jwtDecoder;
-    }
+                return jwtDecoder;
+        }
 }

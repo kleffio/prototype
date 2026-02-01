@@ -254,7 +254,7 @@ public class ContainerServiceImpl {
             Map<String, Object> changes) {
         // Build the URL for the project-management-service
         // Assuming it's reachable via service discovery or Nginx internal routing
-        String auditUrl = "http://project-management-service:8080/api/v1/audit/internal";
+        String auditUrl = "http://project-management-service:8080/api/v1/projects/audit/internal";
 
         try {
             ExternalAuditRequest request = new ExternalAuditRequest();

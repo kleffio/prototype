@@ -31,7 +31,7 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                                                .requestMatchers("/api/v1/audit/internal").permitAll()
+                                                .requestMatchers("/api/v1/projects/audit/internal").permitAll()
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(Customizer.withDefaults()))
