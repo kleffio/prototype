@@ -1,16 +1,20 @@
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import deleteProject from "@features/projects/api/deleteProject";
 import { useBatchDeleteContainers } from "./useBatchDeleteContainers";
 import fetchProjectContainers from "@features/projects/api/getProjectContainers";
+import { generateFinalInvoice } from "@features/billing/api/generateFinalInvoice";
+import type { Invoice } from "@features/billing/types/Invoice";
 
 export function useDeleteProject() {
-  const navigate = useNavigate();
   const { batchDelete } = useBatchDeleteContainers();
 
   const deleteProjectHandler = useCallback(
-    async (projectId: string): Promise<void> => {
+    async (projectId: string): Promise<{ invoice: Invoice }> => {
       try {
+        // Generate final invoice before deletion
+        const invoice = await generateFinalInvoice(projectId);
+        console.log("Generated final invoice:", invoice);
+
         // First, get all containers for the project
         const containers = await fetchProjectContainers(projectId);
         const containerIds = containers.map(container => container.containerId);
@@ -30,13 +34,15 @@ export function useDeleteProject() {
         // Finally, delete the project itself
         await deleteProject(projectId);
         
-        // Don't navigate away - let the calling component handle UI updates
+        // Return the generated invoice for UI display
+        return { invoice };
+        
       } catch (error) {
         console.error("Failed to delete project:", error);
         throw error;
       }
     },
-    [navigate, batchDelete]
+    [batchDelete]
   );
 
   return { deleteProject: deleteProjectHandler };

@@ -197,18 +197,29 @@ export function ProjectsPage() {
   const { deleteProject } = useDeleteProject();
 
   const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete) {
+      throw new Error("No project selected for deletion");
+    }
 
     try {
       setIsDeleting(true);
-      await deleteProject(projectToDelete.projectId);
+      const result = await deleteProject(projectToDelete.projectId);
+      
+      // Handle the generated invoice
+      if (result && result.invoice) {
+        console.log("Final invoice generated:", result.invoice);
+        // The invoice will be available in the billing section
+      }
       
       // Optimistically remove the project from the local state
       // This provides immediate visual feedback without waiting for a reload
       // The useProjects hook will handle the actual data synchronization
+      
+      return result; // Return the result for the modal to handle
     } catch (error) {
       console.error("Failed to delete project:", error);
       // Error handling is done in the hook
+      throw error; // Re-throw to let the modal handle the error
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);

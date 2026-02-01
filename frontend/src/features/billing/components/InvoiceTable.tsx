@@ -11,6 +11,7 @@ import { usePermissions } from "@features/projects/hooks/usePermissions";
 
 interface InvoiceTableProps {
   projectId: string;
+  onInvoiceGenerated?: () => void; // Optional callback when an invoice is generated
 }
 
 export default function InvoiceTable({ projectId }: InvoiceTableProps) {

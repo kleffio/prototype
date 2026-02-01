@@ -223,5 +223,53 @@ public class BillingController {
         return billingService.getPrices();
     }
 
+    /**
+     * Generates a final invoice for a project being deleted.
+     * Only the project owner can generate a final invoice.
+     * This endpoint should be called before project deletion to ensure
+     * all outstanding charges are captured.
+     * 
+     * @param projectId The ID of the project being deleted
+     * @param authentication The authenticated user
+     * @param authHeader The authorization header for permission checks
+     * @return The generated final invoice
+     */
+    @DeleteMapping("/{projectId}/final-invoice")
+    public ResponseEntity<?> generateFinalInvoice(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+            
+            // Check if user is the project owner (more restrictive than MANAGE_BILLING)
+            // For project deletion, we need owner-level permissions
+            if (!hasPermission(userId, projectId, "OWNER", authHeader)) {
+                logger.warn("User {} attempted to generate final invoice for project {} without OWNER permission", userId, projectId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Only project owners can generate final invoices"));
+            }
+            
+            // Generate the final invoice
+            Invoice finalInvoice = billingService.generateFinalInvoice(projectId, userId);
+            
+            logger.info("Final invoice generated successfully for project {} by user {}", projectId, userId);
+            return ResponseEntity.ok(finalInvoice);
+            
+        } catch (EntityNotFoundException e) {
+            logger.error("Failed to generate final invoice for project {}: {}", projectId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid request for final invoice generation for project {}: {}", projectId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error generating final invoice for project {}: {}", projectId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to generate final invoice: " + e.getMessage()));
+        }
+    }
+
 
 }

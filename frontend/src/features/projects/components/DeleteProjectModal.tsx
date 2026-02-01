@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Input } from "@shared/ui/Input";
 import { Label } from "@shared/ui/Label";
 import { Badge } from "@shared/ui/Badge";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2, Calendar, CheckCircle } from "lucide-react";
 import { ConfirmationDialog } from "@shared/ui/ConfirmationDialog";
+import type { Invoice } from "@features/billing/types/Invoice";
 
 interface DeleteProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<{ invoice: Invoice }> | void;
   projectName: string;
   isLoading?: boolean;
 }
@@ -21,13 +22,25 @@ export function DeleteProjectModal({
   isLoading = false
 }: DeleteProjectModalProps) {
   const [projectNameInput, setProjectNameInput] = useState("");
+  const [generatedInvoice, setGeneratedInvoice] = useState<Invoice | null>(null);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   const isProjectNameCorrect = projectNameInput === projectName;
   const isConfirmDisabled = !isProjectNameCorrect || isLoading;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (isProjectNameCorrect) {
-      onConfirm();
+      try {
+        const result = await onConfirm();
+        if (result && result.invoice) {
+          setGeneratedInvoice(result.invoice);
+          setShowInvoice(true);
+        }
+      } catch (error) {
+        console.error("Failed to delete project:", error);
+        // Re-throw to let the parent handle the error
+        throw error;
+      }
     }
   };
 
@@ -89,6 +102,57 @@ export function DeleteProjectModal({
             A final invoice will be generated for your current usage period.
           </span>
         </div>
+
+        {/* Invoice Details Section */}
+        {showInvoice && generatedInvoice && (
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              <div>
+                <h3 className="font-semibold text-emerald-300">Final Invoice Generated</h3>
+                <p className="text-sm text-emerald-400">
+                  Invoice #{generatedInvoice.invoiceId} - ${generatedInvoice.total.toFixed(2)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-400">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span className="font-medium text-neutral-200">${generatedInvoice.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Taxes:</span>
+                <span className="font-medium text-neutral-200">${generatedInvoice.taxes.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>CPU Usage:</span>
+                <span className="font-medium text-neutral-200">{generatedInvoice.totalCPU.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>RAM Usage:</span>
+                <span className="font-medium text-neutral-200">{generatedInvoice.totalRAM.toFixed(2)} GB</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Storage:</span>
+                <span className="font-medium text-neutral-200">{generatedInvoice.totalSTORAGE.toFixed(2)} GB</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <Badge variant="destructive" className="text-xs font-semibold">
+                  {generatedInvoice.status}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>
+                Period: {new Date(generatedInvoice.startDate).toLocaleDateString()} - {new Date(generatedInvoice.endDate).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </ConfirmationDialog>
   );
