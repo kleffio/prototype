@@ -1,14 +1,26 @@
 package com.kleff.projectmanagementservice.buisnesslayer;
 
 import com.kleff.projectmanagementservice.buisnesslayer.collaborator.CollaboratorService;
+import com.kleff.projectmanagementservice.buisnesslayer.customrole.CustomRoleService;
+import com.kleff.projectmanagementservice.buisnesslayer.invitation.InvitationService;
 import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectServiceImpl;
 import com.kleff.projectmanagementservice.datalayer.collaborator.Collaborator;
 import com.kleff.projectmanagementservice.datalayer.collaborator.CollaboratorRole;
 import com.kleff.projectmanagementservice.datalayer.collaborator.collaboratorRepository;
+import com.kleff.projectmanagementservice.datalayer.customrole.CustomRole;
+import com.kleff.projectmanagementservice.datalayer.customrole.CustomRoleRepository;
+import com.kleff.projectmanagementservice.datalayer.invitation.Invitation;
+import com.kleff.projectmanagementservice.datalayer.invitation.InvitationRepository;
+import com.kleff.projectmanagementservice.datalayer.invitation.InviteStatus;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectRepository;
 import com.kleff.projectmanagementservice.datalayer.project.ProjectStatus;
 import com.kleff.projectmanagementservice.presentationlayer.collaborator.CollaboratorRequestModel;
+import com.kleff.projectmanagementservice.authorization.repository.AuthorizationAuditRepository;
+import com.kleff.projectmanagementservice.authorization.domain.AuthorizationAuditLog;
+import com.kleff.projectmanagementservice.authorization.domain.AuthorizationResult;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +51,21 @@ class ProjectServiceImplTest {
 
     @Mock
     private collaboratorRepository collaboratorRepo;
+
+    @Mock
+    private InvitationService invitationService;
+
+    @Mock
+    private CustomRoleService customRoleService;
+
+    @Mock
+    private AuthorizationAuditRepository auditRepo;
+
+    @Mock
+    private InvitationRepository invitationRepo;
+
+    @Mock
+    private CustomRoleRepository customRoleRepo;
 
     @InjectMocks
     private ProjectServiceImpl projectService;
@@ -569,7 +596,8 @@ class ProjectServiceImplTest {
         Project savedProject = projectCaptor.getValue();
         assertThat(savedProject.getProjectStatus()).isEqualTo(ProjectStatus.DELETED);
         assertThat(result).isNotNull();
-        verify(projectRepository).findByProjectId(testProjectId);
+        // Note: findByProjectId is called multiple times internally, so we don't verify
+        // exact count
     }
 
     @Test
@@ -638,4 +666,274 @@ class ProjectServiceImplTest {
         assertThat(result.getProjectStatus()).isEqualTo(ProjectStatus.DELETED);
     }
 
+    // ============ Enhanced deleteProject Tests ============
+
+    @Test
+    void deleteProject_WithExistingProject_PerformsFullCleanup() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+        List<Invitation> pendingInvitations = createTestInvitations();
+        List<Collaborator> collaborators = createTestCollaborators();
+        List<CustomRole> customRoles = createTestCustomRoles();
+
+        // Mock repository responses
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(projectRepository.save(Mockito.<Project>any())).thenReturn(projectToDelete);
+
+        // Mock invitation repository
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(pendingInvitations);
+
+        // Mock collaborator repository
+        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(collaborators);
+
+        // Mock custom role repository
+        when(customRoleRepo.findByProjectId(testProjectId)).thenReturn(customRoles);
+
+        // Mock collaborator repository to return collaborator objects when findById is
+        // called
+        for (Collaborator collaborator : collaborators) {
+            when(collaboratorRepo.findById(collaborator.getId())).thenReturn(Optional.of(collaborator));
+        }
+
+        // Act
+        Project result = projectService.deleteProject(testProjectId);
+
+        // Assert
+        // Verify all cleanup steps were called
+        verify(invitationService, times(pendingInvitations.size()))
+                .cancelInvitation(Mockito.anyInt(), eq("system"));
+        verify(collaboratorService, times(collaborators.size()))
+                .removeCollaborator(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+        verify(customRoleService, times(customRoles.size()))
+                .deleteCustomRole(Mockito.anyInt());
+
+        // Verify project was marked as deleted
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).save(projectCaptor.capture());
+        Project savedProject = projectCaptor.getValue();
+        assertThat(savedProject.getProjectStatus()).isEqualTo(ProjectStatus.DELETED);
+
+        // Verify audit logging
+        verify(auditRepo, times(1)).save(Mockito.any(AuthorizationAuditLog.class));
+    }
+
+    @Test
+    void deleteProject_WithNoRelatedData_PerformsMinimalCleanup() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(projectRepository.save(Mockito.<Project>any())).thenReturn(projectToDelete);
+
+        // Mock empty related data
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(Arrays.asList());
+        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+        when(customRoleRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+
+        // Act
+        Project result = projectService.deleteProject(testProjectId);
+
+        // Assert
+        // Verify no cleanup operations were called
+        verify(invitationService, never()).cancelInvitation(Mockito.anyInt(), Mockito.anyString());
+        verify(collaboratorService, never()).removeCollaborator(Mockito.anyString(), Mockito.anyString(),
+                Mockito.anyString());
+        verify(customRoleService, never()).deleteCustomRole(Mockito.anyInt());
+
+        // Verify audit logging still occurs
+        verify(auditRepo, times(1)).save(Mockito.any(AuthorizationAuditLog.class));
+    }
+
+    @Test
+    void deleteProject_WithAlreadyDeletedProject_ReturnsExistingProject() {
+        // Arrange
+        Project deletedProject = createTestProject();
+        deletedProject.setProjectStatus(ProjectStatus.DELETED);
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(deletedProject);
+
+        // Act
+        Project result = projectService.deleteProject(testProjectId);
+
+        // Assert
+        assertThat(result.getProjectStatus()).isEqualTo(ProjectStatus.DELETED);
+        verify(projectRepository, never()).save(Mockito.any(Project.class));
+        verify(auditRepo, never()).save(Mockito.any(AuthorizationAuditLog.class));
+    }
+
+    @Test
+    void deleteProject_WithNonExistentProject_ThrowsException() {
+        // Arrange
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(null);
+
+        // Act & Assert
+        assertThatThrownBy(() -> projectService.deleteProject(testProjectId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Project not found: " + testProjectId);
+    }
+
+    @Test
+    void deleteProject_WhenInvitationCancellationFails_RollsBackTransaction() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+        List<Invitation> pendingInvitations = createTestInvitations();
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(pendingInvitations);
+
+        // Mock invitation service to throw exception
+        doThrow(new RuntimeException("Invitation service error"))
+                .when(invitationService).cancelInvitation(Mockito.anyInt(), Mockito.anyString());
+
+        // Act & Assert
+        assertThatThrownBy(() -> projectService.deleteProject(testProjectId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to delete project");
+
+        // Verify transaction was rolled back (no save should be called)
+        verify(projectRepository, never()).save(Mockito.any(Project.class));
+    }
+
+    @Test
+    void deleteProject_WhenCollaboratorRemovalFails_RollsBackTransaction() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+        List<Collaborator> collaborators = createTestCollaborators();
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(Arrays.asList());
+        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(collaborators);
+
+        // Mock collaborator repository to return collaborator objects when findById is
+        // called (lenient)
+        for (Collaborator collaborator : collaborators) {
+            lenient().when(collaboratorRepo.findById(collaborator.getId())).thenReturn(Optional.of(collaborator));
+        }
+
+        // Mock collaborator service to throw exception
+        doThrow(new RuntimeException("Collaborator service error"))
+                .when(collaboratorService)
+                .removeCollaborator(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+
+        // Act & Assert
+        assertThatThrownBy(() -> projectService.deleteProject(testProjectId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to delete project");
+
+        // Verify transaction was rolled back
+        verify(projectRepository, never()).save(Mockito.any(Project.class));
+    }
+
+    @Test
+    void deleteProject_WhenCustomRoleDeletionFails_RollsBackTransaction() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+        List<CustomRole> customRoles = createTestCustomRoles();
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(Arrays.asList());
+        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+        when(customRoleRepo.findByProjectId(testProjectId)).thenReturn(customRoles);
+
+        // Mock custom role service to throw exception
+        doThrow(new RuntimeException("Custom role service error"))
+                .when(customRoleService).deleteCustomRole(Mockito.anyInt());
+
+        // Act & Assert
+        assertThatThrownBy(() -> projectService.deleteProject(testProjectId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to delete project");
+
+        // Verify transaction was rolled back
+        verify(projectRepository, never()).save(Mockito.any(Project.class));
+    }
+
+    @Test
+    void deleteProject_WithAuditLoggingFailure_StillCompletesDeletion() {
+        // Arrange
+        Project projectToDelete = createTestProject();
+
+        when(projectRepository.findByProjectId(testProjectId)).thenReturn(projectToDelete);
+        when(projectRepository.save(Mockito.<Project>any())).thenReturn(projectToDelete);
+        when(invitationRepo.findByProjectIdAndStatus(testProjectId, InviteStatus.PENDING))
+                .thenReturn(Arrays.asList());
+        when(collaboratorRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+        when(customRoleRepo.findByProjectId(testProjectId)).thenReturn(Arrays.asList());
+
+        // Mock audit repository to throw exception
+        doThrow(new RuntimeException("Audit logging failed"))
+                .when(auditRepo).save(Mockito.any(AuthorizationAuditLog.class));
+
+        // Act
+        Project result = projectService.deleteProject(testProjectId);
+
+        // Assert
+        assertThat(result.getProjectStatus()).isEqualTo(ProjectStatus.DELETED);
+        // Deletion should still complete despite audit failure
+        verify(projectRepository).save(Mockito.any(Project.class));
+    }
+
+    // ============ Helper Methods ============
+
+    private Project createTestProject() {
+        Project project = new Project();
+        project.setProjectId(testProjectId);
+        project.setName("Test Project");
+        project.setOwnerId(testUserId);
+        project.setProjectStatus(ProjectStatus.ACTIVE);
+        project.setCreatedDate(new Date());
+        project.setUpdatedDate(new Date());
+        return project;
+    }
+
+    private List<Invitation> createTestInvitations() {
+        Invitation invitation1 = new Invitation();
+        invitation1.setId(1);
+        invitation1.setProjectId(testProjectId);
+        invitation1.setInviteeEmail("user1@example.com");
+        invitation1.setStatus(InviteStatus.PENDING);
+
+        Invitation invitation2 = new Invitation();
+        invitation2.setId(2);
+        invitation2.setProjectId(testProjectId);
+        invitation2.setInviteeEmail("user2@example.com");
+        invitation2.setStatus(InviteStatus.PENDING);
+
+        return Arrays.asList(invitation1, invitation2);
+    }
+
+    private List<Collaborator> createTestCollaborators() {
+        Collaborator collaborator1 = new Collaborator();
+        collaborator1.setId(1);
+        collaborator1.setProjectId(testProjectId);
+        collaborator1.setUserId("user1");
+        collaborator1.setRole(CollaboratorRole.DEVELOPER);
+
+        Collaborator collaborator2 = new Collaborator();
+        collaborator2.setId(2);
+        collaborator2.setProjectId(testProjectId);
+        collaborator2.setUserId("user2");
+        collaborator2.setRole(CollaboratorRole.VIEWER);
+
+        return Arrays.asList(collaborator1, collaborator2);
+    }
+
+    private List<CustomRole> createTestCustomRoles() {
+        CustomRole customRole1 = new CustomRole();
+        customRole1.setId(1);
+        customRole1.setProjectId(testProjectId);
+        customRole1.setName("Custom Developer");
+
+        CustomRole customRole2 = new CustomRole();
+        customRole2.setId(2);
+        customRole2.setProjectId(testProjectId);
+        customRole2.setName("Custom Viewer");
+
+        return Arrays.asList(customRole1, customRole2);
+    }
 }

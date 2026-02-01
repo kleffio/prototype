@@ -286,6 +286,44 @@ public class BillingController {
         return billingService.getPrices();
     }
 
+/**
+     * Generates a final invoice for a project being deleted.
+     * Only the project owner can generate a final invoice.
+     */
+    @DeleteMapping("/{projectId}/final-invoice")
+    public ResponseEntity<?> generateFinalInvoice(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+            
+            if (!hasPermission(userId, projectId, "OWNER", authHeader)) {
+                logger.warn("User {} attempted to generate final invoice for project {} without OWNER permission", userId, projectId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Only project owners can generate final invoices"));
+            }
+            
+            Invoice finalInvoice = billingService.generateFinalInvoice(projectId, userId);
+            
+            logger.info("Final invoice generated successfully for project {} by user {}", projectId, userId);
+            return ResponseEntity.ok(finalInvoice);
+            
+        } catch (EntityNotFoundException e) {
+            logger.error("Failed to generate final invoice for project {}: {}", projectId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid request for final invoice generation for project {}: {}", projectId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error generating final invoice for project {}: {}", projectId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to generate final invoice: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/notifications/{projectId}")
     public ResponseEntity<?> getNotificationsForProject(
             @PathVariable String projectId,
@@ -294,9 +332,8 @@ public class BillingController {
         try {
             String userId = getUserIdFromAuth(authentication);
 
-            // Check if user has MANAGE_BILLING permission
             if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
-                logger.warn("User {} attempted to view invoices for project {} without MANAGE_BILLING permission", userId, projectId);
+                logger.warn("User {} attempted to view notifications for project {} without MANAGE_BILLING permission", userId, projectId);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "You don't have permission to view billing information for this project"));
             }
@@ -304,10 +341,9 @@ public class BillingController {
             List<Invoice> items = billingService.getNotificationsForProject(projectId);
             return ResponseEntity.ok(items);
         } catch (Exception e) {
-            logger.error("Error getting invoices for project {}: {}", projectId, e.getMessage(), e);
+            logger.error("Error getting notifications for project {}: {}", projectId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve invoices"));
+                    .body(Map.of("error", "Failed to retrieve notifications"));
         }
     }
-
 }

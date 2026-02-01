@@ -389,4 +389,169 @@ class CollaboratorServiceImplTest {
                                 .containsEntry("old_role", "DEVELOPER")
                                 .containsEntry("new_role", "ADMIN");
         }
+
+        // ============ getUserPermissions Tests ============
+
+        @Test
+        void getUserPermissions_WithOwnerRole_ReturnsOwnerPermission() {
+                // Arrange
+                Collaborator ownerCollaborator = new Collaborator();
+                ownerCollaborator.setProjectId(testProjectId);
+                ownerCollaborator.setUserId(testUserId);
+                ownerCollaborator.setRole(CollaboratorRole.OWNER);
+                ownerCollaborator.setPermissions(null);
+                ownerCollaborator.setCustomRoleId(null);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(ownerCollaborator));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("OWNER");
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("MANAGE_BILLING");
+                assertThat(permissions).contains("DELETE_PROJECT");
+        }
+
+        @Test
+        void getUserPermissions_WithAdminRole_ReturnsAdminPermission() {
+                // Arrange
+                Collaborator adminCollaborator = new Collaborator();
+                adminCollaborator.setProjectId(testProjectId);
+                adminCollaborator.setUserId(testUserId);
+                adminCollaborator.setRole(CollaboratorRole.ADMIN);
+                adminCollaborator.setPermissions(null);
+                adminCollaborator.setCustomRoleId(null);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(adminCollaborator));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("ADMIN");
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("MANAGE_COLLABORATORS");
+                assertThat(permissions).doesNotContain("OWNER");
+        }
+
+        @Test
+        void getUserPermissions_WithDeveloperRole_ReturnsDeveloperPermission() {
+                // Arrange
+                Collaborator developerCollaborator = new Collaborator();
+                developerCollaborator.setProjectId(testProjectId);
+                developerCollaborator.setUserId(testUserId);
+                developerCollaborator.setRole(CollaboratorRole.DEVELOPER);
+                developerCollaborator.setPermissions(null);
+                developerCollaborator.setCustomRoleId(null);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(developerCollaborator));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("DEVELOPER");
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("DEPLOY");
+                assertThat(permissions).doesNotContain("OWNER");
+                assertThat(permissions).doesNotContain("ADMIN");
+        }
+
+        @Test
+        void getUserPermissions_WithViewerRole_ReturnsViewerPermission() {
+                // Arrange
+                Collaborator viewerCollaborator = new Collaborator();
+                viewerCollaborator.setProjectId(testProjectId);
+                viewerCollaborator.setUserId(testUserId);
+                viewerCollaborator.setRole(CollaboratorRole.VIEWER);
+                viewerCollaborator.setPermissions(null);
+                viewerCollaborator.setCustomRoleId(null);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(viewerCollaborator));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("VIEWER");
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("VIEW_LOGS");
+                assertThat(permissions).doesNotContain("OWNER");
+                assertThat(permissions).doesNotContain("ADMIN");
+                assertThat(permissions).doesNotContain("DEVELOPER");
+        }
+
+        @Test
+        void getUserPermissions_WithExplicitPermissions_ReturnsExplicitPermissions() {
+                // Arrange
+                Set<ProjectPermission> explicitPermissions = Set.of(
+                                ProjectPermission.READ_PROJECT,
+                                ProjectPermission.VIEW_LOGS);
+
+                Collaborator explicitCollaborator = new Collaborator();
+                explicitCollaborator.setProjectId(testProjectId);
+                explicitCollaborator.setUserId(testUserId);
+                explicitCollaborator.setRole(CollaboratorRole.VIEWER);
+                explicitCollaborator.setPermissions(explicitPermissions);
+                explicitCollaborator.setCustomRoleId(null);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(explicitCollaborator));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("VIEW_LOGS");
+                assertThat(permissions).doesNotContain("VIEWER");
+                assertThat(permissions).doesNotContain("OWNER");
+        }
+
+        @Test
+        void getUserPermissions_WithCustomRole_ReturnsCustomRolePermissions() {
+                // Arrange
+                CustomRole customRole = new CustomRole();
+                customRole.setId(1);
+                customRole.setPermissions(Set.of(ProjectPermission.READ_PROJECT, ProjectPermission.VIEW_METRICS));
+
+                Collaborator customRoleCollaborator = new Collaborator();
+                customRoleCollaborator.setProjectId(testProjectId);
+                customRoleCollaborator.setUserId(testUserId);
+                customRoleCollaborator.setRole(CollaboratorRole.VIEWER);
+                customRoleCollaborator.setPermissions(null);
+                customRoleCollaborator.setCustomRoleId(1);
+
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.of(customRoleCollaborator));
+                when(customRoleRepo.findById(1)).thenReturn(Optional.of(customRole));
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).contains("READ_PROJECT");
+                assertThat(permissions).contains("VIEW_METRICS");
+                assertThat(permissions).doesNotContain("VIEWER");
+                assertThat(permissions).doesNotContain("OWNER");
+        }
+
+        @Test
+        void getUserPermissions_WhenUserNotFound_ReturnsEmptyList() {
+                // Arrange
+                when(collaboratorRepo.findByProjectIdAndUserId(testProjectId, testUserId))
+                                .thenReturn(Optional.empty());
+
+                // Act
+                List<String> permissions = collaboratorService.getUserPermissions(testProjectId, testUserId);
+
+                // Assert
+                assertThat(permissions).isEmpty();
+        }
 }

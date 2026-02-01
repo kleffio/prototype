@@ -1,21 +1,11 @@
-FROM eclipse-temurin:17-jdk
-
+FROM gradle:jdk17 AS builder
 WORKDIR /app
+COPY --chown=gradle:gradle . .
+# Use the installed gradle from the image
+RUN gradle build --no-daemon -x test
 
-COPY build.gradle settings.gradle gradlew gradlew.bat ./
-COPY gradle/ gradle/
-
-# Fix permissions
-RUN chmod +x gradlew
-
-# Copy source
-COPY src/ src/
-
-# Build the application
-RUN ./gradlew build --no-daemon -x test
-
-# Expose port
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+COPY --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8080
-
-# Run the JAR
-CMD ["sh", "-c", "java -jar build/libs/*.jar"]
+CMD ["java", "-jar", "app.jar"]

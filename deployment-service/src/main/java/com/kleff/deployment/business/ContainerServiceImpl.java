@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @Service
 public class ContainerServiceImpl {
@@ -234,6 +235,77 @@ public class ContainerServiceImpl {
             log.error("Failed to delete container {}: {}", containerID, e.getMessage());
             throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
         }
+    }
+
+    public BatchDeleteResponse batchDeleteContainers(BatchDeleteRequest request) {
+        if (request == null || request.getTargets() == null || request.getTargets().isEmpty()) {
+            throw new RuntimeException("Targets list cannot be null or empty");
+        }
+
+        List<String> deleted = new ArrayList<>();
+        List<BatchDeleteResponse.FailedItem> failed = new ArrayList<>();
+
+        for (BatchDeleteRequest.Target target : request.getTargets()) {
+            try {
+                // Validate input
+                if (target.getProjectID() == null || target.getProjectID().trim().isEmpty()) {
+                    failed.add(BatchDeleteResponse.FailedItem.builder()
+                            .containerID(target.getContainerID())
+                            .reason("Invalid projectID: cannot be null or empty")
+                            .build());
+                    continue;
+                }
+
+                if (target.getContainerID() == null || target.getContainerID().trim().isEmpty()) {
+                    failed.add(BatchDeleteResponse.FailedItem.builder()
+                            .containerID(target.getContainerID())
+                            .reason("Invalid containerID: cannot be null or empty")
+                            .build());
+                    continue;
+                }
+
+                // Find container in database
+                Container container = containerRepository.findContainerByContainerID(target.getContainerID());
+                
+                // Idempotency: if container doesn't exist, treat as success
+                if (container == null) {
+                    deleted.add(target.getContainerID());
+                    log.info("Container {} not found in database, treating as already deleted", target.getContainerID());
+                    continue;
+                }
+
+                // Verify projectID matches (security check)
+                if (!container.getProjectID().equals(target.getProjectID())) {
+                    failed.add(BatchDeleteResponse.FailedItem.builder()
+                            .containerID(target.getContainerID())
+                            .reason("Project ID mismatch: expected " + target.getProjectID() + ", found " + container.getProjectID())
+                            .build());
+                    continue;
+                }
+
+                // Delete from database
+                containerRepository.delete(container);
+                log.info("Container deleted from database: {}", target.getContainerID());
+
+                // Delete upstream WebApp
+                triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
+
+                // Success
+                deleted.add(target.getContainerID());
+
+            } catch (Exception e) {
+                log.error("Failed to delete container {}: {}", target.getContainerID(), e.getMessage());
+                failed.add(BatchDeleteResponse.FailedItem.builder()
+                        .containerID(target.getContainerID())
+                        .reason(e.getMessage())
+                        .build());
+            }
+        }
+
+        return BatchDeleteResponse.builder()
+                .deleted(deleted)
+                .failed(failed)
+                .build();
     }
 
     private void triggerWebAppDeletion(String projectID, String containerID) {

@@ -452,8 +452,6 @@ export function ProjectDetailPage() {
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
       />
-
-      {/* Delete Confirmation Dialog */}
     </section>
   );
 }

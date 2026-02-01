@@ -21,6 +21,8 @@ public interface BillingService {
     public void setPrice(Price price);
     public long computeOutstandingCents(String invoiceId);
     public List<Price> getPrices();
+    public Invoice generateFinalInvoice(String projectId, String username);
+
     public List<Invoice> getNotificationsForProject(String projectId);
     public void markInvoiceAsPaid(String invoiceId, String stripeSessionId);
 
