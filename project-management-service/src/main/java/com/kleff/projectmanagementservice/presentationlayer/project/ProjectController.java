@@ -1,7 +1,9 @@
-package com.kleff.projectmanagementservice.presentationlayer;
+package com.kleff.projectmanagementservice.presentationlayer.project;
 
-import com.kleff.projectmanagementservice.buisnesslayer.ProjectService;
-import com.kleff.projectmanagementservice.buisnesslayer.ProjectServiceImpl;
+import com.kleff.projectmanagementservice.authorization.annotation.RequirePermission;
+import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectService;
+import com.kleff.projectmanagementservice.buisnesslayer.project.ProjectServiceImpl;
+import com.kleff.projectmanagementservice.datalayer.collaborator.ProjectPermission;
 import com.kleff.projectmanagementservice.datalayer.project.Project;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,8 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<Project> getProjectById(@PathVariable String projectId) {
+    @RequirePermission(value = ProjectPermission.READ_PROJECT, projectIdExpression = "#projectId", action = "view_project")
+    public ResponseEntity<Project> getProjectById(@PathVariable String projectId, @AuthenticationPrincipal Jwt jwt) {
         Project project = projectService.getProjectById(projectId);
         if (project == null) {
             return ResponseEntity.notFound().build();
@@ -54,6 +57,7 @@ public class ProjectController {
 
 
     @PatchMapping("/{projectId}")
+    @RequirePermission(value = ProjectPermission.WRITE_PROJECT, projectIdExpression = "#projectId", action = "update_project")
     public ResponseEntity<Project> patchProject(
             @PathVariable String projectId,
             @RequestBody Project updatedProject,
@@ -76,6 +80,7 @@ public class ProjectController {
 
 
     @DeleteMapping("/{projectId}")
+    @RequirePermission(value = ProjectPermission.DELETE_PROJECT, projectIdExpression = "#projectId", action = "delete_project")
     public ResponseEntity<Project> deleteProject(@PathVariable String projectId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         Project projectAllowed = projectService.getProjectById(projectId);

@@ -54,6 +54,14 @@ public class Collaborator {
     @Temporal(TemporalType.TIMESTAMP)
     private Date acceptedAt;
 
+    @Column(name = "expires_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date expiresAt;
+
+    @Column(name = "last_accessed_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastAccessedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;

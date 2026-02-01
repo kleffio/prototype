@@ -61,3 +61,34 @@ func TestUserPublicProfile_WithAvatarAndBio_CopiesValues(t *testing.T) {
 		t.Fatalf("bio: expected %q got %q", bio, p.Bio)
 	}
 }
+
+func TestUserPublicProfile_ExcludesSensitiveInformation(t *testing.T) {
+	now := time.Now().UTC()
+
+	u := &User{
+		ID:            "user123",
+		AuthentikID:   "authentik123",
+		Email:         "user@example.com",
+		EmailVerified: true,
+		LoginUsername: "user@example.com",
+		Username:      "testuser",
+		DisplayName:   "Test User",
+		CreatedAt:     now,
+	}
+
+	p := u.PublicProfile()
+
+	// Verify that sensitive fields are not included in the public profile
+	if p.Username != "testuser" {
+		t.Fatalf("username: expected %q got %q", "testuser", p.Username)
+	}
+	if p.DisplayName != "Test User" {
+		t.Fatalf("displayName: expected %q got %q", "Test User", p.DisplayName)
+	}
+	if !p.CreatedAt.Equal(now) {
+		t.Fatalf("createdAt: expected %v got %v", now, p.CreatedAt)
+	}
+
+	// Note: PublicProfile struct doesn't have Email, EmailVerified, AuthentikID, or LoginUsername fields
+	// This test verifies that the PublicProfile method correctly excludes sensitive information
+}

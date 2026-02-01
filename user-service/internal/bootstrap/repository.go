@@ -40,6 +40,14 @@ func buildUserRepository(cfg *config.Config) (
 
 	log.Printf("users table initialized")
 
+	// Run database migrations
+	if err := repo.RunMigrations(ctx); err != nil {
+		_ = repo.Close()
+		return nil, nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	log.Printf("database migrations completed")
+
 	return repo, repo, nil
 }
 
@@ -67,6 +75,27 @@ func buildAuditRepository(cfg *config.Config) (
 	}
 
 	log.Printf("audit_logs table initialized")
+
+	return repo, repo, nil
+}
+
+func buildPlatformRoleRepository(cfg *config.Config) (
+	repository.PlatformRoleRepository,
+	interface{ Close() error },
+	error,
+) {
+	if cfg.PostgresUserDSN == "" {
+		log.Printf("PostgresUserDSN not configured, platform roles will be disabled")
+		return nil, noopCloser{}, nil
+	}
+
+	log.Printf("platform role repository backend: postgresql")
+	repo, err := postgres.NewPostgresPlatformRoleRepository(cfg.PostgresUserDSN)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create postgres platform role repo: %w", err)
+	}
+
+	log.Printf("platform_roles repository initialized")
 
 	return repo, repo, nil
 }

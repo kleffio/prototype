@@ -7,6 +7,7 @@ import { GradientIcon } from "@shared/ui/GradientIcon";
 import { MiniCard } from "@shared/ui/MiniCard";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { StatBadge } from "@shared/ui/StatBadge";
+
 import {
   Activity,
   ArrowUpRight,

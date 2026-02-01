@@ -50,9 +50,18 @@ export class ProjectModal extends BaseComponent {
     await expect(create).toBeEnabled({ timeout: 30_000 });
     await create.click();
 
-    // Wait for the modal to close
+    // Wait for either success (modal closes) or failure (error appears)
     const modal = this.projectCreateModal();
-    await expect(modal).not.toBeVisible({ timeout: 30_000 });
+    const errorMessage = modal.locator("text=/Failed to create project|Project name is required/");
+
+    try {
+      // Wait for modal to close (success) with shorter timeout
+      await expect(modal).not.toBeVisible({ timeout: 5000 });
+    } catch {
+      // If modal didn't close, check for error
+      await expect(errorMessage).toBeVisible({ timeout: 5000 });
+      throw new Error("Project creation failed - API error or validation issue");
+    }
 
     // Wait a moment for the creation to complete
     await this.page.waitForTimeout(1000);
