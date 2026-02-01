@@ -205,6 +205,30 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
     }
   };
 
+  const loadCollaboratorUsernames = async () => {
+    try {
+      const usernameMap: Record<string, string> = {};
+
+      // Use Promise.all for parallel requests (faster)
+      await Promise.all(
+        collaborators.map(async (collaborator) => {
+          try {
+            const username = await getUsernameById(collaborator.userId);
+            usernameMap[collaborator.userId] = username;
+          } catch (err) {
+            console.error(`Failed to load username for ${collaborator.userId}:`, err);
+            // Fallback to truncated userId if username fetch fails
+            usernameMap[collaborator.userId] = collaborator.userId.substring(0, 8) + "...";
+          }
+        })
+      );
+
+      setUsernames(usernameMap);
+    } catch (error) {
+      console.error("Failed to load usernames:", error);
+    }
+  };
+
   const loadInvitations = async () => {
     if (!canViewInvitations) return;
     try {
@@ -232,6 +256,14 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, projectId]);
+
+  // Load usernames when collaborators change
+  useEffect(() => {
+    if (collaborators.length > 0) {
+      loadCollaboratorUsernames();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collaborators]);
 
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault();
