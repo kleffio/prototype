@@ -21,7 +21,7 @@ type Config struct {
 func FromEnv() (*Config, error) {
 	cfg := &Config{
 		HTTPAddr:          getEnv("HTTP_ADDR", ":8080"),
-		AuthentikBaseURL:  getEnv("AUTHENTIK_BASE_URL"),
+		AuthentikBaseURL:  getEnv("AUTHENTIK_BASE_URL", "http://authentik:9000"),
 		PostgresUserDSN:   os.Getenv("POSTGRES_USER_DSN"),
 		PostgresAuditDSN:  os.Getenv("POSTGRES_AUDIT_DSN"),
 		DefaultAdminEmail: os.Getenv("DEFAULT_ADMIN_EMAIL"),
