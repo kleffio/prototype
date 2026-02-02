@@ -12,18 +12,20 @@ jobs:
       - name: Check Deadline
         shell: bash
         run: |
-          # End of Saturday, Feb 3 in EST (UTC-5) is Sunday, Feb 4 at 10:00:00 UTC
-          DEADLINE=$(date -d "2026-02-04 10:00:00" +%s)
+          # Midnight (00:00:00) EST on Sat, Feb 14 is 05:00:00 UTC
+          DEADLINE=$(date -d "2026-02-14 05:00:00" +%s)
           CURRENT=$(date +%s)
 
           if [ $CURRENT -gt $DEADLINE ]; then
             echo "❌ CODE FREEZE IN EFFECT."
-            echo "The deadline (Midnight, Jan 31st) has passed."
+            echo "The deadline (Midnight, Feb 14th EST) has passed."
             echo "Merges are restricted to focus on documentation and presentations."
             exit 1
           else
             echo "✅ Under deadline. Merges allowed."
-            # Optional: Print how much time is left
-            LEFT=$(( ($DEADLINE - $CURRENT) / 3600 ))
-            echo "Approximately $LEFT hours remaining until code freeze."
+            # Calculate remaining time
+            DIFF=$(( $DEADLINE - $CURRENT ))
+            HOURS=$(( $DIFF / 3600 ))
+            MINUTES=$(( ($DIFF % 3600) / 60 ))
+            echo "Time remaining: $HOURS hours and $MINUTES minutes until code freeze."
           fi
