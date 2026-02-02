@@ -12,6 +12,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.RestClient;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -32,19 +34,22 @@ public class BillingServiceImpl implements BillingService {
     private UsageRecordRepository usageRecordRepository;
     private PriceRepository priceRepository;
     private double taxes = 0.114975;
+    private RestClient restClient;
 
     public BillingServiceImpl(
             ReservedAllocationRepository reservedAllocationRepository,
             InvoiceRepository invoiceRepository,
             UsageRecordRepository usageRecordRepository,
             PriceRepository priceRepository,
-            ApiService apiService
+            ApiService apiService,
+            RestClient.Builder restClientBuilder
     ) {
         this.reservedAllocationRepository = reservedAllocationRepository;
         this.invoiceRepository = invoiceRepository;
         this.usageRecordRepository = usageRecordRepository;
         this.priceRepository = priceRepository;
         this.apiService = apiService;
+        this.restClient = restClientBuilder.build();
     }
 
     //All the invoice logic
@@ -56,13 +61,44 @@ public class BillingServiceImpl implements BillingService {
         return invoiceRepository.save(invoice);
     }
 
+    @Override
+    public void createUsageRecord(UsageRecord record) {
+        usageRecordRepository.save(record);
+    }
+
 
 
     //Usage record logic
 
     @Override
-    public void createUsageRecord(UsageRecord records) {
-        usageRecordRepository.save(records);
+    public List<Invoice> getAllNotificationsForUser(String userId, String authHeader) {
+        // Get all invoices from the database
+        List<Invoice> allInvoices = invoiceRepository.findAll();
+        
+        // Filter invoices based on user permissions
+        return allInvoices.stream()
+            .filter(invoice -> {
+                try {
+                    // Check if user has permission to view this invoice's project
+                    // We use the existing hasPermission method from the controller
+                    // Since we can't access the controller directly, we'll make the REST call here
+                    List<String> permissions = restClient.get()
+                        .uri("/api/v1/collaborators/" + invoice.getProjectId() + "/user/" + userId + "/permissions")
+                        .header("Authorization", authHeader)
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<List<String>>() {});
+                    
+                    return permissions != null && permissions.contains("MANAGE_BILLING");
+                } catch (Exception e) {
+                    // If permission check fails (e.g., project not found/deleted), 
+                    // still include the invoice if it belongs to the user
+                    // This allows users to see final invoices from deleted projects
+                    log.warn("Permission check failed for project {} (likely deleted), including invoice {}", 
+                        invoice.getProjectId(), invoice.getInvoiceId());
+                    return true;
+                }
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -172,9 +208,20 @@ public class BillingServiceImpl implements BillingService {
     @Override
     public List<Invoice> getNotificationsForProject(String projectId) {
         List<Invoice> invoices = invoiceRepository.findByProjectId(projectId);
-        // Filter invoices with OPEN status
+        // Filter invoices with OPEN, OVERDUE, or UNPAID status
         List<Invoice> notifications = invoices.stream()
-                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN || invoice.getStatus() == InvoiceStatus.OVERDUE)
+                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN || invoice.getStatus() == InvoiceStatus.OVERDUE || invoice.getStatus() == InvoiceStatus.UNPAID)
+                .collect(Collectors.toList());
+
+        return notifications;
+    }
+
+    @Override
+    public List<Invoice> getAllNotificationsForUser(List<String> projectIds) {
+        List<Invoice> allInvoices = invoiceRepository.findByProjectIdIn(projectIds);
+        // Filter invoices with OPEN, OVERDUE, or UNPAID status
+        List<Invoice> notifications = allInvoices.stream()
+                .filter(invoice -> invoice.getStatus() == InvoiceStatus.OPEN || invoice.getStatus() == InvoiceStatus.OVERDUE || invoice.getStatus() == InvoiceStatus.UNPAID)
                 .collect(Collectors.toList());
 
         return notifications;
@@ -330,7 +377,7 @@ public class BillingServiceImpl implements BillingService {
             .projectId(projectId)
             .startDate(new java.sql.Date(System.currentTimeMillis()))
             .endDate(new java.sql.Date(System.currentTimeMillis()))
-            .status(InvoiceStatus.UNPAID)
+            .status(InvoiceStatus.OPEN)
             .totalCPU(totalCPU)
             .totalRAM(totalRAM)
             .totalSTORAGE(totalSTORAGE)

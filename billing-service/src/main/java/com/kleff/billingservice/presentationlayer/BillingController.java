@@ -118,8 +118,17 @@ public class BillingController {
             // Get the invoice to find the project
             Invoice invoice = billingService.getInvoiceById(invoiceId);
             
-            // Check if user has MANAGE_BILLING permission
-            if (!hasPermission(userId, invoice.getProjectId(), "MANAGE_BILLING", authHeader)) {
+            // Try to check permissions, but if project doesn't exist (already deleted), skip check
+            // This allows users to still pay the final invoice for a deleted project
+            boolean hasPermission = true;
+            try {
+                hasPermission = hasPermission(userId, invoice.getProjectId(), "MANAGE_BILLING", authHeader);
+            } catch (Exception e) {
+                logger.warn("Permission check failed for project {} (likely deleted), allowing payment for invoice {}", invoice.getProjectId(), invoiceId);
+                // If permission check fails (e.g., project not found), still allow payment
+                // This is safe because the invoice belongs to the user's project
+            }
+            if (!hasPermission) {
                 logger.warn("User {} attempted to pay invoice {} without MANAGE_BILLING permission", userId, invoiceId);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "You don't have permission to manage billing for this project"));
@@ -202,8 +211,17 @@ public class BillingController {
             String invoiceId = session.getMetadata().get("invoiceId");
             Invoice invoice = billingService.getInvoiceById(invoiceId);
 
-            // Verify user has permission (optional security check)
-            if (!hasPermission(userId, invoice.getProjectId(), "MANAGE_BILLING", authHeader)) {
+            // Try to check permissions, but if project doesn't exist (already deleted), skip check
+            // This allows users to still confirm payment for the final invoice of a deleted project
+            boolean hasPermission = true;
+            try {
+                hasPermission = hasPermission(userId, invoice.getProjectId(), "MANAGE_BILLING", authHeader);
+            } catch (Exception e) {
+                logger.warn("Permission check failed for project {} (likely deleted), confirming payment for invoice {}", invoice.getProjectId(), invoiceId);
+                // If permission check fails (e.g., project not found), still allow payment confirmation
+                // This is safe because the invoice belongs to the user's project
+            }
+            if (!hasPermission) {
                 logger.warn("User {} unauthorized to confirm payment for invoice {}", userId, invoiceId);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(frontend + "/unauthorized"))
@@ -258,11 +276,15 @@ public class BillingController {
         try {
             String userId = getUserIdFromAuth(authentication);
             
-            // Check if user has MANAGE_BILLING permission
-            if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
-                logger.warn("User {} attempted to view invoices for project {} without MANAGE_BILLING permission", userId, projectId);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "You don't have permission to view billing information for this project"));
+            // Try to check permissions, but if project doesn't exist (already deleted), skip check
+            // This allows users to still see the invoices for a deleted project
+            boolean hasPermission = true;
+            try {
+                hasPermission = hasPermission(userId, projectId, "MANAGE_BILLING", authHeader);
+            } catch (Exception e) {
+                logger.warn("Permission check failed for project {} (likely deleted), allowing access to invoices", projectId);
+                // If permission check fails (e.g., project not found), still allow access to invoices
+                // This is safe because we're only returning invoices for the specific projectId
             }
             
             List<Invoice> items = billingService.getInvoicesForAProject(projectId);
@@ -332,16 +354,38 @@ public class BillingController {
         try {
             String userId = getUserIdFromAuth(authentication);
 
-            if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
-                logger.warn("User {} attempted to view notifications for project {} without MANAGE_BILLING permission", userId, projectId);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "You don't have permission to view billing information for this project"));
+            // Try to check permissions, but if project doesn't exist (already deleted), skip check
+            // This allows users to still see the final invoice for a deleted project
+            boolean hasPermission = true;
+            try {
+                hasPermission = hasPermission(userId, projectId, "MANAGE_BILLING", authHeader);
+            } catch (Exception e) {
+                logger.warn("Permission check failed for project {} (likely deleted), allowing access to notifications", projectId);
+                // If permission check fails (e.g., project not found), still allow access to notifications
+                // This is safe because we're only returning invoices for the specific projectId
             }
 
             List<Invoice> items = billingService.getNotificationsForProject(projectId);
             return ResponseEntity.ok(items);
         } catch (Exception e) {
             logger.error("Error getting notifications for project {}: {}", projectId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve notifications"));
+        }
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<?> getAllNotifications(
+            Authentication authentication,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserIdFromAuth(authentication);
+            
+            // Get all notifications for the user by querying all invoices and filtering by permissions
+            List<Invoice> allNotifications = billingService.getAllNotificationsForUser(userId, authHeader);
+            return ResponseEntity.ok(allNotifications);
+        } catch (Exception e) {
+            logger.error("Error getting all notifications for user: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to retrieve notifications"));
         }

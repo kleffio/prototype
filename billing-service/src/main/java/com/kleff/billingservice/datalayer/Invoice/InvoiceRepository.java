@@ -10,4 +10,5 @@ import java.util.List;
 public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     public Invoice findByInvoiceId(String invoiceId);
     public List<Invoice> findByProjectId(String projectId);
+    public List<Invoice> findByProjectIdIn(List<String> projectIds);
 }

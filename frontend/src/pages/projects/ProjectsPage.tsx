@@ -29,6 +29,7 @@ import {
   Zap
 } from "lucide-react";
 import { getMyInvitations } from "@features/projects/api/invitations";
+import { fetchAllNotifications } from "@features/billing/api/getAllNotifications";
 import { Spinner } from "@shared/ui/Spinner";
 
 const translations = {
@@ -69,6 +70,27 @@ export function ProjectsPage() {
   const tNotifications = translations[locale].notifications;
 
   const currentUserId = auth.user?.profile?.sub;
+
+  const refreshNotificationCount = async () => {
+    try {
+      // Load invitation count
+      const invitations = await getMyInvitations();
+      const pendingInvitationCount = (invitations || []).filter(
+        (inv) => inv.status === "PENDING"
+      ).length;
+
+      // Load bill notifications count
+      const bills = await fetchAllNotifications();
+      const pendingBillCount = bills.filter(
+        (bill) => bill.status === "OPEN" || bill.status === "OVERDUE"
+      ).length;
+
+      // Update the total count
+      setInvitationCount(pendingInvitationCount + pendingBillCount);
+    } catch (error) {
+      console.error("Failed to refresh notification count:", error);
+    }
+  };
 
   useEffect(() => {
     const loadInvitationCount = async () => {
@@ -207,24 +229,27 @@ export function ProjectsPage() {
         // The invoice will be available in the billing section
       }
 
-      // Optimistically remove the project from the local state
-      // This provides immediate visual feedback without waiting for a reload
-      // The useProjects hook will handle the actual data synchronization
+      // Trigger a reload to ensure data consistency AFTER deletion
+      // This refreshes the projects list and updates the UI
+      await reload();
 
-      return result; // Return the result for the modal to handle
+      // Return the result for the modal to handle
+      // The modal will stay open to show the invoice
+      return result;
     } catch (error) {
       console.error("Failed to delete project:", error);
       // Error handling is done in the hook
       throw error; // Re-throw to let the modal handle the error
     } finally {
       setIsDeleting(false);
-      setIsDeleteModalOpen(false);
-      setProjectToDelete(null);
-
-      // Trigger a reload to ensure data consistency
-      // This will refresh the projects list and update the UI
-      await reload();
+      // DON'T close the modal here - let the modal handle closing after showing the invoice
+      // The modal's handleClose will be called when the user dismisses it
     }
+  };
+
+  const handleDeleteModalClose = () => {
+    setIsDeleteModalOpen(false);
+    setProjectToDelete(null);
   };
 
   const handleOpenDeleteModal = (project: Project) => {
@@ -540,12 +565,7 @@ export function ProjectsPage() {
                 <div className="max-h-[70vh] overflow-y-auto p-5">
                   <PendingInvitations
                     onUpdate={() => {
-                      getMyInvitations().then((invitations) => {
-                        const pendingCount = (invitations || []).filter(
-                          (inv) => inv.status === "PENDING"
-                        ).length;
-                        setInvitationCount(pendingCount);
-                      });
+                      refreshNotificationCount();
                     }}
                   />
                 </div>
@@ -646,7 +666,7 @@ export function ProjectsPage() {
 
       <DeleteProjectModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={handleDeleteModalClose}
         onConfirm={handleDeleteProject}
         projectName={projectToDelete?.name || ""}
         isLoading={isDeleting}

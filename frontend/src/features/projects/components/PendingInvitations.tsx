@@ -10,6 +10,7 @@ import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { fetchNotifications } from "@features/billing/api/getNotifications";
+import { fetchAllNotifications } from "@features/billing/api/getAllNotifications";
 
 const translations = {
   en: enTranslations,
@@ -92,17 +93,21 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
   };
 
   const loadBills = async () => {
-    if (!projectId) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-      const data = await fetchNotifications(projectId);
-      setBills(data || []);
+
+      // If projectId is provided, load bills for that specific project
+      if (projectId) {
+        const data = await fetchNotifications(projectId);
+        setBills(data || []);
+      } else {
+        // If no projectId, load all notifications for the user across all projects
+        const data = await fetchAllNotifications();
+        setBills(data || []);
+      }
     } catch (error) {
       console.error("Failed to load bills:", error);
+      setBills([]);
     } finally {
       setLoading(false);
     }
@@ -310,19 +315,18 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
             </div>
           )}
 
-          {!projectId ? (
+          {bills.length === 0 ? (
             <div className="flex min-h-[300px] items-center justify-center py-8 text-center">
               <div>
                 <FileText className="mx-auto mb-3 h-12 w-12 text-neutral-600" />
-                <p className="text-sm text-neutral-400">No open bill currently available</p>
-              </div>
-            </div>
-          ) : bills.length === 0 ? (
-            <div className="flex min-h-[300px] items-center justify-center py-8 text-center">
-              <div>
-                <FileText className="mx-auto mb-3 h-12 w-12 text-neutral-600" />
-                <p className="text-sm text-neutral-400">No pending bills</p>
-                <p className="mt-1 text-xs text-neutral-500">All invoices are paid</p>
+                <p className="text-sm text-neutral-400">
+                  {!projectId ? "No pending bills across your projects" : "No pending bills"}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {!projectId
+                    ? "All invoices are paid across your projects"
+                    : "All invoices are paid"}
+                </p>
               </div>
             </div>
           ) : (

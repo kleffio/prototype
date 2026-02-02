@@ -25,5 +25,7 @@ public interface BillingService {
 
     public List<Invoice> getNotificationsForProject(String projectId);
     public void markInvoiceAsPaid(String invoiceId, String stripeSessionId);
+    public List<Invoice> getAllNotificationsForUser(List<String> projectIds);
+    public List<Invoice> getAllNotificationsForUser(String userId, String authHeader);
 
 }
