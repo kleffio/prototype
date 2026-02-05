@@ -176,7 +176,11 @@
     "create_button": "Create Container",
     "update_button": "Update Container",
     "cancel": "Cancel",
-    "failed_save": "Failed to save container."
+    "failed_save": "Failed to save container.",
+    "enable_database": "Enable Database",
+    "database_storage": "Database Storage",
+    "database_storage_description": "Select the storage size for your PostgreSQL database (1-100 GB)",
+    "storage_gb": "{{size}} GB"
   },
   "editEnvModal": {
     "title": "Edit Environment Variables",

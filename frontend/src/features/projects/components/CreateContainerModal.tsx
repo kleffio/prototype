@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
+import { Switch } from "@shared/ui/Switch";
 import { X, Plus, Trash2 } from "lucide-react";
 import updateContainer from "@features/projects/api/updateContainer";
 import type { Container } from "@features/projects/types/Container";
@@ -34,6 +35,8 @@ export function ContainerModal({
   const [repoUrl, setRepoUrl] = useState("");
   const [branch, setBranch] = useState("");
   const [envVariables, setEnvVariables] = useState<Array<{ key: string; value: string }>>([]);
+  const [enableDatabase, setEnableDatabase] = useState(false);
+  const [storageSizeGB, setStorageSizeGB] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locale, setLocale] = useState(getLocale());
@@ -74,6 +77,8 @@ export function ContainerModal({
     setRepoUrl("");
     setBranch("");
     setEnvVariables([]);
+    setEnableDatabase(false);
+    setStorageSizeGB(10);
     setError(null);
   };
 
@@ -108,7 +113,9 @@ export function ContainerModal({
         port: portNum,
         repoUrl: repoUrl.trim(),
         branch: branch.trim(),
-        envVariables: Object.keys(envVarsObject).length > 0 ? envVarsObject : undefined
+        envVariables: Object.keys(envVarsObject).length > 0 ? envVarsObject : undefined,
+        enableDatabase,
+        storageSizeGB: enableDatabase ? storageSizeGB : undefined
       };
 
       if (isEditMode && container) {
@@ -294,6 +301,49 @@ export function ContainerModal({
                   </Button>
                 </div>
               ))}
+            </div>
+
+            {/* Database Provisioning Section */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium tracking-wide text-neutral-300 uppercase">
+                  {t.enable_database}
+                </label>
+                <Switch
+                  checked={enableDatabase}
+                  onCheckedChange={setEnableDatabase}
+                />
+              </div>
+
+              {enableDatabase && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-medium tracking-wide text-neutral-300 uppercase">
+                      {t.database_storage}
+                    </label>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {t.database_storage_description}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={storageSizeGB}
+                      onChange={(e) => setStorageSizeGB(parseInt(e.target.value))}
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <div className="flex justify-between text-xs text-neutral-400">
+                      <span>1 GB</span>
+                      <span className="font-medium text-neutral-200">
+                        {t.storage_gb.replace("{{size}}", storageSizeGB.toString())}
+                      </span>
+                      <span>100 GB</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3">
