@@ -71,7 +71,9 @@ export function DeleteProjectModal({
 
   // Use the stored deleted project name when showing invoice, otherwise use current projectName
   const displayProjectName = showInvoice && deletedProjectName ? deletedProjectName : projectName;
-  const modalTitle = showInvoice ? `Project Deleted: ${displayProjectName}` : `Delete Project: ${displayProjectName}`;
+  const modalTitle = showInvoice
+    ? `Project Deleted: ${displayProjectName}`
+    : `Delete Project: ${displayProjectName}`;
   const modalDescription =
     "Are you sure you want to delete this project? This will permanently remove all collaborators, cancel pending invites, and stop all running containers. A final invoice will be generated for your current usage period. This action cannot be undone.";
 
@@ -80,8 +82,12 @@ export function DeleteProjectModal({
       open={isOpen}
       onOpenChange={handleClose}
       title={modalTitle}
-      description={showInvoice ? "Your project has been successfully deleted. Here is your final invoice summary." : modalDescription}
-      confirmText={showInvoice ? "Close" : (isLoading ? "Deleting..." : "Confirm Delete")}
+      description={
+        showInvoice
+          ? "Your project has been successfully deleted. Here is your final invoice summary."
+          : modalDescription
+      }
+      confirmText={showInvoice ? "Close" : isLoading ? "Deleting..." : "Confirm Delete"}
       cancelText={showInvoice ? undefined : "Cancel"}
       onConfirm={showInvoice ? handleClose : handleConfirm}
       onCancel={showInvoice ? undefined : handleClose}

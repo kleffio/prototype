@@ -75,12 +75,16 @@ export function ProjectsPage() {
     try {
       // Load invitation count
       const invitations = await getMyInvitations();
-      const pendingInvitationCount = (invitations || []).filter((inv) => inv.status === "PENDING").length;
-      
+      const pendingInvitationCount = (invitations || []).filter(
+        (inv) => inv.status === "PENDING"
+      ).length;
+
       // Load bill notifications count
       const bills = await fetchAllNotifications();
-      const pendingBillCount = bills.filter((bill) => bill.status === "OPEN" || bill.status === "OVERDUE").length;
-      
+      const pendingBillCount = bills.filter(
+        (bill) => bill.status === "OPEN" || bill.status === "OVERDUE"
+      ).length;
+
       // Update the total count
       setInvitationCount(pendingInvitationCount + pendingBillCount);
     } catch (error) {
@@ -316,32 +320,35 @@ export function ProjectsPage() {
                   <span>{getRelativeTime(project.createdDate)}</span>
                 </div>
 
-                {project.projectStatus && (
-                  <Badge variant="success" className="px-2 py-0.5 text-[10px]">
-                    <Zap className="mr-1 h-2.5 w-2.5" />
-                    {t.status.active}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {project.projectStatus && (
+                    <Badge variant="success" className="px-2 py-0.5 text-[10px]">
+                      <Zap className="mr-1 h-2.5 w-2.5" />
+                      {t.status.active}
+                    </Badge>
+                  )}
+
+                  {isOwner && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenDeleteModal(project);
+                      }}
+                      className="pointer-events-auto opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+                      title="Delete project"
+                    >
+                      <div className="rounded-lg bg-red-500/10 p-1.5 ring-1 ring-red-500/20 transition-all hover:bg-red-500/20 hover:ring-red-500/30">
+                        <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                      </div>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </Link>
-
-      {isOwner && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            handleOpenDeleteModal(project);
-          }}
-          className="absolute -top-2 -right-2 opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
-          title="Delete project"
-        >
-          <div className="rounded-lg bg-red-500/10 p-2 ring-1 ring-red-500/20 hover:bg-red-500/20">
-            <Trash2 className="h-4 w-4 text-red-400" />
-          </div>
-        </button>
-      )}
     </div>
   );
 

@@ -322,12 +322,12 @@ public class ContainerServiceImpl {
         }
     }
 
+    // Inject audit URL from application properties
+    @org.springframework.beans.factory.annotation.Value("${audit.service.url:http://project-management-service:8080/api/v1/projects/audit/internal}")
+    private String auditServiceUrl;
+
     private void sendAuditLog(String action, String projectId, String containerId, String userId,
             Map<String, Object> changes) {
-        // Build the URL for the project-management-service
-        // Assuming it's reachable via service discovery or Nginx internal routing
-        String auditUrl = "http://project-management-service:8080/api/v1/projects/audit/internal";
-
         try {
             ExternalAuditRequest request = new ExternalAuditRequest();
             request.setAction(action);
@@ -337,7 +337,7 @@ public class ContainerServiceImpl {
             request.setResourceId(containerId);
             request.setChanges(changes);
 
-            restTemplate.postForObject(auditUrl, request, Void.class);
+            restTemplate.postForObject(auditServiceUrl, request, Void.class);
             log.info("Audit log sent for action: {}", action);
         } catch (Exception e) {
             log.error("Failed to send audit log: {}", e.getMessage());
