@@ -1,3 +1,4 @@
+---
 name: "Code Freeze Check"
 
 on:
@@ -14,7 +15,7 @@ jobs:
         run: |
           # The deadline is the end of Friday, Feb 13th (Midnight).
           # In EST (UTC-5), Midnight entering Saturday, Feb 14 is 05:00:00 UTC.
-          
+
           # Target: Feb 14, 2026 at 05:00:00 UTC
           DEADLINE=$(date -d "2026-02-14 05:00:00 UTC" +%s)
           CURRENT=$(date +%s)
@@ -26,7 +27,7 @@ jobs:
             exit 1
           else
             echo "✅ Under deadline. Merges allowed."
-            
+
             # Optional: Print how much time is left in hours
             LEFT=$(( ($DEADLINE - $CURRENT) / 3600 ))
             echo "Approximately $LEFT hours remaining until code freeze."
