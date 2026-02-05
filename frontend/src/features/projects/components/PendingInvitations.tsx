@@ -95,7 +95,7 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
   const loadBills = async () => {
     try {
       setLoading(true);
-      
+
       // If projectId is provided, load bills for that specific project
       if (projectId) {
         const data = await fetchNotifications(projectId);
@@ -323,7 +323,9 @@ export function PendingInvitations({ onUpdate, projectId }: PendingInvitationsPr
                   {!projectId ? "No pending bills across your projects" : "No pending bills"}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
-                  {!projectId ? "All invoices are paid across your projects" : "All invoices are paid"}
+                  {!projectId
+                    ? "All invoices are paid across your projects"
+                    : "All invoices are paid"}
                 </p>
               </div>
             </div>
