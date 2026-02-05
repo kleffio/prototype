@@ -7,4 +7,6 @@ export type Project = {
   projectStatus: string | null;
   createdDate: string | null;
   updatedDate: string | null;
+  enableDatabase?: boolean;
+  storageSize?: number; // in GB
 };

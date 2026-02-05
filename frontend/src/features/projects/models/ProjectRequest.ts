@@ -3,4 +3,6 @@ export type ProjectRequestModel = {
   description?: string;
   ownerId?: string;
   stackId?: string;
+  enableDatabase?: boolean;
+  storageSize?: number; // in GB
 };
