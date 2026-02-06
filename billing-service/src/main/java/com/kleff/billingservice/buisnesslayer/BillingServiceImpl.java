@@ -272,6 +272,88 @@ public class BillingServiceImpl implements BillingService {
         return invoice;
     }
 
+    @Scheduled(cron = "0 0 3 2 * ?")
+    @Transactional
+    public void verifyMonthlyBillsCreated() {
+        log.info("Starting failsafe verification of monthly bill generation");
+
+        YearMonth previousMonth = YearMonth.now().minusMonths(1);
+        int daysInPreviousMonth = previousMonth.lengthOfMonth();
+
+        // Get all project IDs
+        List<String> listOfProjectIds = apiService.getListOfProjectIds();
+
+        int missingCount = 0;
+        int createdCount = 0;
+
+        for (String projectId : listOfProjectIds) {
+            try {
+                // Check if invoice was created for this project for the previous month
+                // We look for invoices created in the current month for the previous month's usage
+                LocalDate firstDayOfCurrentMonth = LocalDate.now().withDayOfMonth(1);
+                LocalDate todayDate = LocalDate.now();
+
+                List<Invoice> recentInvoices = invoiceRepository.findByProjectIdAndCreatedDateBetween(
+                        projectId,
+                        Date.valueOf(firstDayOfCurrentMonth),
+                        Date.valueOf(todayDate)
+                );
+
+                // If no invoice found for this project in the current month, create one
+                if (recentInvoices.isEmpty()) {
+                    log.warn("Missing monthly invoice for project: {} - Creating now", projectId);
+                    missingCount++;
+
+                    Invoice invoice = getLastsMonthUsageRecordsAverage(projectId, daysInPreviousMonth);
+                    invoiceRepository.save(invoice);
+                    createdCount++;
+
+                    log.info("Failsafe created invoice for project: {} - Invoice ID: {}",
+                            projectId, invoice.getInvoiceId());
+                }
+
+            } catch (Exception e) {
+                log.error("Failsafe failed to verify/create invoice for project: {}", projectId, e);
+                // Continue with other projects
+            }
+        }
+
+        log.info("Failsafe verification completed. Missing invoices detected: {}, Successfully created: {}",
+                missingCount, createdCount);
+    }
+    @Scheduled(cron = "0 0 4 * * ?")
+    @Transactional
+    public void markOverdueInvoices() {
+        log.info("Starting scheduled task to mark overdue invoices");
+
+        LocalDate today = LocalDate.now();
+        LocalDate sevenDaysAgo = today.minusDays(7);
+
+        // Find all OPEN invoices
+        List<Invoice> openInvoices = invoiceRepository.findByStatus(InvoiceStatus.OPEN);
+
+        int markedCount = 0;
+        for (Invoice invoice : openInvoices) {
+            if (invoice.getEndDate() != null) {
+                LocalDate invoiceEndDate = invoice.getEndDate().toLocalDate();
+
+                // Check if invoice is more than 7 days old
+                if (invoiceEndDate.isBefore(sevenDaysAgo) || invoiceEndDate.isEqual(sevenDaysAgo)) {
+                    invoice.setStatus(InvoiceStatus.OVERDUE);
+                    invoiceRepository.save(invoice);
+                    markedCount++;
+
+                    log.info("Marked invoice {} as OVERDUE (End date: {}, Project: {})",
+                            invoice.getInvoiceId(),
+                            invoice.getEndDate(),
+                            invoice.getProjectId());
+                }
+            }
+        }
+
+        log.info("Completed marking overdue invoices. Total marked: {}", markedCount);
+    }
+
 
 
 
