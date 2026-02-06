@@ -14,13 +14,13 @@ export function AppHeader() {
   const auth = useAuth();
   const navigate = useNavigate();
 
-const handleLogin = useCallback(() => {
-  if (auth.isAuthenticated) {
-    navigate(ROUTES.DASHBOARD);
-  } else {
-    auth.signinRedirect();
-  }
-}, [auth.isAuthenticated, auth, navigate]);
+  const handleLogin = useCallback(() => {
+    if (auth.isAuthenticated) {
+      navigate(ROUTES.DASHBOARD);
+    } else {
+      auth.signinRedirect();
+    }
+  }, [auth.isAuthenticated, auth, navigate]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl supports-backdrop-filter:bg-[#0f0f10]/30">
