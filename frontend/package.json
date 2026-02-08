@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "format": "prettier \"src/**/*.{ts,tsx,js,jsx}\" --write",
+    "format": "prettier \"src/**/*.{ts,tsx,js,jsx,css}\" --write",
     "format:check": "prettier --check .",
     "test:e2e": "yarn test:e2e:clean && playwright test",
     "test:e2e:clean": "rm -f e2e/storage/auth.json",
