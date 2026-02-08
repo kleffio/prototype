@@ -3,10 +3,11 @@
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"sort"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +20,7 @@ import (
 
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 	kleffv1 "kleff.io/api/v1"
-	
+
 	// Import CloudNativePG API
 	postgresv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 )
@@ -36,14 +37,45 @@ type WebAppReconciler struct {
 //+kubebuilder:rbac:groups="",resources=services;secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
 
 func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	webapp := &kleffv1.WebApp{}
-	if err := r.Get(ctx, req.NamespacedName, webapp); err != nil {
+	var err error
+	if err = r.Get(ctx, req.NamespacedName, webapp); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	// --- NEW: BUILD JOB CHECK ---
+	if webapp.Spec.BuildJobName != "" {
+		buildJob := &batchv1.Job{}
+		// We look in "default" namespace because that's where your main.go creates them
+		err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: webapp.Spec.BuildJobName}, buildJob)
+		
+		if err != nil {
+			if client.IgnoreNotFound(err) == nil {
+				// Job might have been cleaned up by TTL, proceed with deployment
+				logger.Info("Build job not found, assuming image is already available", "job", webapp.Spec.BuildJobName)
+			} else {
+				return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "BuildCheckFailed", err.Error())
+			}
+		} else {
+			// Check if job is still running
+			if buildJob.Status.Succeeded == 0 {
+				// Check if it failed
+				if buildJob.Status.Failed > 0 {
+					return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "BuildFailed", "The Kaniko build job failed. Check build logs.")
+				}
+				// Still building
+				logger.Info("Build job still in progress, waiting...", "job", buildJob.Name)
+				return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "Building", "Waiting for Kaniko build to complete...", 30*time.Second)
+			}
+			logger.Info("Build job completed successfully, proceeding to deployment", "job", buildJob.Name)
+		}
+	}
+	// --- END BUILD JOB CHECK ---
 
 	// Define standard labels
 	labels := map[string]string{
@@ -64,18 +96,23 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			},
 		}
 
-		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, dbCluster, func() error {
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, dbCluster, func() error {
 			dbCluster.Labels = labels
-			
-			instances := 1
-			dbCluster.Spec.Instances = &instances
+
 			// Using the version from CRD
 			dbCluster.Spec.ImageName = fmt.Sprintf("ghcr.io/cloudnative-pg/postgresql:%s", webapp.Spec.Database.Version)
-			
+
 			// Storage size from CRD
 			storageSize := fmt.Sprintf("%dGi", webapp.Spec.Database.StorageSize)
+			if dbCluster.Spec.StorageConfiguration == (postgresv1.StorageConfiguration{}) {
+				dbCluster.Spec.StorageConfiguration = postgresv1.StorageConfiguration{}
+			}
 			dbCluster.Spec.StorageConfiguration.Size = storageSize
-			
+
+			// Set number of instances
+			instances := 1
+			dbCluster.Spec.Instances = instances
+
 			return controllerutil.SetControllerReference(webapp, dbCluster, r.Scheme)
 		})
 		if err != nil {
@@ -108,7 +145,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
 		deployment.Labels = labels
 		if deployment.CreationTimestamp.IsZero() {
 			deployment.Spec.Selector = &metav1.LabelSelector{
@@ -130,18 +167,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		// Inject DB Secrets if enabled
 		// CNPG naming convention for the app secret is: <cluster-name>-app
 		if webapp.Spec.Database.Enabled {
-			dbSecretName := dbClusterName + "-app" 
-			
-			// Check if the secret exists before proceeding
-    		secret := &corev1.Secret{}
-    		err := r.Get(ctx, client.ObjectKey{Namespace: webapp.Namespace, Name: dbSecretName}, secret)
-    		if err != nil {
-        		if client.IgnoreNotFound(err) == nil {
-            		logger.Info("Database secret not ready yet, requeueing")
-            		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
-        		}
-        		return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "SecretError", err.Error())
-    		}
+			dbSecretName := dbClusterName + "-app"
 
 			dbKeys := map[string]string{
 				"DATABASE_HOST":     "host",
@@ -272,13 +298,16 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 }
 
-func (r *WebAppReconciler) updateStatus(ctx context.Context, webapp *kleffv1.WebApp, status metav1.ConditionStatus, reason, message string) (ctrl.Result, error) {
+func (r *WebAppReconciler) updateStatus(ctx context.Context, webapp *kleffv1.WebApp, status metav1.ConditionStatus, reason, message string, requeueAfter ...time.Duration) (ctrl.Result, error) {
 	currentCond := meta.FindStatusCondition(webapp.Status.Conditions, "Available")
 
 	if currentCond != nil &&
 		currentCond.Status == status &&
 		currentCond.Reason == reason &&
 		currentCond.Message == message {
+		if len(requeueAfter) > 0 {
+			return ctrl.Result{RequeueAfter: requeueAfter[0]}, nil
+		}
 		return ctrl.Result{}, nil
 	}
 
@@ -294,6 +323,9 @@ func (r *WebAppReconciler) updateStatus(ctx context.Context, webapp *kleffv1.Web
 		return ctrl.Result{}, err
 	}
 
+	if len(requeueAfter) > 0 {
+		return ctrl.Result{RequeueAfter: requeueAfter[0]}, nil
+	}
 	return ctrl.Result{}, nil
 }
 

@@ -243,7 +243,7 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	// 6. Create or Update the WebApp Custom Resource
 	// We pass resourceName ("app-UUID") as the K8s name,
 	// but the original req (containing raw UUID) is stored in the Spec.
-	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, req); err != nil {
+	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req); err != nil {
 		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
 		http.Error(w, "Build started, but failed to sync deployment metadata", http.StatusInternalServerError)
 		return
@@ -344,7 +344,7 @@ func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
+func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, jobName string, req BuildRequest) error {
 	port := req.Port
 	if port == 0 {
 		port = 8080
@@ -376,14 +376,15 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 				},
 			},
 			"spec": map[string]interface{}{
-				"containerID":  req.ContainerID,
-				"displayName":  req.Name,
-				"image":        image,
-				"port":         int64(port),
-				"repoURL":      req.RepoURL,
-				"branch":       req.Branch,
-				"envVariables": req.EnvVariables,
-				"database":     databaseSpec, // Added Database Spec
+				"containerID":    req.ContainerID,
+				"displayName":    req.Name,
+				"image":          image,
+				"buildJobName":   jobName,
+				"port":           int64(port),
+				"repoURL":        req.RepoURL,
+				"branch":         req.Branch,
+				"envVariables":   req.EnvVariables,
+				"database":       databaseSpec, // Added Database Spec
 			},
 		},
 	}
@@ -406,6 +407,7 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 			// Update fields
 			spec["displayName"] = req.Name
 			spec["image"] = image
+			spec["buildJobName"] = jobName
 			spec["port"] = int64(port)
 			spec["branch"] = req.Branch
 			spec["repoURL"] = req.RepoURL

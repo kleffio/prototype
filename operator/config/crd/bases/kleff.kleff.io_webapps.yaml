@@ -41,6 +41,10 @@ spec:
             properties:
               branch:
                 type: string
+              buildJobName:
+                description: The name of the Kaniko job responsible for building the
+                  image
+                type: string
               containerID:
                 description: 'ADDED: The UUID from the build request'
                 type: string

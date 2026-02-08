@@ -42,6 +42,10 @@ type WebAppSpec struct {
 
 	// +optional
 	EnvVariables map[string]string `json:"envVariables,omitempty"`
+
+	// The name of the Kaniko job responsible for building the image
+	// +optional
+	BuildJobName string `json:"buildJobName,omitempty"`
 }
 
 // WebAppStatus defines the observed state of WebApp.

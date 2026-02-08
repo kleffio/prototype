@@ -61,6 +61,15 @@ public class ContainerController {
     public ContainerResponseModel updateContainer(@PathVariable String containerID,
             @RequestBody ContainerRequestModel containerRequest, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt != null ? jwt.getSubject() : "unknown";
+        // Database validation
+        if (containerRequest.isEnableDatabase()) {
+            if (containerRequest.getStorageSizeGB() == null) {
+                throw new RuntimeException("Storage size is required when database is enabled");
+            }
+            if (containerRequest.getStorageSizeGB() < 1 || containerRequest.getStorageSizeGB() > 100) {
+                throw new RuntimeException("Storage size must be between 1 and 100 GB");
+            }
+        }
         try {
             return containerService.updateContainer(containerID, containerRequest, userId);
         } catch (RuntimeException e) {
