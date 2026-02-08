@@ -125,7 +125,7 @@ services:
     image: postgres:16
     container_name: user-service-postgres
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
@@ -140,6 +140,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  chat-support-service:
+    build:
+      context: ./chat-support-service
+      dockerfile: Dockerfile
+    container_name: chat-support-service
+    ports:
+      - "8086:8086"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-kleff-docs}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    restart: unless-stopped
+
 
   deployment-service:
     build:
