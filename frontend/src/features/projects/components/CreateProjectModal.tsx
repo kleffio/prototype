@@ -38,7 +38,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
     try {
       await createProject({
         name: name.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || undefined
       });
 
       resetForm();

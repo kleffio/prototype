@@ -309,19 +309,16 @@ export function ContainerModal({
                 <label className="block text-xs font-medium tracking-wide text-neutral-300 uppercase">
                   {t.enable_database}
                 </label>
-                <Switch
-                  checked={enableDatabase}
-                  onCheckedChange={setEnableDatabase}
-                />
+                <Switch checked={enableDatabase} onCheckedChange={setEnableDatabase} />
               </div>
 
               {enableDatabase && (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-medium tracking-wide text-neutral-300 uppercase">
                       {t.database_storage}
                     </label>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="mt-1 text-xs text-neutral-500">
                       {t.database_storage_description}
                     </p>
                   </div>
@@ -332,7 +329,7 @@ export function ContainerModal({
                       max="100"
                       value={storageSizeGB}
                       onChange={(e) => setStorageSizeGB(parseInt(e.target.value))}
-                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-blue-500"
                     />
                     <div className="flex justify-between text-xs text-neutral-400">
                       <span>1 GB</span>
@@ -341,6 +338,12 @@ export function ContainerModal({
                       </span>
                       <span>100 GB</span>
                     </div>
+                  </div>
+                  <div className="rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2">
+                    <p className="text-xs text-blue-200">{t.database_connection_info}</p>
+                    <p className="mt-1 font-mono text-xs text-blue-100">
+                      {t.database_env_vars_list}
+                    </p>
                   </div>
                 </div>
               )}

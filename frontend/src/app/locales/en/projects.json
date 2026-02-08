@@ -180,7 +180,9 @@
     "enable_database": "Enable Database",
     "database_storage": "Database Storage",
     "database_storage_description": "Select the storage size for your PostgreSQL database (1-100 GB)",
-    "storage_gb": "{{size}} GB"
+    "storage_gb": "{{size}} GB",
+    "database_connection_info": "To connect to the database from your container, use the following environment variables:",
+    "database_env_vars_list": "DATABASE_HOST, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, DATABASE_NAME"
   },
   "editEnvModal": {
     "title": "Edit Environment Variables",

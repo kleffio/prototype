@@ -1,4 +1,4 @@
- package controller
+package controller
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 	kleffv1 "kleff.io/api/v1"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	// Import CloudNativePG API
 	postgresv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
@@ -53,7 +53,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		buildJob := &batchv1.Job{}
 		// We look in "default" namespace because that's where your main.go creates them
 		err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: webapp.Spec.BuildJobName}, buildJob)
-		
+
 		if err != nil {
 			if client.IgnoreNotFound(err) == nil {
 				// Job might have been cleaned up by TTL, proceed with deployment
@@ -87,7 +87,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// --- 1. HANDLE CLOUDNATIVEPG CLUSTER ---
 	// Unique Name based on ContainerID to avoid collisions in the same namespace
 	dbClusterName := fmt.Sprintf("db-%s", webapp.Spec.ContainerID)
-	
+
 	if webapp.Spec.Database.Enabled {
 		dbCluster := &postgresv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -335,6 +335,6 @@ func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&gatewayv1.HTTPRoute{}).
-		Owns(&postgresv1.Cluster{}). 
+		Owns(&postgresv1.Cluster{}).
 		Complete(r)
 }

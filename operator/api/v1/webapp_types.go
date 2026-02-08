@@ -20,24 +20,24 @@ type DatabaseConfig struct {
 // WebAppSpec defines the desired state of WebApp
 type WebAppSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	
+
 	// +kubebuilder:validation:MinLength=1
 	DisplayName string `json:"displayName,omitempty"`
 
 	// ADDED: The UUID from the build request
 	ContainerID string `json:"containerID,omitempty"`
 
-	RepoURL     string `json:"repoURL,omitempty"`
-	Branch      string `json:"branch,omitempty"`
-	
+	RepoURL string `json:"repoURL,omitempty"`
+	Branch  string `json:"branch,omitempty"`
+
 	// +kubebuilder:validation:Required
 	Image string `json:"image,omitempty"`
-	
+
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	// +kubebuilder:default=8080
 	Port int `json:"port,omitempty"`
-	
+
 	Database DatabaseConfig `json:"database,omitempty"`
 
 	// +optional
