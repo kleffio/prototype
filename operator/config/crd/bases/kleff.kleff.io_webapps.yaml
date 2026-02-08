@@ -44,6 +44,18 @@ spec:
               containerID:
                 description: 'ADDED: The UUID from the build request'
                 type: string
+              database:
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  storageSize:
+                    default: 10
+                    type: integer
+                  version:
+                    default: "16.2"
+                    type: string
+                type: object
               displayName:
                 minLength: 1
                 type: string

@@ -8,6 +8,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type DatabaseConfig struct {
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+	// +kubebuilder:default=10
+	StorageSize int `json:"storageSize,omitempty"`
+	// +kubebuilder:default="16.2"
+	Version string `json:"version,omitempty"`
+}
+
 // WebAppSpec defines the desired state of WebApp
 type WebAppSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -29,6 +38,8 @@ type WebAppSpec struct {
 	// +kubebuilder:default=8080
 	Port int `json:"port,omitempty"`
 	
+	Database DatabaseConfig `json:"database,omitempty"`
+
 	// +optional
 	EnvVariables map[string]string `json:"envVariables,omitempty"`
 }

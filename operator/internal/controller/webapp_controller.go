@@ -1,10 +1,10 @@
-package controller
+ package controller
 
 import (
 	"context"
 	"fmt"
-	"regexp" 
-	"strings"
+	"regexp"
+	"sort"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,10 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	// Import Gateway API types
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-
 	kleffv1 "kleff.io/api/v1"
+	
+	// Import CloudNativePG API
+	postgresv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 )
 
 type WebAppReconciler struct {
@@ -28,47 +29,87 @@ type WebAppReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+//+kubebuilder:rbac:groups=postgresql.cnpg.io,resources=clusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kleff.kleff.io,resources=webapps,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kleff.kleff.io,resources=webapps/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=services;secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;create;update;patch;delete
+
 func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// 1. Fetch the WebApp CR
 	webapp := &kleffv1.WebApp{}
-	err := r.Get(ctx, req.NamespacedName, webapp)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, webapp); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// --- DEFINE LABELS ---
-	// "app" is the UUID (webapp.Name). 
-	// We add "display-name" for human observability via kubectl.
+	// Define standard labels
 	labels := map[string]string{
-		"app":          webapp.Name, // This is the UUID
+		"app":          webapp.Name,
 		"container-id": webapp.Spec.ContainerID,
 		"controller":   "webapp",
 	}
-	if webapp.Spec.DisplayName != "" {
-		// Sanitize display name for label safety (max 63 chars, alphanumeric)
-		safeDisplayName := regexp.MustCompile(`[^a-z0-9A-Z._-]`).ReplaceAllString(webapp.Spec.DisplayName, "-")
-		labels["display-name"] = safeDisplayName
+
+	// --- 1. HANDLE CLOUDNATIVEPG CLUSTER ---
+	// Unique Name based on ContainerID to avoid collisions in the same namespace
+	dbClusterName := fmt.Sprintf("db-%s", webapp.Spec.ContainerID)
+	
+	if webapp.Spec.Database.Enabled {
+		dbCluster := &postgresv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dbClusterName,
+				Namespace: webapp.Namespace,
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, dbCluster, func() error {
+			dbCluster.Labels = labels
+			
+			instances := 1
+			dbCluster.Spec.Instances = &instances
+			// Using the version from CRD
+			dbCluster.Spec.ImageName = fmt.Sprintf("ghcr.io/cloudnative-pg/postgresql:%s", webapp.Spec.Database.Version)
+			
+			// Storage size from CRD
+			storageSize := fmt.Sprintf("%dGi", webapp.Spec.Database.StorageSize)
+			dbCluster.Spec.StorageConfiguration.Size = storageSize
+			
+			return controllerutil.SetControllerReference(webapp, dbCluster, r.Scheme)
+		})
+		if err != nil {
+			logger.Error(err, "Failed to reconcile Postgres Cluster")
+			return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "DatabaseFailed", err.Error())
+		}
 	}
 
-	// 2. Sync Deployment
+	// --- 2. SYNC DEPLOYMENT ---
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      webapp.Name, // UUID
+			Name:      webapp.Name,
 			Namespace: webapp.Namespace,
 		},
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
-		deployment.Labels = labels
+	// Check for Database Secret BEFORE the CreateOrUpdate block
+	var dbSecretName string
+	if webapp.Spec.Database.Enabled {
+		dbSecretName = dbClusterName + "-app"
+		secret := &corev1.Secret{}
+		err := r.Get(ctx, client.ObjectKey{Namespace: webapp.Namespace, Name: dbSecretName}, secret)
+		if err != nil {
+			if client.IgnoreNotFound(err) == nil {
+				logger.Info("Database secret not ready yet, requeueing", "secret", dbSecretName)
+				// Requeue after 5 seconds to give CNPG time to create the secret
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+			}
+			return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "SecretError", err.Error())
+		}
+	}
 
-		// Selector is immutable after creation, so we set it only if new
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+		deployment.Labels = labels
 		if deployment.CreationTimestamp.IsZero() {
 			deployment.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": webapp.Name},
@@ -77,24 +118,54 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 		replicas := int32(1)
 		deployment.Spec.Replicas = &replicas
+		deployment.Spec.Template.ObjectMeta.Labels = labels
+		deployment.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "acr-creds"}}
 
-		// Pod Template
-		if deployment.Spec.Template.ObjectMeta.Labels == nil {
-			deployment.Spec.Template.ObjectMeta.Labels = make(map[string]string)
-		}
-		for k, v := range labels {
-			deployment.Spec.Template.ObjectMeta.Labels[k] = v
-		}
-
-		deployment.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
-			{Name: "acr-creds"},
-		}
-
-		// Environment Variables
+		// Gather Environment Variables
 		var envVars []corev1.EnvVar
-		for key, value := range webapp.Spec.EnvVariables {
-			envVars = append(envVars, corev1.EnvVar{Name: key, Value: value})
+		for k, v := range webapp.Spec.EnvVariables {
+			envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
 		}
+
+		// Inject DB Secrets if enabled
+		// CNPG naming convention for the app secret is: <cluster-name>-app
+		if webapp.Spec.Database.Enabled {
+			dbSecretName := dbClusterName + "-app" 
+			
+			// Check if the secret exists before proceeding
+    		secret := &corev1.Secret{}
+    		err := r.Get(ctx, client.ObjectKey{Namespace: webapp.Namespace, Name: dbSecretName}, secret)
+    		if err != nil {
+        		if client.IgnoreNotFound(err) == nil {
+            		logger.Info("Database secret not ready yet, requeueing")
+            		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+        		}
+        		return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "SecretError", err.Error())
+    		}
+
+			dbKeys := map[string]string{
+				"DATABASE_HOST":     "host",
+				"DATABASE_PORT":     "port",
+				"DATABASE_USER":     "user",
+				"DATABASE_PASSWORD": "password",
+				"DATABASE_NAME":     "dbname",
+			}
+
+			for envName, secretKey := range dbKeys {
+				envVars = append(envVars, corev1.EnvVar{
+					Name: envName,
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{Name: dbSecretName},
+							Key:                  secretKey,
+						},
+					},
+				})
+			}
+		}
+
+		// Sort Envs to prevent "Permadiff" (Go map iteration is random)
+		sort.Slice(envVars, func(i, j int) bool { return envVars[i].Name < envVars[j].Name })
 
 		deployment.Spec.Template.Spec.Containers = []corev1.Container{{
 			Name:            "app",
@@ -102,22 +173,14 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			ImagePullPolicy: corev1.PullAlways,
 			Env:             envVars,
 			Ports: []corev1.ContainerPort{{
-				Name:          "http",
 				ContainerPort: int32(webapp.Spec.Port),
-				Protocol:      corev1.ProtocolTCP,
 			}},
-			LivenessProbe: &corev1.Probe{
-				ProbeHandler: corev1.ProbeHandler{
-					TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromInt(webapp.Spec.Port)},
-				},
-			},
 		}}
 
 		return controllerutil.SetControllerReference(webapp, deployment, r.Scheme)
 	})
 
 	if err != nil {
-		logger.Error(err, "Failed to reconcile Deployment")
 		return r.updateStatus(ctx, webapp, metav1.ConditionFalse, "DeploymentFailed", err.Error())
 	}
 
@@ -234,12 +297,12 @@ func (r *WebAppReconciler) updateStatus(ctx context.Context, webapp *kleffv1.Web
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
 func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kleffv1.WebApp{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&gatewayv1.HTTPRoute{}).
+		Owns(&postgresv1.Cluster{}). 
 		Complete(r)
 }

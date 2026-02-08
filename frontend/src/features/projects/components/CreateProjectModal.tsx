@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { X } from "lucide-react";
-import { Switch } from "@shared/ui/Switch";
 
 import createProject from "@features/projects/api/createProject";
 
@@ -15,8 +14,6 @@ interface CreateProjectModalProps {
 export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [enableDatabase, setEnableDatabase] = useState(false);
-  const [storageSize, setStorageSize] = useState(10); // Default 10 GB
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,8 +22,6 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
   const resetForm = () => {
     setName("");
     setDescription("");
-    setEnableDatabase(false);
-    setStorageSize(10);
     setError(null);
   };
 
@@ -44,8 +39,6 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
       await createProject({
         name: name.trim(),
         description: description.trim() || undefined,
-        enableDatabase,
-        storageSize: enableDatabase ? storageSize : undefined
       });
 
       resetForm();
@@ -130,43 +123,6 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 placeholder="Short summary of what this project does."
               />
             </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="enable-database"
-                  className="block text-xs font-medium tracking-wide text-neutral-300 uppercase"
-                >
-                  Enable Database
-                </label>
-                <Switch
-                  id="enable-database"
-                  checked={enableDatabase}
-                  onCheckedChange={setEnableDatabase}
-                />
-              </div>
-            </div>
-
-            {enableDatabase && (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="storage-size"
-                  className="block text-xs font-medium tracking-wide text-neutral-300 uppercase"
-                >
-                  Storage Size (GB): {storageSize}
-                </label>
-                <input
-                  id="storage-size"
-                  name="storageSize"
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={storageSize}
-                  onChange={(e) => setStorageSize(Number(e.target.value))}
-                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            )}
 
             <div className="mt-6 flex items-center justify-end gap-3">
               <Button
