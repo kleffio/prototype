@@ -13,11 +13,13 @@ interface ContainerResponse {
   repoUrl?: string;
   branch?: string;
   envVariables?: Record<string, string>;
+  enableDatabase?: boolean;
+  storageSizeGB?: number;
 }
 
 export default async function fetchProjectContainers(projectId: string): Promise<Container[]> {
   try {
-    const res = await client.get<ContainerResponse[]>(`/api/v1/projects/${projectId}/containers`);
+    const res = await client.get<ContainerResponse[]>(`/api/v1/containers/${projectId}`);
     // Transform the API response to match the Container type
     const containers: Container[] = (res.data ?? []).map((item) => ({
       containerId: item.containerID || item.containerId || "",
@@ -28,7 +30,9 @@ export default async function fetchProjectContainers(projectId: string): Promise
       createdAt: item.createdAt,
       repoUrl: item.repoUrl || "",
       branch: item.branch || "main",
-      envVariables: item.envVariables || {}
+      envVariables: item.envVariables || {},
+      enableDatabase: item.enableDatabase || false,
+      storageSizeGB: item.storageSizeGB || 0
     }));
     return containers;
   } catch (error: unknown) {

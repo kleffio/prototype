@@ -204,6 +204,33 @@ export function ContainerDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* Database */}
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="h-5 w-5 flex-shrink-0 text-neutral-400">
+                  {container.enableDatabase ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                      <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                      <path d="M3 12h18"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                      <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                      <path d="M3 12h18"></path>
+                    </svg>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-neutral-100">Database</div>
+                  <div className="truncate font-mono text-sm text-neutral-200">
+                    {container.enableDatabase 
+                      ? `${container.storageSizeGB} GB` 
+                      : "Disabled"}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

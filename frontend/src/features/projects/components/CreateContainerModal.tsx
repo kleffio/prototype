@@ -66,6 +66,9 @@ export function ContainerModal({
         const envs = Object.entries(container.envVariables).map(([key, value]) => ({ key, value }));
         setEnvVariables(envs);
       }
+
+      setEnableDatabase(container.enableDatabase || false);
+      setStorageSizeGB(container.storageSizeGB || 10);
     } else if (!isOpen) {
       resetForm();
     }
