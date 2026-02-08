@@ -20,7 +20,6 @@ export function AppHeader() {
     } else {
       auth.signinRedirect();
     }
-
   }, [auth, navigate]);
 
   return (
