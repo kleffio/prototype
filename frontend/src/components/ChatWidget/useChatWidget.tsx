@@ -25,7 +25,7 @@ export const useChatWidget = () => {
                 }
             ]);
         }
-    }, [isOpen]);
+    }, [isOpen, messages.length]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -68,7 +68,7 @@ export const useChatWidget = () => {
             };
 
             setMessages(prev => [...prev, botMsg]);
-        } catch (error) {
+        } catch {
             const errorMsg: Message = {
                 id: crypto.randomUUID(),
                 role: 'assistant',

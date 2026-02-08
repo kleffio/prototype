@@ -20,36 +20,37 @@ export function AppHeader() {
     } else {
       auth.signinRedirect();
     }
-  }, [auth.isAuthenticated, auth, navigate]);
+  }
+  }, [auth, navigate]);
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl supports-backdrop-filter:bg-[#0f0f10]/30">
-      <div className="pointer-events-none absolute inset-0 z-0 bg-linear-to-b from-[#0f0f10]/60 via-[#0f0f10]/50 to-[#0f0f10]/60" />
-      <div className="pointer-events-none absolute inset-0 z-0 shadow-[0_1px_0_0_rgba(255,255,255,0.05)]" />
+return (
+  <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl supports-backdrop-filter:bg-[#0f0f10]/30">
+    <div className="pointer-events-none absolute inset-0 z-0 bg-linear-to-b from-[#0f0f10]/60 via-[#0f0f10]/50 to-[#0f0f10]/60" />
+    <div className="pointer-events-none absolute inset-0 z-0 shadow-[0_1px_0_0_rgba(255,255,255,0.05)]" />
 
-      <div className="app-container relative z-10 flex h-12 items-center gap-6 md:h-14">
-        <div className="flex flex-1 items-center gap-6">
-          <Brand fontSize="text-[14px]" />
-          <div className="hidden lg:block">
-            <DesktopMegaMenu />
-          </div>
-        </div>
-
-        <div className="hidden items-center gap-3 lg:flex">
-          <LocaleSwitcher variant="compact" />
-          <div className="h-4 w-px bg-white/10" />
-
-          {auth.isAuthenticated ? (
-            <UserMenu variant="compact" align="right" />
-          ) : (
-            <AuthButtons onLogin={handleLogin} variant="desktop" />
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 lg:hidden">
-          <MobileSheetNav />
+    <div className="app-container relative z-10 flex h-12 items-center gap-6 md:h-14">
+      <div className="flex flex-1 items-center gap-6">
+        <Brand fontSize="text-[14px]" />
+        <div className="hidden lg:block">
+          <DesktopMegaMenu />
         </div>
       </div>
-    </header>
-  );
+
+      <div className="hidden items-center gap-3 lg:flex">
+        <LocaleSwitcher variant="compact" />
+        <div className="h-4 w-px bg-white/10" />
+
+        {auth.isAuthenticated ? (
+          <UserMenu variant="compact" align="right" />
+        ) : (
+          <AuthButtons onLogin={handleLogin} variant="desktop" />
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 lg:hidden">
+        <MobileSheetNav />
+      </div>
+    </div>
+  </header>
+);
 }

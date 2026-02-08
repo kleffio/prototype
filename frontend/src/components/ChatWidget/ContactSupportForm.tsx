@@ -27,7 +27,7 @@ export const ContactSupportForm: React.FC<ContactSupportFormProps> = ({ history,
                 history: history.slice(-5) // Send last 5 messages for context
             });
             onSubmitSuccess();
-        } catch (err) {
+        } catch {
             setError('Failed to send support ticket. Please try again.');
         } finally {
             setLoading(false);
