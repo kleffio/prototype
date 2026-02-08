@@ -71,7 +71,7 @@ export function DesktopMegaMenu() {
           <NavigationMenuItem key={link.href}>
             <NavigationMenuLink asChild>
               <UnderlineLink
-                to={link.href}
+                href={link.href}
                 className="text-muted rounded-full px-4 py-1.5 text-sm font-medium hover:bg-white/5"
               >
                 {link.label}
