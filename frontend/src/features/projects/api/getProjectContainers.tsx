@@ -17,7 +17,7 @@ interface ContainerResponse {
 
 export default async function fetchProjectContainers(projectId: string): Promise<Container[]> {
   try {
-    const res = await client.get<ContainerResponse[]>(`/api/v1/containers/${projectId}`);
+    const res = await client.get<ContainerResponse[]>(`/api/v1/projects/${projectId}/containers`);
     // Transform the API response to match the Container type
     const containers: Container[] = (res.data ?? []).map((item) => ({
       containerId: item.containerID || item.containerId || "",
