@@ -14,6 +14,7 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:5173",
                         "https://api.kleff.io",
                         "http://localhost:3000",
+                        "http://localhost:5173",
                         "http://localhost:8080",
                         "https://kleff.io"
                 )

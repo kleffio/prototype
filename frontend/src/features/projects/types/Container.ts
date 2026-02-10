@@ -8,4 +8,6 @@ export type Container = {
   repoUrl: string;
   branch: string;
   envVariables?: Record<string, string>;
+  enableDatabase?: boolean;
+  storageSizeGB?: number;
 };

@@ -24,4 +24,6 @@ public class ContainerRequestModel {
     private String repoUrl; 
     private String branch;
     private Map<String, String> envVariables;
+    private boolean enableDatabase;
+    private Integer storageSizeGB;
 }
