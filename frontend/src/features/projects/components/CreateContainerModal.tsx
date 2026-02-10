@@ -346,7 +346,10 @@ export function ContainerModal({
                     <p className="text-xs text-blue-200">{t.database_connection_info}</p>
                     <div className="mt-1 space-y-1">
                       {Object.entries(t.database_env_vars_examples).map(([key, value]) => (
-                        <div key={key} className="flex justify-between items-center font-mono text-xs">
+                        <div
+                          key={key}
+                          className="flex items-center justify-between font-mono text-xs"
+                        >
                           <span className="text-blue-100">{key}:</span>
                           <span className="text-blue-300">{value}</span>
                         </div>

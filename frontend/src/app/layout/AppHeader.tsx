@@ -20,7 +20,7 @@ export function AppHeader() {
     } else {
       auth.signinRedirect();
     }
-  }, [auth.isAuthenticated, auth, navigate]);
+  }, [auth, navigate]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl supports-backdrop-filter:bg-[#0f0f10]/30">
