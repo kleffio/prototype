@@ -52,16 +52,13 @@ type BatchDeleteResponse struct {
 }
 
 type BuildRequest struct {
-	ContainerID    string            `json:"containerID"`
-	ProjectID      string            `json:"projectID"`
-	Name           string            `json:"name"`
-	RepoURL        string            `json:"repoUrl"`
-	Branch         string            `json:"branch"`
-	Port           int               `json:"port"`
-	EnvVariables   map[string]string `json:"envVariables,omitempty"`
-	// New Database Fields
-	EnableDatabase bool              `json:"enableDatabase"`
-	StorageSizeGB  int               `json:"storageSizeGB"`
+	ContainerID  string            `json:"containerID"`
+	ProjectID    string            `json:"projectID"`
+	Name         string            `json:"name"`                   // App name
+	RepoURL      string            `json:"repoUrl"`                // Source Git URL
+	Branch       string            `json:"branch"`                 // Git Branch
+	Port         int               `json:"port"`                   // Optional: App Port
+	EnvVariables map[string]string `json:"envVariables,omitempty"` // Environment variables
 }
 
 type UpdateWebAppRequest struct {
@@ -238,12 +235,10 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Inside handleCreateBuild, before calling createWebApp
-	s.Logger.Info("Processing build request", "db_enabled", req.EnableDatabase, "storage", req.StorageSizeGB)
 	// 6. Create or Update the WebApp Custom Resource
 	// We pass resourceName ("app-UUID") as the K8s name,
 	// but the original req (containing raw UUID) is stored in the Spec.
-	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req); err != nil {
+	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, req); err != nil {
 		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
 		http.Error(w, "Build started, but failed to sync deployment metadata", http.StatusInternalServerError)
 		return
@@ -344,23 +339,11 @@ func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, jobName string, req BuildRequest) error {
+// createWebApp uses the Dynamic Client to create or update the Custom Resource
+func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
 	port := req.Port
 	if port == 0 {
 		port = 8080
-	}
-
-	// Handle Database Defaults
-	storageSize := req.StorageSizeGB
-	if storageSize == 0 {
-		storageSize = 10 // Default as per acceptance criteria
-	}
-
-	// Construct the database spec map
-	databaseSpec := map[string]interface{}{
-		"enabled":     req.EnableDatabase,
-		"storageSize": storageSize,
-		"version":     "16.2", // Default as per acceptance criteria
 	}
 
 	// Construct the Unstructured object
@@ -369,22 +352,20 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 			"apiVersion": "kleff.kleff.io/v1",
 			"kind":       "WebApp",
 			"metadata": map[string]interface{}{
-				"name":      resourceName,
+				"name":      resourceName, // UUID
 				"namespace": namespace,
 				"labels": map[string]interface{}{
 					"container-id": req.ContainerID,
 				},
 			},
 			"spec": map[string]interface{}{
-				"containerID":    req.ContainerID,
-				"displayName":    req.Name,
-				"image":          image,
-				"buildJobName":   jobName,
-				"port":           int64(port),
-				"repoURL":        req.RepoURL,
-				"branch":         req.Branch,
-				"envVariables":   req.EnvVariables,
-				"database":       databaseSpec, // Added Database Spec
+				"containerID":  req.ContainerID,
+				"displayName":  req.Name, // User-friendly name
+				"image":        image,
+				"port":         int64(port),
+				"repoURL":      req.RepoURL,
+				"branch":       req.Branch,
+				"envVariables": req.EnvVariables,
 			},
 		},
 	}
@@ -404,14 +385,12 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 				spec = make(map[string]interface{})
 			}
 
-			// Update fields
+			// Update ALL fields to ensure they reflect the latest UI changes
 			spec["displayName"] = req.Name
 			spec["image"] = image
-			spec["buildJobName"] = jobName
 			spec["port"] = int64(port)
 			spec["branch"] = req.Branch
 			spec["repoURL"] = req.RepoURL
-			spec["database"] = databaseSpec // Ensure database updates are reflected
 			if req.EnvVariables != nil {
 				spec["envVariables"] = req.EnvVariables
 			}

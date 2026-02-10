@@ -28,6 +28,4 @@ public class ContainerResponseModel {
     private String repoUrl; 
     private String branch;
     private Map<String, String> envVariables;
-    private boolean enableDatabase;
-    private Integer storageSizeGB;
 }

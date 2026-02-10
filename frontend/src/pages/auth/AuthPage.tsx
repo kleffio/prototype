@@ -11,7 +11,7 @@ export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
 
-  const from = useMemo(() => location.state?.from ?? ROUTES.DASHBOARD, [location.state?.from]);
+  const from = location.state?.from ?? ROUTES.DASHBOARD;
   const attemptedRef = useRef(false);
 
   const isCallback = useMemo(() => {
@@ -42,7 +42,7 @@ export function AuthPage() {
       console.error("[AuthPage] signinRedirect failed:", err);
       attemptedRef.current = false;
     });
-  }, [auth, auth.isLoading, auth.isAuthenticated, isCallback, from, navigate]);
+  }, [auth.isLoading, auth.isAuthenticated, auth, isCallback, from, navigate]);
 
   const handleContinue = () => {
     auth.signinRedirect({ state: { from } }).catch((err) => {

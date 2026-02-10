@@ -161,20 +161,7 @@
     "create_button": "Créer le conteneur",
     "update_button": "Mettre à jour le conteneur",
     "cancel": "Annuler",
-    "failed_save": "Échec de l'enregistrement du conteneur.",
-    "enable_database": "Activer la base de données",
-    "database_storage": "Stockage de la base de données",
-    "database_storage_description": "Sélectionnez la taille du stockage pour votre base de données PostgreSQL (1-100 GB)",
-    "storage_gb": "{{size}} Go",
-    "database_connection_info": "Pour se connecter à la base de données depuis votre conteneur, utilisez les variables d'environnement suivantes :",
-    "database_env_vars_list": "DATABASE_HOST, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD, DATABASE_NAME",
-    "database_env_vars_examples": {
-      "DATABASE_HOST": "db-<id-conteneur>",
-      "DATABASE_PORT": "5432",
-      "DATABASE_USER": "app",
-      "DATABASE_PASSWORD": "<auto-generé>",
-      "DATABASE_NAME": "app"
-    }
+    "failed_save": "Échec de l'enregistrement du conteneur."
   },
   "editEnvModal": {
     "title": "Modifier les variables d'environnement",

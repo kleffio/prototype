@@ -83,8 +83,6 @@ public class ContainerServiceImpl {
         existingContainer.setBranch(request.getBranch());
         existingContainer.setPort(request.getPort());
         existingContainer.setProjectID(request.getProjectID());
-        existingContainer.setEnableDatabase(request.isEnableDatabase());
-        existingContainer.setStorageSizeGB(request.getStorageSizeGB());
 
         if (request.getEnvVariables() != null) {
             existingContainer.setEnvVariables(containerMapper.mapToJson(request.getEnvVariables()));
@@ -103,8 +101,6 @@ public class ContainerServiceImpl {
         changes.put("repoUrl", updatedContainer.getRepoUrl());
         changes.put("branch", updatedContainer.getBranch());
         changes.put("port", updatedContainer.getPort());
-        changes.put("enableDatabase", updatedContainer.isEnableDatabase());
-        changes.put("storageSizeGB", updatedContainer.getStorageSizeGB());
 
         sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
 
@@ -189,9 +185,7 @@ public class ContainerServiceImpl {
                 request.getBranch(),
                 request.getPort(),
                 request.getName(),
-                request.getEnvVariables(),
-                request.isEnableDatabase(),
-                request.getStorageSizeGB());
+                request.getEnvVariables());
 
         try {
             restTemplate.postForObject(deploymentServiceUrl, buildRequest, String.class);
@@ -412,13 +406,9 @@ public class ContainerServiceImpl {
         private String name;
         @JsonProperty("envVariables")
         private Map<String, String> envVariables;
-        @JsonProperty("enableDatabase")
-        private boolean enableDatabase;
-        @JsonProperty("storageSizeGB")
-        private Integer storageSizeGB;
 
         public GoBuildRequest(String containerID, String projectID, String repoUrl, String branch, int port,
-                String name, Map<String, String> envVariables, boolean enableDatabase, Integer storageSizeGB) {
+                String name, Map<String, String> envVariables) {
             this.containerID = containerID;
             this.projectID = projectID;
             this.repoUrl = repoUrl;
@@ -426,8 +416,6 @@ public class ContainerServiceImpl {
             this.port = port;
             this.name = name;
             this.envVariables = envVariables;
-            this.enableDatabase = enableDatabase;
-            this.storageSizeGB = storageSizeGB;
         }
     }
 }

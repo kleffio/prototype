@@ -33,7 +33,4 @@ public class Container {
     
     @Column(columnDefinition = "TEXT")
     private String envVariables;
-    
-    private boolean enableDatabase;
-    private Integer storageSizeGB;
 }

@@ -13,8 +13,6 @@ interface ContainerResponse {
   repoUrl?: string;
   branch?: string;
   envVariables?: Record<string, string>;
-  enableDatabase?: boolean;
-  storageSizeGB?: number;
 }
 
 export default async function fetchProjectContainers(projectId: string): Promise<Container[]> {
@@ -30,9 +28,7 @@ export default async function fetchProjectContainers(projectId: string): Promise
       createdAt: item.createdAt,
       repoUrl: item.repoUrl || "",
       branch: item.branch || "main",
-      envVariables: item.envVariables || {},
-      enableDatabase: item.enableDatabase || false,
-      storageSizeGB: item.storageSizeGB || 0
+      envVariables: item.envVariables || {}
     }));
     return containers;
   } catch (error: unknown) {

@@ -5,6 +5,4 @@ export type ContainerRequest = {
   repoUrl: string;
   branch: string;
   envVariables?: Record<string, string>;
-  enableDatabase?: boolean;
-  storageSizeGB?: number;
 };
