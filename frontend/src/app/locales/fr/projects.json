@@ -174,7 +174,14 @@
       "DATABASE_USER": "app",
       "DATABASE_PASSWORD": "<auto-generé>",
       "DATABASE_NAME": "app"
-    }
+    },
+    "github_username": "Nom d'utilisateur GitHub",
+    "fetch_repos": "Récupérer les dépôts",
+    "select_repo": "Sélectionner un dépôt",
+    "fetching_repos": "Récupération des dépôts...",
+    "no_repos_found": "Aucun dépôt public trouvé.",
+    "back": "Retour",
+    "next": "Suivant"
   },
   "editEnvModal": {
     "title": "Modifier les variables d'environnement",
