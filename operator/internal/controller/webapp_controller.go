@@ -145,6 +145,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
+
 	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
 		deployment.Labels = labels
 		if deployment.CreationTimestamp.IsZero() {
@@ -157,6 +158,9 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		deployment.Spec.Replicas = &replicas
 		deployment.Spec.Template.ObjectMeta.Labels = labels
 		deployment.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "acr-creds"}}
+
+		enableServiceLinks := false
+		deployment.Spec.Template.Spec.EnableServiceLinks = &enableServiceLinks
 
 		// Gather Environment Variables
 		var envVars []corev1.EnvVar
