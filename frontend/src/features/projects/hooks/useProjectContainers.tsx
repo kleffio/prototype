@@ -17,6 +17,7 @@ export function useProjectContainers(projectId: string) {
         const data = await fetchProjectContainers(projectId);
         setContainers(data);
       } catch (err: unknown) {
+        console.error('useProjectContainers error:', err);
         const error = err as { message?: string };
         setError(error?.message || "Failed to load containers");
       } finally {
@@ -35,6 +36,7 @@ export function useProjectContainers(projectId: string) {
         const data = await fetchProjectContainers(projectId);
         setContainers(data);
       } catch (err: unknown) {
+        console.error('useProjectContainers reload error:', err);
         const error = err as { message?: string };
         setError(error?.message || "Failed to load containers");
       } finally {

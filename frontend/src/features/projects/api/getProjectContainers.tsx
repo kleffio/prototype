@@ -36,6 +36,7 @@ export default async function fetchProjectContainers(projectId: string): Promise
     }));
     return containers;
   } catch (error: unknown) {
+    console.error('Error fetching project containers:', error);
     const err = error as { response?: { status?: number } };
     // If the API returns 404 (no containers found), treat it as successful empty response
     if (err.response?.status === 404) {
