@@ -115,7 +115,9 @@ export function ContainerModal({
   };
 
   const handleSelectRepo = (repo: { clone_url: string; name: string }) => {
-    setRepoUrl(repo.clone_url);
+    // Remove .git suffix if present
+    const cleanUrl = repo.clone_url.replace(/\.git$/, '');
+    setRepoUrl(cleanUrl);
     if (!name) {
       setName(repo.name);
     }
