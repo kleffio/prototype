@@ -25,6 +25,8 @@ import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { SecureComponent } from "@app/components/SecureComponent";
+import { BuildLogsSheet } from "./BuildLogsSheet";
+import { FileText } from "lucide-react";
 
 const translations = {
   en: enTranslations,
@@ -46,12 +48,14 @@ export function ContainerDetailModal({
   container,
   onEditEnv,
   onEditContainer,
-  onDelete
-}: ContainerDetailModalProps) {
+  onDelete,
+  projectId
+}: ContainerDetailModalProps & { projectId?: string }) {
   const [copiedId, setCopiedId] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [locale, setLocale] = React.useState(getLocale());
+  const [showBuildLogs, setShowBuildLogs] = React.useState(false);
   const t = translations[locale].projectDetail.containerDetail;
 
   React.useEffect(() => {
@@ -140,6 +144,17 @@ export function ContainerDetailModal({
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t.visit_app}
               </Button>
+              {projectId && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowBuildLogs(true)}
+                  className="text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {t.view_build_logs}
+                </Button>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -407,6 +422,16 @@ export function ContainerDetailModal({
           </div>
         </div>
       </ConfirmationDialog>
+
+      {/* Build Logs Sheet */}
+      {projectId && (
+        <BuildLogsSheet
+          container={container}
+          projectId={projectId}
+          open={showBuildLogs}
+          onOpenChange={setShowBuildLogs}
+        />
+      )}
     </section>
   );
 }

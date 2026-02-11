@@ -36,6 +36,7 @@ import { usePermissions } from "@features/projects/hooks/usePermissions";
 import { TeamModal } from "@features/projects/components/TeamModal";
 import { SecureComponent } from "@app/components/SecureComponent";
 import { SimpleContainerLogsSheet } from "@features/projects/components/SimpleContainerLogsSheet";
+import { BuildLogsSheet } from "@features/projects/components/BuildLogsSheet";
 import ProjectBillingEstimatesCard from "@features/billing/components/getEstimateBilling";
 import { ActionLogModal } from "@features/projects/components/ActionLogModal";
 
@@ -70,6 +71,8 @@ export function ProjectDetailPage() {
 
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logsContainer, setLogsContainer] = useState<Container | null>(null);
+  const [isBuildLogsOpen, setIsBuildLogsOpen] = useState(false);
+  const [buildLogsContainer, setBuildLogsContainer] = useState<Container | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -410,7 +413,13 @@ export function ProjectDetailPage() {
         }}
         projectId={projectId || ""}
         container={selectedContainerForEdit}
-        onSuccess={() => reload()}
+        onSuccess={(container) => {
+          reload();
+          if (container) {
+            setBuildLogsContainer(container);
+            setIsBuildLogsOpen(true);
+          }
+        }}
       />
 
       <EditEnvVariablesModal
@@ -444,6 +453,7 @@ export function ProjectDetailPage() {
         onEditEnv={handleEditEnv}
         onEditContainer={handleEditContainer}
         onDelete={handleDeleteContainer}
+        projectId={projectId}
       />
 
       <SimpleContainerLogsSheet
@@ -451,6 +461,13 @@ export function ProjectDetailPage() {
         projectId={projectId || ""}
         open={isLogsOpen}
         onOpenChange={setIsLogsOpen}
+      />
+
+      <BuildLogsSheet
+        container={buildLogsContainer}
+        projectId={projectId || ""}
+        open={isBuildLogsOpen}
+        onOpenChange={setIsBuildLogsOpen}
       />
     </section>
   );

@@ -120,6 +120,7 @@
       "edit_container": "Modifier le conteneur",
       "visit_app": "Visiter l'application",
       "view_logs": "Voir les logs",
+      "view_build_logs": "Voir les logs de construction",
       "unknown": "Inconnu",
       "copied": "Copié !",
       "restart": "Redémarrer",
