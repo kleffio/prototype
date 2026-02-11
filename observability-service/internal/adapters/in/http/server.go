@@ -121,7 +121,9 @@ func extractUserIDFromToken(token string, userServiceURL string) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("failed to validate token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("token validation failed")
@@ -148,7 +150,9 @@ func checkUserStatus(userID string, userServiceURL string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to check user status: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("user status check failed")

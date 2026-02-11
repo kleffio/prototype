@@ -5,11 +5,11 @@ import (
 )
 
 type Config struct {
-	ServerPort      string
-	PrometheusURL   string
-	LokiURL         string
-	Environment     string
-	UserServiceURL  string
+	ServerPort     string
+	PrometheusURL  string
+	LokiURL        string
+	Environment    string
+	UserServiceURL string
 }
 
 func Load() *Config {

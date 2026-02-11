@@ -7,17 +7,17 @@ import (
 
 func TestLoad_WithEnvironmentVariables(t *testing.T) {
 	// Set environment variables
-	os.Setenv("SERVER_PORT", "8090")
-	os.Setenv("PROMETHEUS_URL", "http://prometheus:9090")
-	os.Setenv("LOKI_URL", "http://loki:3100")
-	os.Setenv("ENVIRONMENT", "production")
+	_ = os.Setenv("SERVER_PORT", "8090")
+	_ = os.Setenv("PROMETHEUS_URL", "http://prometheus:9090")
+	_ = os.Setenv("LOKI_URL", "http://loki:3100")
+	_ = os.Setenv("ENVIRONMENT", "production")
 
 	defer func() {
 		// Clean up environment variables
-		os.Unsetenv("SERVER_PORT")
-		os.Unsetenv("PROMETHEUS_URL")
-		os.Unsetenv("LOKI_URL")
-		os.Unsetenv("ENVIRONMENT")
+		_ = os.Unsetenv("SERVER_PORT")
+		_ = os.Unsetenv("PROMETHEUS_URL")
+		_ = os.Unsetenv("LOKI_URL")
+		_ = os.Unsetenv("ENVIRONMENT")
 	}()
 
 	config := Load()
@@ -41,10 +41,10 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 
 func TestLoad_WithoutEnvironmentVariables(t *testing.T) {
 	// Ensure environment variables are not set
-	os.Unsetenv("SERVER_PORT")
-	os.Unsetenv("PROMETHEUS_URL")
-	os.Unsetenv("LOKI_URL")
-	os.Unsetenv("ENVIRONMENT")
+	_ = os.Unsetenv("SERVER_PORT")
+	_ = os.Unsetenv("PROMETHEUS_URL")
+	_ = os.Unsetenv("LOKI_URL")
+	_ = os.Unsetenv("ENVIRONMENT")
 
 	config := Load()
 
@@ -66,8 +66,10 @@ func TestLoad_WithoutEnvironmentVariables(t *testing.T) {
 }
 
 func TestGetEnv_WithValue(t *testing.T) {
-	os.Setenv("TEST_KEY", "test_value")
-	defer os.Unsetenv("TEST_KEY")
+	_ = os.Setenv("TEST_KEY", "test_value")
+	defer func() {
+		_ = os.Unsetenv("TEST_KEY")
+	}()
 
 	result := getEnv("TEST_KEY", "default_value")
 	if result != "test_value" {
@@ -76,7 +78,7 @@ func TestGetEnv_WithValue(t *testing.T) {
 }
 
 func TestGetEnv_WithoutValue(t *testing.T) {
-	os.Unsetenv("NONEXISTENT_KEY")
+	_ = os.Unsetenv("NONEXISTENT_KEY")
 
 	result := getEnv("NONEXISTENT_KEY", "default_value")
 	if result != "default_value" {
@@ -85,8 +87,10 @@ func TestGetEnv_WithoutValue(t *testing.T) {
 }
 
 func TestGetEnv_WithEmptyValue(t *testing.T) {
-	os.Setenv("EMPTY_KEY", "")
-	defer os.Unsetenv("EMPTY_KEY")
+	_ = os.Setenv("EMPTY_KEY", "")
+	defer func() {
+		_ = os.Unsetenv("EMPTY_KEY")
+	}()
 
 	result := getEnv("EMPTY_KEY", "default_value")
 	if result != "default_value" {
