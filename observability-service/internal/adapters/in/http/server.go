@@ -21,6 +21,14 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, userServiceU
 		AllowCredentials: true,
 	}))
 
+	// Public endpoints (no authentication required)
+	public := router.Group("/api/v1/systems")
+	{
+		public.GET("/uptime", handler.GetUptimeMetrics)
+		public.GET("/system-uptime", handler.GetSystemUptime)
+	}
+
+	// Authenticated endpoints (JWT required)
 	api := router.Group("/api/v1/systems")
 	api.Use(jwtAuthMiddleware(userServiceURL)) // Apply JWT middleware to all API routes
 	{
@@ -46,9 +54,6 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, userServiceU
 		api.GET("/projects/:projectID/usage/:days", handler.GetProjectUsageMetricsWithDays)
 		api.GET("/projects/:projectID/usage", handler.GetProjectUsageMetrics)
 		api.GET("/projects/:projectID/totalusage", handler.GetProjectTotalUsageMetrics)
-
-		api.GET("/uptime", handler.GetUptimeMetrics)
-		api.GET("/system-uptime", handler.GetSystemUptime)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
