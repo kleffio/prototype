@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ContainerServiceImpl {
@@ -61,11 +62,19 @@ public class ContainerServiceImpl {
 
         Container savedContainer = containerRepository.save(container);
 
-        // FIX: Pass both the request and the ID from the saved object
-        triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
-
-        sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
-                Map.of("name", savedContainer.getName()));
+        // Trigger build/deployment asynchronously to return immediately
+        String finalProjectID = savedContainer.getProjectID();
+        String finalContainerID = savedContainer.getContainerID();
+        String finalName = savedContainer.getName();
+        CompletableFuture.runAsync(() -> {
+            try {
+                triggerBuildDeployment(containerRequestModel, finalContainerID);
+                sendAuditLog("create_container", finalProjectID, finalContainerID, userId,
+                        Map.of("name", finalName));
+            } catch (Exception e) {
+                log.error("Failed to complete async create for container {}: {}", finalContainerID, e.getMessage());
+            }
+        });
 
         return containerMapper.containerToContainerResponseModel(savedContainer);
     }
@@ -90,19 +99,30 @@ public class ContainerServiceImpl {
 
         Container updatedContainer = containerRepository.save(existingContainer);
 
-        // FIX: Pass both the request and the containerID
-        triggerBuildDeployment(request, containerID);
-
-        Map<String, Object> changes = new java.util.HashMap<>();
-        changes.put("name", updatedContainer.getName());
-        if (oldName != null && !oldName.equals(updatedContainer.getName())) {
-            changes.put("previous_name", oldName);
-        }
-        changes.put("repoUrl", updatedContainer.getRepoUrl());
-        changes.put("branch", updatedContainer.getBranch());
-        changes.put("port", updatedContainer.getPort());
-
-        sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
+        // Trigger build/deployment asynchronously to return immediately
+        String finalProjectID = updatedContainer.getProjectID();
+        String finalContainerID = containerID;
+        String finalOldName = oldName;
+        String finalNewName = updatedContainer.getName();
+        String finalRepoUrl = updatedContainer.getRepoUrl();
+        String finalBranch = updatedContainer.getBranch();
+        int finalPort = updatedContainer.getPort();
+        CompletableFuture.runAsync(() -> {
+            try {
+                triggerBuildDeployment(request, finalContainerID);
+                Map<String, Object> changes = new java.util.HashMap<>();
+                changes.put("name", finalNewName);
+                if (finalOldName != null && !finalOldName.equals(finalNewName)) {
+                    changes.put("previous_name", finalOldName);
+                }
+                changes.put("repoUrl", finalRepoUrl);
+                changes.put("branch", finalBranch);
+                changes.put("port", finalPort);
+                sendAuditLog("update_container", finalProjectID, finalContainerID, userId, changes);
+            } catch (Exception e) {
+                log.error("Failed to complete async update for container {}: {}", finalContainerID, e.getMessage());
+            }
+        });
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
@@ -227,10 +247,15 @@ public class ContainerServiceImpl {
             containerRepository.delete(container);
             log.info("Container deleted from database: {}", containerID);
 
-            // Make upstream call to delete the WebApp in Kubernetes
-            triggerWebAppDeletion(container.getProjectID(), containerID);
-
-            sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
+            // Trigger WebApp deletion asynchronously to return immediately
+            CompletableFuture.runAsync(() -> {
+                try {
+                    triggerWebAppDeletion(container.getProjectID(), containerID);
+                    sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
+                } catch (Exception e) {
+                    log.error("Failed to complete async deletion for container {}: {}", containerID, e.getMessage());
+                }
+            });
         } catch (Exception e) {
             log.error("Failed to delete container {}: {}", containerID, e.getMessage());
             throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
@@ -287,8 +312,16 @@ public class ContainerServiceImpl {
                 containerRepository.delete(container);
                 log.info("Container deleted from database: {}", target.getContainerID());
 
-                // Delete upstream WebApp
-                triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
+                // Trigger WebApp deletion asynchronously
+                String finalProjectID = container.getProjectID();
+                String finalContainerID = container.getContainerID();
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        triggerWebAppDeletion(finalProjectID, finalContainerID);
+                    } catch (Exception e) {
+                        log.error("Failed to complete async deletion for container {}: {}", finalContainerID, e.getMessage());
+                    }
+                });
 
                 // Success
                 deleted.add(target.getContainerID());
