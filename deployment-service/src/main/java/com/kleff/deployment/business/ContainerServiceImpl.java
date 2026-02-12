@@ -5,6 +5,7 @@ import com.kleff.deployment.data.container.*;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ContainerServiceImpl {
@@ -54,23 +56,34 @@ public class ContainerServiceImpl {
         return containerRepository.findContainersByProjectID(projectID);
     }
 
-    public ContainerResponseModel createContainer(ContainerRequestModel containerRequestModel, String userId) {
+    @Async
+    public CompletableFuture<ContainerResponseModel> createContainerAsync(ContainerRequestModel containerRequestModel, String userId) {
         Container container = containerMapper.containerRequestModelToContainer(containerRequestModel);
         container.setStatus("Running");
         container.setCreatedAt(LocalDateTime.now());
 
         Container savedContainer = containerRepository.save(container);
 
-        // FIX: Pass both the request and the ID from the saved object
-        triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
+        // Trigger build deployment asynchronously
+        CompletableFuture.runAsync(() -> triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID()));
 
         sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
                 Map.of("name", savedContainer.getName()));
 
-        return containerMapper.containerToContainerResponseModel(savedContainer);
+        return CompletableFuture.completedFuture(containerMapper.containerToContainerResponseModel(savedContainer));
     }
 
-    public ContainerResponseModel updateContainer(String containerID, ContainerRequestModel request, String userId) {
+    public ContainerResponseModel createContainer(ContainerRequestModel containerRequestModel, String userId) {
+        try {
+            return createContainerAsync(containerRequestModel, userId).join();
+        } catch (Exception e) {
+            log.error("Failed to create container: {}", e.getMessage());
+            throw new RuntimeException("Failed to create container: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public CompletableFuture<ContainerResponseModel> updateContainerAsync(String containerID, ContainerRequestModel request, String userId) {
         Container existingContainer = containerRepository.findContainerByContainerID(containerID);
         if (existingContainer == null) {
             throw new RuntimeException("Container not found with ID: " + containerID);
@@ -92,8 +105,8 @@ public class ContainerServiceImpl {
 
         Container updatedContainer = containerRepository.save(existingContainer);
 
-        // FIX: Pass both the request and the containerID
-        triggerBuildDeployment(request, containerID);
+        // Trigger build deployment asynchronously
+        CompletableFuture.runAsync(() -> triggerBuildDeployment(request, containerID));
 
         Map<String, Object> changes = new java.util.HashMap<>();
         changes.put("name", updatedContainer.getName());
@@ -108,7 +121,16 @@ public class ContainerServiceImpl {
 
         sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
 
-        return containerMapper.containerToContainerResponseModel(updatedContainer);
+        return CompletableFuture.completedFuture(containerMapper.containerToContainerResponseModel(updatedContainer));
+    }
+
+    public ContainerResponseModel updateContainer(String containerID, ContainerRequestModel request, String userId) {
+        try {
+            return updateContainerAsync(containerID, request, userId).join();
+        } catch (Exception e) {
+            log.error("Failed to update container: {}", e.getMessage());
+            throw new RuntimeException("Failed to update container: " + e.getMessage(), e);
+        }
     }
 
     public ContainerResponseModel updateContainerEnvVariables(String containerID, Map<String, String> envVariables,
@@ -179,7 +201,8 @@ public class ContainerServiceImpl {
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
 
-    private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
+    @Async
+    public CompletableFuture<Void> triggerBuildDeploymentAsync(ContainerRequestModel request, String containerID) {
         String deploymentServiceUrl = BASE_URL + "/api/v1/build/create";
 
         GoBuildRequest buildRequest = new GoBuildRequest(
@@ -198,6 +221,16 @@ public class ContainerServiceImpl {
             log.info("Update/Build triggered successfully for: {}", request.getName());
         } catch (Exception e) {
             log.error("Failed to trigger build service for {}: {}", request.getName(), e.getMessage());
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
+        try {
+            triggerBuildDeploymentAsync(request, containerID);
+        } catch (Exception e) {
+            log.error("Failed to trigger build deployment: {}", e.getMessage());
         }
     }
 
@@ -222,7 +255,8 @@ public class ContainerServiceImpl {
         }
     }
 
-    public void deleteContainer(String containerID, String userId) {
+    @Async
+    public CompletableFuture<Void> deleteContainerAsync(String containerID, String userId) {
         Container container = containerRepository.findContainerByContainerID(containerID);
         if (container == null) {
             throw new RuntimeException("Container not found with ID: " + containerID);
@@ -233,12 +267,23 @@ public class ContainerServiceImpl {
             containerRepository.delete(container);
             log.info("Container deleted from database: {}", containerID);
 
-            // Make upstream call to delete the WebApp in Kubernetes
-            triggerWebAppDeletion(container.getProjectID(), containerID);
+            // Trigger web app deletion asynchronously
+            CompletableFuture.runAsync(() -> triggerWebAppDeletion(container.getProjectID(), containerID));
 
             sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
         } catch (Exception e) {
             log.error("Failed to delete container {}: {}", containerID, e.getMessage());
+            throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public void deleteContainer(String containerID, String userId) {
+        try {
+            deleteContainerAsync(containerID, userId);
+        } catch (Exception e) {
+            log.error("Failed to delete container: {}", e.getMessage());
             throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
         }
     }
@@ -314,8 +359,8 @@ public class ContainerServiceImpl {
                 .build();
     }
 
-    private void triggerWebAppDeletion(String projectID, String containerID) {
-
+    @Async
+    public CompletableFuture<Void> triggerWebAppDeletionAsync(String projectID, String containerID) {
         String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
 
         try {
@@ -325,6 +370,16 @@ public class ContainerServiceImpl {
             log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}",
                     projectID, containerID, e.getMessage());
             throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void triggerWebAppDeletion(String projectID, String containerID) {
+        try {
+            triggerWebAppDeletionAsync(projectID, containerID);
+        } catch (Exception e) {
+            log.error("Failed to trigger web app deletion: {}", e.getMessage());
         }
     }
 
