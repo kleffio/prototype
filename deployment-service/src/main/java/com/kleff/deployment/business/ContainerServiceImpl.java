@@ -179,6 +179,7 @@ public class ContainerServiceImpl {
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
 
+    @org.springframework.scheduling.annotation.Async("taskExecutor")
     private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
         String deploymentServiceUrl = BASE_URL + "/api/v1/build/create";
 
@@ -201,6 +202,7 @@ public class ContainerServiceImpl {
         }
     }
 
+    @org.springframework.scheduling.annotation.Async("taskExecutor")
     private void triggerWebAppUpdate(Container container, Map<String, String> envVariables) {
         String updateServiceUrl = BASE_URL + "/api/v1/webapp/update";
 
@@ -219,6 +221,20 @@ public class ContainerServiceImpl {
             log.info("WebApp update triggered successfully for: {}", container.getName());
         } catch (Exception e) {
             log.error("Failed to trigger WebApp update: {}", e.getMessage());
+        }
+    }
+
+    @org.springframework.scheduling.annotation.Async("taskExecutor")
+    private void triggerWebAppDeletion(String projectID, String containerID) {
+        String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
+
+        try {
+            restTemplate.delete(deleteServiceUrl);
+            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
+        } catch (Exception e) {
+            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}",
+                    projectID, containerID, e.getMessage());
+            // Don't throw exception here to allow the response to be sent
         }
     }
 
@@ -314,19 +330,6 @@ public class ContainerServiceImpl {
                 .build();
     }
 
-    private void triggerWebAppDeletion(String projectID, String containerID) {
-
-        String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
-
-        try {
-            restTemplate.delete(deleteServiceUrl);
-            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
-        } catch (Exception e) {
-            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}",
-                    projectID, containerID, e.getMessage());
-            throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
-        }
-    }
 
     // Inject audit URL from application properties
     @org.springframework.beans.factory.annotation.Value("${audit.service.url:http://project-management-service:8080/api/v1/projects/audit/internal}")
