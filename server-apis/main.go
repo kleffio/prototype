@@ -153,12 +153,12 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Auth middleware removed, handlers wrapped only with enableCors
-	mux.HandleFunc("POST /api/v1/build/create", enableCors(server.handleCreateBuild))
-	mux.HandleFunc("GET /api/v1/build/hello", enableCors(server.handleHelloWorld))
-	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
-	mux.HandleFunc("GET /api/v1/build/logs/{projectID}/{containerID}", enableCors(server.handleBuildLogs))
+	mux.HandleFunc("/api/v1/build/create", enableCors(server.handleCreateBuild))
+	mux.HandleFunc("/api/v1/build/hello", enableCors(server.handleHelloWorld))
+	mux.HandleFunc("/api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
+	mux.HandleFunc("/api/v1/build/logs/{projectID}/{containerID}", enableCors(server.handleBuildLogs))
 	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
-	mux.HandleFunc("POST /api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
+	mux.HandleFunc("/api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
 
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -175,11 +175,19 @@ func main() {
 }
 
 func (s *Server) handleHelloWorld(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello World, this is a CD test for christine"))
 }
 
 func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	// Limit request body size (1MB)
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
@@ -272,6 +280,10 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleBuildLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	projectID := r.PathValue("projectID")
 	containerID := r.PathValue("containerID")
 
@@ -352,6 +364,10 @@ func (s *Server) handleBuildLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	var req BatchDeleteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
@@ -510,6 +526,10 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 }
 
 func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	projectID := r.PathValue("projectID")
 	containerID := r.PathValue("containerID")
 
