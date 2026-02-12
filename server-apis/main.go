@@ -204,12 +204,16 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Sanitize IDs
+	// Namespace Name = Project ID
 	namespaceName, err := validateAndSanitize(req.ProjectID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid Project ID format: %v", err), http.StatusBadRequest)
 		return
 	}
 
+	// SANITIZATION LOGIC:
+	// rawUUID is the clean version of the UUID (e.g. "68af67d3...")
+	// resourceName is the name for K8s objects (e.g. "app-68af67d3...")
 	rawUUID, err := validateAndSanitize(req.ContainerID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid Container ID format: %v", err), http.StatusBadRequest)
@@ -235,38 +239,43 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5. Process build asynchronously
-	go func() {
-		// Submit Kaniko Build Job
-		jobName := fmt.Sprintf("build-%s-%s", resourceName, tag)
-		if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage, rawUUID); err != nil {
-			s.Logger.Error("Failed to create build job", "job", jobName, "error", err)
-			return
-		}
+	// 5. Submit Kaniko Build Job
+	// Use the resourceName in the job name to keep it linked
+	jobName := fmt.Sprintf("build-%s-%s", resourceName, tag)
+	if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage, rawUUID); err != nil {
+		s.Logger.Error("Failed to create build job", "job", jobName, "error", err)
+		http.Error(w, "Failed to start build process", http.StatusInternalServerError)
+		return
+	}
 
-		// Create or Update the WebApp Custom Resource
-		s.Logger.Info("Processing build request", "db_enabled", req.EnableDatabase, "storage", req.StorageSizeGB)
-		if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req, rawUUID); err != nil {
-			s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
-			return
-		}
 
-		s.Logger.Info("Build and Deployment triggered",
-			"resourceName", resourceName,
-			"rawUUID", rawUUID,
-			"image", generatedImage,
-		)
-	}()
+	// Inside handleCreateBuild, before calling createWebApp
+	s.Logger.Info("Processing build request", "db_enabled", req.EnableDatabase, "storage", req.StorageSizeGB)
+	// 6. Create or Update the WebApp Custom Resource
+	// We pass resourceName ("app-UUID") as the K8s name,
+	// but the original req (containing raw UUID) is stored in the Spec.
+	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req, rawUUID); err != nil {
+		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
+		http.Error(w, "Build started, but failed to sync deployment metadata", http.StatusInternalServerError)
+		return
+	}
 
-	// 6. Return response immediately
+	s.Logger.Info("Build and Deployment triggered",
+		"resourceName", resourceName,
+		"rawUUID", rawUUID,
+		"image", generatedImage,
+	)
+
+	// 7. Success Response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Response{
 		Namespace: namespaceName,
-		JobName:   fmt.Sprintf("build-%s-%s", resourceName, tag),
+		JobName:   jobName,
 		AppName:   req.Name,
 		Image:     generatedImage,
-		Message:   fmt.Sprintf("Deployment initiated. URL: https://%s.kleff.io", resourceName),
-		Existed:   existed,
+		// Update message to reflect the new URL format
+		Message: fmt.Sprintf("Deployment created. URL: https://%s.kleff.io", resourceName),
+		Existed: existed,
 	})
 }
 
@@ -545,28 +554,28 @@ func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
 	}
 	resourceName := "app-" + rawUUID
 
-	// 4. Delete from Kubernetes asynchronously
-	go func() {
-		err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
+	// 4. Delete from Kubernetes
+	err = s.DynamicClient.Resource(webAppGVR).Namespace(namespaceName).Delete(r.Context(), resourceName, metav1.DeleteOptions{})
 
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				s.Logger.Warn("WebApp not found for deletion", "resourceName", resourceName, "namespace", namespaceName)
-			} else {
-				s.Logger.Error("Failed to delete WebApp", "resourceName", resourceName, "error", err)
-			}
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			s.Logger.Warn("WebApp not found for deletion", "resourceName", resourceName, "namespace", namespaceName)
+			http.Error(w, "WebApp not found", http.StatusNotFound)
 			return
 		}
+		s.Logger.Error("Failed to delete WebApp", "resourceName", resourceName, "error", err)
+		http.Error(w, fmt.Sprintf("Failed to delete WebApp: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-		s.Logger.Info("WebApp deleted successfully via upstream call", "resourceName", resourceName, "namespace", namespaceName)
-	}()
+	s.Logger.Info("WebApp deleted successfully via upstream call", "resourceName", resourceName, "namespace", namespaceName)
 
-	// 5. Return response immediately
+	// 5. Success Response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Response{
 		Namespace: namespaceName,
 		AppName:   resourceName,
-		Message:   "WebApp deletion initiated successfully",
+		Message:   "WebApp deleted successfully",
 	})
 }
 

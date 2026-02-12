@@ -102,14 +102,13 @@ public class ContainerController {
     public ResponseEntity<String> deleteContainer(@PathVariable String containerID, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt != null ? jwt.getSubject() : "unknown";
         try {
-            // Return response immediately while processing deletion asynchronously
             containerService.deleteContainer(containerID, userId);
-            return ResponseEntity.ok("Container deletion initiated successfully");
+            return ResponseEntity.ok("Container deleted successfully");
         } catch (RuntimeException e) {
             if (e.getMessage().contains("not found")) {
                 return ResponseEntity.notFound().build();
             } else {
-                return ResponseEntity.internalServerError().body("Failed to initiate container deletion: " + e.getMessage());
+                return ResponseEntity.internalServerError().body("Failed to delete container: " + e.getMessage());
             }
         }
     }
