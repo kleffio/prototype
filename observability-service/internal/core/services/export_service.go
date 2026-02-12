@@ -41,11 +41,11 @@ func (s *exportService) ExportLogs(ctx context.Context, params domain.ExportPara
 	for _, container := range logs.Containers {
 		for _, entry := range container.Logs {
 			allEntries = append(allEntries, logExportEntry{
-				Timestamp:     formatNanoTimestamp(entry.Timestamp),
-				Container:     container.ContainerName,
-				Level:         detectLogLevel(entry.Log),
-				Message:       entry.Log,
-				RawTimestamp:  entry.Timestamp,
+				Timestamp:    formatNanoTimestamp(entry.Timestamp),
+				Container:    container.ContainerName,
+				Level:        detectLogLevel(entry.Log),
+				Message:      entry.Log,
+				RawTimestamp: entry.Timestamp,
 			})
 		}
 	}

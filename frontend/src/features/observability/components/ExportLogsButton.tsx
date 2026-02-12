@@ -68,17 +68,12 @@ export function ExportLogsButton({ projectId }: ExportLogsButtonProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setOpen(!open)}
-        title="Export logs"
-      >
+      <Button size="sm" variant="ghost" onClick={() => setOpen(!open)} title="Export logs">
         <Download className="h-4 w-4" />
       </Button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-white/10 bg-neutral-900 p-4 shadow-xl">
+        <div className="absolute top-full right-0 z-50 mt-2 w-64 rounded-lg border border-white/10 bg-neutral-900 p-4 shadow-xl">
           <h3 className="mb-3 text-sm font-medium text-neutral-200">Export Logs</h3>
 
           <div className="mb-3">
@@ -116,12 +111,7 @@ export function ExportLogsButton({ projectId }: ExportLogsButtonProps) {
             </select>
           </div>
 
-          <Button
-            size="sm"
-            className="w-full"
-            onClick={handleExport}
-            disabled={loading}
-          >
+          <Button size="sm" className="w-full" onClick={handleExport} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
