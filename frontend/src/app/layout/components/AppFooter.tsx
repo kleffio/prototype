@@ -25,7 +25,7 @@ export function AppFooter() {
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
-                    to={ROUTES.DOCS}
+                    href={ROUTES.DOCS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Docs
@@ -33,7 +33,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   <UnderlineLink
-                    to={ROUTES.PRICING}
+                    href={ROUTES.PRICING}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Pricing
@@ -41,7 +41,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   <UnderlineLink
-                    to={ROUTES.STATUS}
+                    href={ROUTES.STATUS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Status
@@ -56,7 +56,7 @@ export function AppFooter() {
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
-                    to={ROUTES.ABOUT}
+                    href={ROUTES.ABOUT}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     About
@@ -64,7 +64,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   <UnderlineLink
-                    to={ROUTES.FAQ}
+                    href={ROUTES.FAQ}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     FAQ
@@ -79,7 +79,7 @@ export function AppFooter() {
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
-                    to={ROUTES.TERMS}
+                    href={ROUTES.TERMS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Terms
@@ -87,7 +87,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   <UnderlineLink
-                    to={ROUTES.PRIVACY}
+                    href={ROUTES.PRIVACY}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Privacy
@@ -102,7 +102,7 @@ export function AppFooter() {
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
-                    to={"https://www.linkedin.com/company/kleffio/"}
+                    href={"https://www.linkedin.com/company/kleffio/"}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Linkedin
@@ -110,7 +110,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   <UnderlineLink
-                    to={"mailto:kleffioapp@gmail.com"}
+                    href={"mailto:kleffioapp@gmail.com"}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
                     Email

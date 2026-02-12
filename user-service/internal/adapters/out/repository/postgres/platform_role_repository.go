@@ -91,7 +91,9 @@ func (r *PostgresPlatformRoleRepository) GetActiveRolesByUserID(ctx context.Cont
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var roles []domain.PlatformRole
 	for rows.Next() {

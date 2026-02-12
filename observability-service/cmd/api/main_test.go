@@ -20,32 +20,32 @@ func TestMain_Environment(t *testing.T) {
 	defer func() {
 		// Restore original environment variables
 		if originalPort != "" {
-			os.Setenv("SERVER_PORT", originalPort)
+			_ = os.Setenv("SERVER_PORT", originalPort)
 		} else {
-			os.Unsetenv("SERVER_PORT")
+			_ = os.Unsetenv("SERVER_PORT")
 		}
 		if originalPrometheusURL != "" {
-			os.Setenv("PROMETHEUS_URL", originalPrometheusURL)
+			_ = os.Setenv("PROMETHEUS_URL", originalPrometheusURL)
 		} else {
-			os.Unsetenv("PROMETHEUS_URL")
+			_ = os.Unsetenv("PROMETHEUS_URL")
 		}
 		if originalLokiURL != "" {
-			os.Setenv("LOKI_URL", originalLokiURL)
+			_ = os.Setenv("LOKI_URL", originalLokiURL)
 		} else {
-			os.Unsetenv("LOKI_URL")
+			_ = os.Unsetenv("LOKI_URL")
 		}
 		if originalEnvironment != "" {
-			os.Setenv("ENVIRONMENT", originalEnvironment)
+			_ = os.Setenv("ENVIRONMENT", originalEnvironment)
 		} else {
-			os.Unsetenv("ENVIRONMENT")
+			_ = os.Unsetenv("ENVIRONMENT")
 		}
 	}()
 
 	// Set test environment variables
-	os.Setenv("SERVER_PORT", "8081")
-	os.Setenv("PROMETHEUS_URL", "http://test-prometheus:9090")
-	os.Setenv("LOKI_URL", "http://test-loki:3100")
-	os.Setenv("ENVIRONMENT", "test")
+	_ = os.Setenv("SERVER_PORT", "8081")
+	_ = os.Setenv("PROMETHEUS_URL", "http://test-prometheus:9090")
+	_ = os.Setenv("LOKI_URL", "http://test-loki:3100")
+	_ = os.Setenv("ENVIRONMENT", "test")
 
 	// This test just verifies that the main package can be imported
 	// and that environment variables are properly set up
@@ -80,16 +80,16 @@ func TestMain_ConfigurationFlow(t *testing.T) {
 	}()
 
 	// Set up test environment
-	os.Setenv("SERVER_PORT", "0") // Use port 0 to avoid conflicts
-	os.Setenv("PROMETHEUS_URL", "http://localhost:9090")
-	os.Setenv("LOKI_URL", "http://localhost:3100")
-	os.Setenv("ENVIRONMENT", "test")
+	_ = os.Setenv("SERVER_PORT", "0") // Use port 0 to avoid conflicts
+	_ = os.Setenv("PROMETHEUS_URL", "http://localhost:9090")
+	_ = os.Setenv("LOKI_URL", "http://localhost:3100")
+	_ = os.Setenv("ENVIRONMENT", "test")
 
 	defer func() {
-		os.Unsetenv("SERVER_PORT")
-		os.Unsetenv("PROMETHEUS_URL")
-		os.Unsetenv("LOKI_URL")
-		os.Unsetenv("ENVIRONMENT")
+		_ = os.Unsetenv("SERVER_PORT")
+		_ = os.Unsetenv("PROMETHEUS_URL")
+		_ = os.Unsetenv("LOKI_URL")
+		_ = os.Unsetenv("ENVIRONMENT")
 	}()
 
 	// This test verifies that the main function's imports and

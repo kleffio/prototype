@@ -148,7 +148,15 @@ function UserSettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    authLoading,
+    isAuthenticated,
+    user?.access_token,
+    user?.profile?.email,
+    user?.profile?.sub,
+    location.pathname
+  ]);
 
   useEffect(() => {
     checkDeactivatedRoute();
