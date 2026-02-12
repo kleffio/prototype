@@ -1,11 +1,8 @@
 package com.kleff.deployment.business;
 
 import com.kleff.deployment.data.container.*;
-<<<<<<< HEAD
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
-=======
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,7 +19,6 @@ public class ContainerServiceImpl {
 
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
-<<<<<<< HEAD
     private final AsyncDeploymentService asyncDeploymentService;
 
     public ContainerServiceImpl(ContainerRepository containerRepository,
@@ -31,16 +27,6 @@ public class ContainerServiceImpl {
         this.containerRepository = containerRepository;
         this.containerMapper = containerMapper;
         this.asyncDeploymentService = asyncDeploymentService;
-=======
-    private final DeploymentInternalClient deploymentClient;
-
-    public ContainerServiceImpl(ContainerRepository containerRepository,
-            ContainerMapper containerMapper,
-            DeploymentInternalClient deploymentClient) {
-        this.containerRepository = containerRepository;
-        this.containerMapper = containerMapper;
-        this.deploymentClient = deploymentClient;
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
     }
 
     public List<ContainerResponseModel> getAllContainers() {
@@ -72,11 +58,7 @@ public class ContainerServiceImpl {
         Container savedContainer = containerRepository.save(container);
 
         // FIX: Pass both the request and the ID from the saved object
-<<<<<<< HEAD
         asyncDeploymentService.triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
-=======
-        deploymentClient.triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 
         asyncDeploymentService.sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
                 Map.of("name", savedContainer.getName()));
@@ -107,11 +89,7 @@ public class ContainerServiceImpl {
         Container updatedContainer = containerRepository.save(existingContainer);
 
         // FIX: Pass both the request and the containerID
-<<<<<<< HEAD
         asyncDeploymentService.triggerBuildDeployment(request, containerID);
-=======
-        deploymentClient.triggerBuildDeployment(request, containerID);
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 
         Map<String, Object> changes = new java.util.HashMap<>();
         changes.put("name", updatedContainer.getName());
@@ -152,11 +130,7 @@ public class ContainerServiceImpl {
         container.setEnvVariables(containerMapper.mapToJson(envVariables));
         Container updatedContainer = containerRepository.save(container);
 
-<<<<<<< HEAD
         asyncDeploymentService.triggerWebAppUpdate(container, envVariables);
-=======
-        deploymentClient.triggerWebAppUpdate(container, envVariables);
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 
         // Calculate diffs safely
         try {
@@ -213,11 +187,7 @@ public class ContainerServiceImpl {
             log.info("Container deleted from database: {}", containerID);
 
             // Make upstream call to delete the WebApp in Kubernetes
-<<<<<<< HEAD
             asyncDeploymentService.triggerWebAppDeletion(container.getProjectID(), containerID);
-=======
-            deploymentClient.triggerWebAppDeletion(container.getProjectID(), containerID);
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 
             asyncDeploymentService.sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
         } catch (Exception e) {
@@ -277,11 +247,7 @@ public class ContainerServiceImpl {
                 log.info("Container deleted from database: {}", target.getContainerID());
 
                 // Delete upstream WebApp
-<<<<<<< HEAD
                 asyncDeploymentService.triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
-=======
-                deploymentClient.triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 
                 // Success
                 deleted.add(target.getContainerID());
@@ -300,79 +266,4 @@ public class ContainerServiceImpl {
                 .failed(failed)
                 .build();
     }
-<<<<<<< HEAD
-=======
-
-    // Inject audit URL from application properties
-    @org.springframework.beans.factory.annotation.Value("${audit.service.url:http://project-management-service:8080/api/v1/projects/audit/internal}")
-    private String auditServiceUrl;
-
-    private void sendAuditLog(String action, String projectId, String containerId, String userId,
-            Map<String, Object> changes) {
-        try {
-            ExternalAuditRequest request = new ExternalAuditRequest();
-            request.setAction(action);
-            request.setProjectId(projectId);
-            request.setUserId(userId != null ? userId : "system");
-            request.setResourceType("CONTAINER");
-            request.setResourceId(containerId);
-            request.setChanges(changes);
-
-            // Note: We'll need a RestTemplate here. Let's inject it.
-            // For now, let's create a simple one or inject it.
-            // TODO: Inject RestTemplate here if needed. For now, using a simple one.
-            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-            restTemplate.postForObject(auditServiceUrl, request, Void.class);
-            log.info("Audit log sent for action: {}", action);
-        } catch (Exception e) {
-            log.error("Failed to send audit log: {}", e.getMessage());
-        }
-    }
-
-    // Inner DTO for Audit Request
-    private static class ExternalAuditRequest {
-        @JsonProperty("action")
-        private String action;
-        @JsonProperty("projectId")
-        private String projectId;
-        @JsonProperty("userId")
-        private String userId;
-        @JsonProperty("resourceType")
-        private String resourceType;
-        @JsonProperty("resourceId")
-        private String resourceId;
-        @JsonProperty("changes")
-        private Map<String, Object> changes;
-        @JsonProperty("ipAddress")
-        private String ipAddress;
-
-        public void setAction(String action) {
-            this.action = action;
-        }
-
-        public void setProjectId(String projectId) {
-            this.projectId = projectId;
-        }
-
-        public void setUserId(String userId) {
-            this.userId = userId;
-        }
-
-        public void setResourceType(String resourceType) {
-            this.resourceType = resourceType;
-        }
-
-        public void setResourceId(String resourceId) {
-            this.resourceId = resourceId;
-        }
-
-        public void setChanges(Map<String, Object> changes) {
-            this.changes = changes;
-        }
-
-        public void setIpAddress(String ipAddress) {
-            this.ipAddress = ipAddress;
-        }
-    }
->>>>>>> 8c84be017397477ff959692e5f9d3569e514d8fa
 }
