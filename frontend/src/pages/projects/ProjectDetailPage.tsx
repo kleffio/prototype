@@ -14,8 +14,7 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Crown,
-  Database
+  Crown
 } from "lucide-react";
 import { useProject } from "@features/projects/hooks/useProject";
 import { useProjectContainers } from "@features/projects/hooks/useProjectContainers";
@@ -39,7 +38,6 @@ import { SecureComponent } from "@app/components/SecureComponent";
 import { SimpleContainerLogsSheet } from "@features/projects/components/SimpleContainerLogsSheet";
 import ProjectBillingEstimatesCard from "@features/billing/components/getEstimateBilling";
 import { ActionLogModal } from "@features/projects/components/ActionLogModal";
-import { Switch } from "@shared/ui/Switch";
 
 const translations = {
   en: enTranslations,
@@ -317,48 +315,6 @@ export function ProjectDetailPage() {
                 <p className="text-sm font-medium text-neutral-200">{project.createdDate || "—"}</p>
               </div>
             </div>
-          </div>
-        </SoftPanel>
-
-        <SoftPanel className="p-5">
-          <h2 className="mb-4 text-sm font-semibold tracking-wide text-neutral-400 uppercase">
-            Database Configuration
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-neutral-800 p-2">
-                  <Database className="h-4 w-4 text-neutral-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-200">Enable Database</p>
-                  <p className="text-xs text-neutral-500">
-                    Provision a PostgreSQL database for this project
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={project.enableDatabase || false}
-                disabled // Currently read-only, can be enabled with update API
-              />
-            </div>
-
-            {project.enableDatabase && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-neutral-200">Storage Size</p>
-                  <p className="text-sm text-neutral-400">{project.storageSize || 10} GB</p>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={project.storageSize || 10}
-                  disabled // Currently read-only, can be enabled with update API
-                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-not-allowed"
-                />
-              </div>
-            )}
           </div>
         </SoftPanel>
 

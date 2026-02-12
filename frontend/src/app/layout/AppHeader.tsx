@@ -15,7 +15,11 @@ export function AppHeader() {
   const navigate = useNavigate();
 
   const handleLogin = useCallback(() => {
-    navigate(auth.isAuthenticated ? ROUTES.DASHBOARD : ROUTES.AUTH_SIGNIN);
+    if (auth.isAuthenticated) {
+      navigate(ROUTES.DASHBOARD);
+    } else {
+      navigate(ROUTES.AUTH_SIGNIN);
+    }
   }, [auth.isAuthenticated, navigate]);
 
   return (

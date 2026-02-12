@@ -87,10 +87,12 @@ class ContainerResponseModelTest {
         String repoUrl = "https://github.com/test/repo";
         String branch = "main";
         Map<String, String> envVariables = Map.of("KEY1", "value1", "KEY2", "value2");
+        boolean enableDatabase = true;
+        Integer storageSizeGB = 20;
 
         // Act
         ContainerResponseModel model = new ContainerResponseModel(
-                containerID, projectID, name, status, image, port, createdAt, repoUrl, branch, envVariables);
+                containerID, projectID, name, status, image, port, createdAt, repoUrl, branch, envVariables, enableDatabase, storageSizeGB);
 
         // Assert
         assertThat(model).isNotNull();
@@ -104,6 +106,8 @@ class ContainerResponseModelTest {
         assertThat(model.getRepoUrl()).isEqualTo(repoUrl);
         assertThat(model.getBranch()).isEqualTo(branch);
         assertThat(model.getEnvVariables()).isEqualTo(envVariables);
+        assertThat(model.isEnableDatabase()).isEqualTo(enableDatabase);
+        assertThat(model.getStorageSizeGB()).isEqualTo(storageSizeGB);
     }
 
     @Test
