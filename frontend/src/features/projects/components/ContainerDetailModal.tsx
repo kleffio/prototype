@@ -66,7 +66,7 @@ export function ContainerDetailModal({
 
   if (!isOpen || !container) return null;
 
-  const appUrl = `https://${container.containerId}.kleff.io`;
+  const appUrl = `https://app-${container.containerId}.kleff.io`;
 
   const handleCopyId = async () => {
     try {
@@ -280,7 +280,7 @@ export function ContainerDetailModal({
 
           {/* Environment Variables Section - Full Width */}
           {container.envVariables && Object.keys(container.envVariables).length > 0 && (
-            <div className="mt-8 rounded-lg bg-slate-900/60 p-6">
+            <div className="mt-8 rounded-lg border border-white/10 bg-white/5 p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">{t.environment_variables}</h3>
                 {onEditEnv && (
@@ -289,7 +289,7 @@ export function ContainerDetailModal({
                       size="sm"
                       variant="outline"
                       onClick={() => onEditEnv(container)}
-                      className="border-slate-600 bg-slate-700 text-xs text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                      className="border-white/10 bg-white/5 text-xs text-neutral-300 hover:border-white/20 hover:bg-white/10"
                     >
                       <Settings className="mr-1 h-3 w-3" />
                       {t.edit_variables}
@@ -301,12 +301,12 @@ export function ContainerDetailModal({
                 {Object.entries(container.envVariables).map(([key, value]) => (
                   <div
                     key={key}
-                    className="flex items-center gap-3 rounded border border-slate-700 bg-slate-800/60 p-3"
+                    className="flex items-center gap-3 rounded border border-white/10 bg-white/5 p-3"
                   >
-                    <span className="min-w-0 flex-1 font-mono text-sm font-semibold text-slate-300">
+                    <span className="min-w-0 flex-1 font-mono text-sm font-semibold text-neutral-300">
                       {key}
                     </span>
-                    <span className="text-sm text-slate-500">=</span>
+                    <span className="text-sm text-neutral-500">=</span>
                     <span className="min-w-0 flex-1 font-mono text-sm break-all text-white">
                       {value}
                     </span>
@@ -317,13 +317,13 @@ export function ContainerDetailModal({
           )}
 
           {/* Footer - Action Buttons */}
-          <div className="mt-8 border-t border-slate-700 pt-6">
+          <div className="mt-8 border-t border-white/10 pt-6">
             <div className="flex flex-wrap justify-end gap-3">
               <SecureComponent requiredPermission="DEPLOY">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                  className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                 >
                   <Play className="mr-2 h-4 w-4" />
                   {t.restart}
@@ -333,7 +333,7 @@ export function ContainerDetailModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                  className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                 >
                   <Square className="mr-2 h-4 w-4" />
                   {t.stop}
@@ -345,7 +345,7 @@ export function ContainerDetailModal({
                     size="sm"
                     variant="outline"
                     onClick={() => onEditContainer(container)}
-                    className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                    className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     {t.edit_container}
@@ -358,7 +358,7 @@ export function ContainerDetailModal({
                     size="sm"
                     variant="outline"
                     onClick={() => onEditEnv(container)}
-                    className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                    className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     {t.edit_environment_variables}
@@ -369,7 +369,7 @@ export function ContainerDetailModal({
                 <Button
                   size="sm"
                   variant="destructive"
-                  className="bg-red-600 text-white hover:bg-red-700"
+                  className="border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDeleting}
                 >
