@@ -32,7 +32,6 @@ export function streamBuildLogs(
     {
       method: "GET",
       headers: {
-        "Cache-Control": "no-cache",
         Accept: "text/plain"
       },
       signal

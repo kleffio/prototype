@@ -234,7 +234,7 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	// 5. Submit Kaniko Build Job
 	// Use the resourceName in the job name to keep it linked
 	jobName := fmt.Sprintf("build-%s-%s", resourceName, tag)
-	if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage, req.ContainerID); err != nil {
+	if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage, rawUUID); err != nil {
 		s.Logger.Error("Failed to create build job", "job", jobName, "error", err)
 		http.Error(w, "Failed to start build process", http.StatusInternalServerError)
 		return
@@ -246,7 +246,7 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	// 6. Create or Update the WebApp Custom Resource
 	// We pass resourceName ("app-UUID") as the K8s name,
 	// but the original req (containing raw UUID) is stored in the Spec.
-	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req); err != nil {
+	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req, rawUUID); err != nil {
 		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
 		http.Error(w, "Build started, but failed to sync deployment metadata", http.StatusInternalServerError)
 		return
@@ -427,7 +427,7 @@ func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, jobName string, req BuildRequest) error {
+func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, jobName string, req BuildRequest, rawUUID string) error {
 	port := req.Port
 	if port == 0 {
 		port = 8080
@@ -455,7 +455,7 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 				"name":      resourceName,
 				"namespace": namespace,
 				"labels": map[string]interface{}{
-					"container-id": req.ContainerID,
+					"container-id": rawUUID,
 				},
 			},
 			"spec": map[string]interface{}{
