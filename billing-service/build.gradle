@@ -21,50 +21,54 @@ repositories {
 
 dependencies {
 
-
-
-    //Security dependencies
+    // ===============================
+    // Web
+    // ===============================
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // For WebClient only
+
+    // ===============================
+    // Security
+    // ===============================
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
+    implementation 'org.springframework.security:spring-security-oauth2-jose' // Needed for Jwt
 
-    // ---- Runtime / application dependencies ----
-
-    // Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
-
-    // Data access
+    // ===============================
+    // Data & Persistence
+    // ===============================
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 
-    // Database
-    runtimeOnly 'org.postgresql:postgresql'   // version managed by Spring Boot
+    runtimeOnly 'org.postgresql:postgresql'
 
-    // Hypersistence Utils (Hibernate 6.3 compatible)
+    // Hibernate utilities
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.7.0'
 
-    // Web: MVC (blocking) + WebClient (for HTTP calls)
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient only; no reactive server activated unless you add controllers
-
-    // For stripe payments
+    // ===============================
+    // Stripe Payments
+    // ===============================
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-    implementation "com.stripe:stripe-java:31.0.0"
-    // ---- Test dependencies ----
+    implementation 'com.stripe:stripe-java:31.0.0'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // ===============================
+    // Lombok
+    // ===============================
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.36'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
 
+    // ===============================
+    // Testing
+    // ===============================
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
 }
 
-test{
+test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
 }

@@ -1,6 +1,5 @@
 package com.kleff.billingservice.datalayer.Record;
 
-import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

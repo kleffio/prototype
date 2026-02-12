@@ -1,6 +1,5 @@
 package com.kleff.billingservice.datalayer.Invoice;
 
-import com.kleff.billingservice.datalayer.Record.UsageRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +12,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     public List<Invoice> findByProjectId(String projectId);
     public List<Invoice> findByProjectIdIn(List<String> projectIds);
     List<Invoice> findByStatus(InvoiceStatus invoiceStatus);
-    List<Invoice> findByProjectIdAndCreatedDateBetween(String projectId, Date date, Date date1);
+    List<Invoice> findByProjectIdAndEndDateBetween(
+            String projectId,
+            Date startDate,
+            Date endDate
+    );
+
 }
