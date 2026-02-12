@@ -15,7 +15,17 @@ export function BuildLogsViewer({ projectId, containerId }: BuildLogsViewerProps
   const [isStreaming, setIsStreaming] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
+  // Validate parameters synchronously
+  const isValidParams =
+    projectId && containerId && projectId !== "undefined" && containerId !== "undefined";
+
   const fetchLogs = () => {
+    if (!isValidParams) {
+      setError("Invalid parameters: projectId and containerId are required");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setLogs([]);
@@ -106,7 +116,19 @@ export function BuildLogsViewer({ projectId, containerId }: BuildLogsViewerProps
     };
   };
 
+  // Auto-scroll to bottom when new logs are added
   useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    if (!projectId || !containerId || projectId === "undefined" || containerId === "undefined") {
+      // Handle invalid parameters - don't set state in effect
+      return;
+    }
+
     const controller = new AbortController();
     const signal = controller.signal;
 
@@ -192,12 +214,22 @@ export function BuildLogsViewer({ projectId, containerId }: BuildLogsViewerProps
     };
   }, [projectId, containerId]);
 
-  // Auto-scroll to bottom when new logs are added
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [logs]);
+  // Handle invalid parameters synchronously - before any conditional returns
+  if (!isValidParams) {
+    return (
+      <SoftPanel>
+        <div style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
+          <h3 className="text-kleff-gold mb-3 text-xl font-semibold">Failed to Load Build Logs</h3>
+          <p className="mb-2 text-sm text-red-400">
+            Invalid parameters: projectId and containerId are required
+          </p>
+          <p className="mb-6 text-sm text-neutral-500">
+            Please check if the project and container exist before trying to view logs.
+          </p>
+        </div>
+      </SoftPanel>
+    );
+  }
 
   if (loading && logs.length === 0) {
     return (

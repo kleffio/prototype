@@ -415,9 +415,12 @@ export function ProjectDetailPage() {
         container={selectedContainerForEdit}
         onSuccess={(container) => {
           reload();
-          if (container) {
-            setBuildLogsContainer(container);
-            setIsBuildLogsOpen(true);
+          if (container && container.containerId) {
+            // Add a delay to give backend time to create the container before fetching logs
+            setTimeout(() => {
+              setBuildLogsContainer(container);
+              setIsBuildLogsOpen(true);
+            }, 2000);
           }
         }}
       />
