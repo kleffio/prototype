@@ -91,7 +91,9 @@ func (r *PostgresAuditRepository) GetUserAuditLogs(ctx context.Context, userID d
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	logs := make([]*domain.AuditLog, 0)
 	for rows.Next() {

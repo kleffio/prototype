@@ -71,7 +71,9 @@ func (m *AuthentikManager) ResolveUserID(ctx context.Context, email string) (str
 	if err != nil {
 		return "", fmt.Errorf("authentik lookup request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return "", fmt.Errorf("user not found in authentik")
@@ -119,7 +121,9 @@ func (m *AuthentikManager) UpdateUsername(ctx context.Context, userID string, us
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("user not found in Authentik")
