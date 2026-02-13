@@ -22,7 +22,7 @@ type mockMetricsRepository struct {
 	getMemoryUtilizationFunc                func(ctx context.Context, duration string) (*domain.ResourceUtilization, error)
 	getNodesFunc                            func(ctx context.Context) ([]domain.NodeMetric, error)
 	getNamespacesFunc                       func(ctx context.Context) ([]domain.NamespaceMetric, error)
-	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error)
+	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
 	getProjectUsageMetricsFunc              func(ctx context.Context, projectID string) (*domain.ProjectUsageMetrics, error)
 	getProjectUsageMetricsWithDaysFunc      func(ctx context.Context, projectID string, days int) (*domain.ProjectUsageMetrics, error)
 	getProjectTotalUsageMetricsFunc         func(ctx context.Context, projectID string) (*domain.ProjectTotalUsageMetrics, error)
@@ -101,9 +101,9 @@ func (m *mockMetricsRepository) GetNamespaces(ctx context.Context) ([]domain.Nam
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockMetricsRepository) GetDatabaseIOMetrics(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+func (m *mockMetricsRepository) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 	if m.getDatabaseIOMetricsFunc != nil {
-		return m.getDatabaseIOMetricsFunc(ctx, duration)
+		return m.getDatabaseIOMetricsFunc(ctx, duration, namespaces)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -365,7 +365,7 @@ func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	}
 
 	mockRepo := &mockMetricsRepository{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return expectedMetrics, nil
 		},
 	}
@@ -373,7 +373,7 @@ func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	service := NewMetricsService(mockRepo)
 	ctx := context.Background()
 
-	result, err := service.GetDatabaseIOMetrics(ctx, "1h")
+	result, err := service.GetDatabaseIOMetrics(ctx, "1h", nil)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -688,7 +688,7 @@ func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	expectedError := errors.New("database io error")
 
 	mockRepo := &mockMetricsRepository{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return nil, expectedError
 		},
 	}
@@ -696,7 +696,7 @@ func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	service := NewMetricsService(mockRepo)
 	ctx := context.Background()
 
-	result, err := service.GetDatabaseIOMetrics(ctx, "1h")
+	result, err := service.GetDatabaseIOMetrics(ctx, "1h", nil)
 
 	if err == nil {
 		t.Fatal("Expected error, got nil")

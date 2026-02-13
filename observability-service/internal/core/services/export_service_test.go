@@ -65,7 +65,7 @@ func (m *exportMockMetricsRepo) GetUptimeMetrics(_ context.Context, _ string) (*
 func (m *exportMockMetricsRepo) GetSystemUptime(_ context.Context) (float64, error) {
 	return 0, nil
 }
-func (m *exportMockMetricsRepo) GetDatabaseIOMetrics(_ context.Context, _ string) (*domain.DatabaseMetrics, error) {
+func (m *exportMockMetricsRepo) GetDatabaseIOMetrics(_ context.Context, _ string, _ []string) (*domain.DatabaseMetrics, error) {
 	return nil, nil
 }
 func (m *exportMockMetricsRepo) GetProjectUsageMetrics(_ context.Context, _ string) (*domain.ProjectUsageMetrics, error) {
