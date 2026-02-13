@@ -180,5 +180,28 @@
     {
       "label": "Blog"
     }
-  ]
+  ],
+  "footer": {
+    "brand": "Kleff Platform",
+    "tagline": "Open-source-first hosting for modern teams.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "contact_us": "Contact Us",
+    "docs": "Docs",
+    "pricing": "Pricing",
+    "status": "Status",
+    "about": "About",
+    "faq": "FAQ",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "linkedin": "Linkedin",
+    "email": "Email",
+    "copyright": "© {{year}} Kleff. All rights reserved."
+  },
+  "confirmationDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "deleting": "Deleting..."
+  }
 }

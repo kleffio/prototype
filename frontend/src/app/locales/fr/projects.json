@@ -311,5 +311,58 @@
     "decline": "Refuser",
     "error_accept": "Échec de l'acceptation de l'invitation",
     "error_reject": "Échec du refus de l'invitation"
+  },
+  "teamManagement": {
+    "loading": "Chargement de l'équipe...",
+    "title": "Membres de l'équipe",
+    "member": "membre",
+    "members": "membres",
+    "pending_invitation": "invitation en attente",
+    "pending_invitations": "invitations en attente",
+    "invite_member": "Inviter un membre",
+    "collaborator_removed": "Collaborateur supprimé",
+    "invitation_deleted": "Invitation supprimée",
+    "role_updated": "Rôle mis à jour avec succès",
+    "failed_load": "Échec du chargement des membres de l'équipe",
+    "failed_remove": "Échec de la suppression du collaborateur",
+    "failed_delete_invitation": "Échec de la suppression de l'invitation",
+    "failed_update_role": "Échec de la mise à jour du rôle",
+    "failed_invite": "Échec de l'envoi de l'invitation",
+    "please_enter_email": "Veuillez entrer une adresse e-mail",
+    "invitation_sent": "Invitation envoyée à",
+    "table": {
+      "user_id": "ID utilisateur",
+      "role": "Rôle",
+      "status": "Statut",
+      "joined": "Inscrit",
+      "actions": "Actions",
+      "email": "E-mail",
+      "sent": "Envoyé"
+    },
+    "no_members": "Aucun membre dans l'équipe",
+    "pending_title": "Invitations en attente",
+    "no_invitations": "Aucune invitation en attente",
+    "invited_appear": "Les utilisateurs invités apparaîtront ici",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "edit_role": "Modifier le rôle",
+    "remove_collaborator": "Supprimer le collaborateur",
+    "delete_invitation": "Supprimer l'invitation",
+    "invite_modal": {
+      "title": "Inviter un membre d'équipe",
+      "description": "Envoyer une invitation à collaborer sur ce projet",
+      "email_label": "Adresse e-mail",
+      "email_placeholder": "collegue@exemple.com",
+      "role_label": "Rôle",
+      "cancel": "Annuler",
+      "sending": "Envoi...",
+      "send_invitation": "Envoyer l'invitation"
+    },
+    "roles": {
+      "OWNER": "Accès complet, y compris la suppression du projet",
+      "ADMIN": "Gérer l'équipe, déployer et configurer",
+      "DEVELOPER": "Déployer des conteneurs et gérer les variables d'environnement",
+      "VIEWER": "Accès en lecture seule"
+    }
   }
 }

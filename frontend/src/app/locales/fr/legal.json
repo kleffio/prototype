@@ -29,5 +29,250 @@
       "description": "Contactez notre équipe commerciale pour les tarifs d'entreprise et les arrangements personnalisés.",
       "button": "Parler à un représentant"
     }
+  },
+  "terms": {
+    "badge": "Conditions d'utilisation",
+    "title_line1": "Des règles simples.",
+    "title_line2": "Des conditions justes.",
+    "subtitle": "Nous restons directs. Pas de clauses cachées, pas de jargon juridique.",
+    "last_updated": "Dernière mise à jour le 6 décembre 2024",
+    "basics": {
+      "label": "Les bases",
+      "title": "Principes fondamentaux",
+      "description": "Ce que vous pouvez attendre en utilisant Kleff.",
+      "use_right": {
+        "title": "Utilisez correctement",
+        "description": "Déployez de superbes applications. Pas d'abus. Pas de contenu illégal."
+      },
+      "pay_fair": {
+        "title": "Payez équitablement",
+        "description": "Payez uniquement ce que vous utilisez. Annulez à tout moment."
+      },
+      "stay_secure": {
+        "title": "Restez sécurisé",
+        "description": "Nous gérons la sécurité. Vous gérez le code."
+      },
+      "own_data": {
+        "title": "Vos données vous appartiennent",
+        "description": "Votre code est le vôtre. Exportez à tout moment."
+      }
+    },
+    "acceptable_use": {
+      "label": "Utilisation acceptable",
+      "title": "Ce qui est interdit",
+      "description": "Gardez la plateforme sûre et légale pour tous.",
+      "items": [
+        "Héberger des logiciels malveillants, des sites d'hameçonnage ou des logiciels malicieux",
+        "Envoyer du spam ou des courriels commerciaux non sollicités",
+        "Violer les lois sur la propriété intellectuelle ou le droit d'auteur",
+        "Miner des cryptomonnaies sans autorisation explicite",
+        "Tenter de pirater, attaquer ou perturber nos systèmes",
+        "Revendre ou redistribuer nos services sans autorisation",
+        "Harceler, menacer ou abuser d'autres utilisateurs",
+        "Héberger du contenu illégal ou faciliter des activités illégales"
+      ]
+    },
+    "sla": {
+      "label": "Accord de niveau de service",
+      "description": "Ce que vous pouvez attendre de l'infrastructure et du support Kleff.",
+      "uptime": {
+        "title": "99,9 % de disponibilité",
+        "description": "Déploiements en production avec basculement automatique et surveillance."
+      },
+      "infrastructure": {
+        "title": "Infrastructure 24/7",
+        "description": "Systèmes toujours actifs avec redondance sur plusieurs zones."
+      },
+      "backups": {
+        "title": "Sauvegardes automatiques",
+        "description": "Instantanés quotidiens conservés pendant 30 jours sur les plans payants."
+      },
+      "ddos": {
+        "title": "Protection DDoS",
+        "description": "Protection intégrée contre les attaques par déni de service distribué."
+      }
+    },
+    "promise": {
+      "title": "Notre",
+      "title_highlight": "promesse",
+      "title_end": "envers vous",
+      "items": [
+        {
+          "title": "Tarification transparente",
+          "description": "Voyez exactement ce que vous payez. Pas de coûts cachés ni de factures surprises."
+        },
+        {
+          "title": "Support réel",
+          "description": "Parlez à des humains. Support par courriel pour tous, prioritaire pour les plans payants."
+        },
+        {
+          "title": "Aucun verrouillage",
+          "description": "Exportez vos données et partez quand vous voulez. Nous facilitons les choses."
+        },
+        {
+          "title": "Mises à jour régulières",
+          "description": "Améliorations continues basées sur vos retours et demandes."
+        },
+        {
+          "title": "Limites de ressources équitables",
+          "description": "Quotas généreux qui évoluent avec votre succès."
+        },
+        {
+          "title": "Propriété des données",
+          "description": "Votre code, vos données, vos déploiements. Tout vous appartient."
+        }
+      ]
+    },
+    "pricing_section": {
+      "title": "À propos de la",
+      "title_highlight": "tarification",
+      "tiers": {
+        "free": {
+          "title": "Plan gratuit",
+          "description": "Parfait pour les projets personnels. Aucune carte de crédit requise."
+        },
+        "payg": {
+          "title": "Paiement à l'usage",
+          "description": "Payez uniquement pour le calcul, la bande passante et le stockage que vous utilisez réellement."
+        },
+        "team": {
+          "title": "Plans équipe",
+          "description": "Tarification mensuelle prévisible pour les équipes et entreprises en croissance."
+        },
+        "cancel": {
+          "title": "Annulez à tout moment",
+          "description": "Pas de contrats. Pas de pénalités. Arrêtez quand vous voulez."
+        }
+      }
+    },
+    "contact": {
+      "title": "Questions sur les conditions ?",
+      "description": "Notre équipe juridique se fera un plaisir de tout clarifier. Nous répondons sous 48 heures.",
+      "button": "Contacter l'équipe juridique"
+    }
+  },
+  "privacy": {
+    "badge": "Politique de confidentialité",
+    "title_line1": "Votre vie privée",
+    "title_line2": "est sacrée.",
+    "subtitle": "Nous protégeons vos données comme si c'étaient les nôtres. Voici exactement comment.",
+    "last_updated": "Dernière mise à jour le 6 décembre 2024",
+    "promise": {
+      "label": "Notre promesse",
+      "title": "Plateforme axée sur la confidentialité",
+      "description": "Conçue avec la souveraineté des données canadiennes et la conformité LPRPDE dès le premier jour.",
+      "canadian": {
+        "title": "100 % canadien",
+        "description": "Les données ne quittent jamais le Canada. Jamais."
+      },
+      "encrypted": {
+        "title": "Chiffré",
+        "description": "Chiffrement de bout en bout. Toujours actif."
+      },
+      "transparent": {
+        "title": "Transparent",
+        "description": "Vos données vous appartiennent. Point final."
+      },
+      "pipeda": {
+        "title": "Conforme LPRPDE",
+        "description": "Conformité complète à la vie privée canadienne."
+      }
+    },
+    "collection": {
+      "label": "Collecte de données",
+      "title": "Ce que nous collectons et pourquoi",
+      "description": "Uniquement ce qui est nécessaire pour fournir et améliorer notre service.",
+      "contact": {
+        "title": "Coordonnées",
+        "description": "Courriel, nom, détails de l'entreprise nécessaires pour la création du compte et la communication."
+      },
+      "billing": {
+        "title": "Données de facturation",
+        "description": "Informations de paiement traitées de manière sécurisée via Stripe. Nous ne stockons jamais les numéros de carte."
+      },
+      "usage": {
+        "title": "Statistiques d'utilisation",
+        "description": "Analyses anonymes pour améliorer les performances et corriger les bogues. Aucun suivi personnel."
+      }
+    },
+    "how_we_use": {
+      "label": "Comment nous utilisons vos données",
+      "description": "Vos informations sont utilisées uniquement pour fournir et améliorer notre service d'hébergement.",
+      "delivery": {
+        "title": "Prestation de service",
+        "description": "Déployer des applications, traiter les paiements et fournir du support."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Mises à jour du service, alertes de sécurité et notifications de facturation."
+      },
+      "improvements": {
+        "title": "Améliorations",
+        "description": "Analyser les tendances d'utilisation pour améliorer les performances et les fonctionnalités."
+      },
+      "security": {
+        "title": "Sécurité",
+        "description": "Détecter les menaces, prévenir la fraude et protéger vos applications."
+      }
+    },
+    "rights": {
+      "title": "Vos",
+      "title_highlight": "droits sur les données",
+      "items": [
+        {
+          "title": "Accéder à vos données",
+          "description": "Demandez une copie à tout moment, pour n'importe quelle raison"
+        },
+        { "title": "Supprimer vos données", "description": "Suppression permanente sous 30 jours" },
+        { "title": "Exporter vos données", "description": "Format JSON portable, prêt à l'emploi" },
+        {
+          "title": "Corriger vos données",
+          "description": "Mettez à jour les informations inexactes instantanément"
+        },
+        { "title": "Refuser les analyses", "description": "Désactivez le suivi non essentiel" },
+        {
+          "title": "Déposer une plainte",
+          "description": "Contactez le Commissaire à la protection de la vie privée du Canada"
+        }
+      ]
+    },
+    "security_measures": {
+      "title": "Mesures de",
+      "title_highlight": "sécurité",
+      "title_end": "des données",
+      "encryption": {
+        "title": "Chiffrement",
+        "description": "AES-256 au repos, TLS 1.3 en transit"
+      },
+      "access_control": {
+        "title": "Contrôle d'accès",
+        "description": "Authentification multifacteur, permissions basées sur les rôles"
+      },
+      "monitoring": {
+        "title": "Surveillance",
+        "description": "Surveillance de sécurité 24/7 et alertes"
+      },
+      "audits": { "title": "Audits", "description": "Tests d'intrusion et révisions réguliers" }
+    },
+    "contact": {
+      "title": "Questions sur la confidentialité ?",
+      "description": "Notre équipe de confidentialité est là pour vous aider. Nous répondons sous 24 heures.",
+      "button": "Contacter l'équipe confidentialité"
+    }
+  },
+  "faq": {
+    "badge": "Questions fréquemment posées",
+    "title_line1": "Déployez plus vite.",
+    "title_line2": "Demandez n'importe quoi.",
+    "subtitle": "Tout ce que vous devez savoir sur le déploiement, la mise à l'échelle et la gestion de vos applications sur Kleff.",
+    "search_placeholder": "Rechercher dans la FAQ...",
+    "results_found": "Trouvé",
+    "results_for": "résultat(s) pour",
+    "no_results_title": "Aucun résultat trouvé",
+    "no_results_description": "Essayez des mots-clés différents ou parcourez par catégorie",
+    "clear_search": "Effacer la recherche",
+    "still_have_questions": "Encore des questions ?",
+    "team_help": "Notre équipe est là pour vous aider à tirer le meilleur parti de Kleff.",
+    "contact_support": "Contacter le support"
   }
 }

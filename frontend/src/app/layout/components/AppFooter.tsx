@@ -1,7 +1,24 @@
+import { useState, useEffect } from "react";
 import { ROUTES } from "@app/routes/routes";
 import { UnderlineLink } from "@shared/ui/UnderlineLink";
+import enTranslations from "@app/locales/en/components.json";
+import frTranslations from "@app/locales/fr/components.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function AppFooter() {
+  const [locale, setLocaleState] = useState(getLocale());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].footer;
+
   return (
     <footer className="border-t border-white/5 bg-black/40">
       <div className="app-container py-8">
@@ -10,10 +27,8 @@ export function AppFooter() {
           <div className="flex min-w-[200px] items-start gap-2">
             <span className="bg-kleff-primary mt-1 h-4 w-5 flex-shrink-0 rounded-lg" />
             <div className="flex flex-col">
-              <span className="text-foreground text-[17px] font-semibold">Kleff Platform</span>
-              <span className="mt-1 max-w-xs text-[15px] text-neutral-500">
-                Open-source-first hosting for modern teams.
-              </span>
+              <span className="text-foreground text-[17px] font-semibold">{t.brand}</span>
+              <span className="mt-1 max-w-xs text-[15px] text-neutral-500">{t.tagline}</span>
             </div>
           </div>
 
@@ -21,14 +36,14 @@ export function AppFooter() {
           <div className="flex flex-wrap gap-x-12 gap-y-8">
             {/* Product Column */}
             <div className="min-w-[120px]">
-              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Product</h3>
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">{t.product}</h3>
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
                     href={ROUTES.DOCS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Docs
+                    {t.docs}
                   </UnderlineLink>
                 </li>
                 <li>
@@ -36,7 +51,7 @@ export function AppFooter() {
                     href={ROUTES.PRICING}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Pricing
+                    {t.pricing}
                   </UnderlineLink>
                 </li>
                 <li>
@@ -44,7 +59,7 @@ export function AppFooter() {
                     href={ROUTES.STATUS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Status
+                    {t.status}
                   </UnderlineLink>
                 </li>
               </ul>
@@ -52,7 +67,7 @@ export function AppFooter() {
 
             {/* Company Column */}
             <div className="min-w-[120px]">
-              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Company</h3>
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">{t.company}</h3>
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink

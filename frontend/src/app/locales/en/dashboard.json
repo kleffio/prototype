@@ -13,6 +13,93 @@
     "create_new_deployment": "Create New Deployment",
     "view_analytics": "View Analytics",
     "view_all": "View All",
-    "deploy_new_project": "Deploy New Project"
+    "deploy_new_project": "Deploy New Project",
+    "metrics_overview": "Metrics Overview",
+    "monitor_cluster": "Monitor your Kubernetes cluster metrics",
+    "last_updated": "Last updated:",
+    "refresh": "Refresh",
+    "performance": "Performance",
+    "time_ranges": {
+      "5m": "Last 5 minutes",
+      "15m": "Last 15 minutes",
+      "30m": "Last 30 minutes",
+      "1h": "Last 1 hour",
+      "3h": "Last 3 hours",
+      "6h": "Last 6 hours",
+      "12h": "Last 12 hours",
+      "24h": "Last 24 hours"
+    },
+    "cluster_error": "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible.",
+    "logs": {
+      "loading": "Loading logs...",
+      "failed_title": "Failed to Load Logs",
+      "unable_to_retrieve": "Unable to retrieve logs for",
+      "network_issue": "This could be due to network issues or the observability service being unavailable.",
+      "try_again": "Try Again",
+      "retrying": "Retrying...",
+      "logs_prefix": "Logs:",
+      "no_logs": "No logs found"
+    },
+    "project_metrics": {
+      "loading": "Loading usage metrics...",
+      "error": "Unable to retrieve project usage metrics.",
+      "title": "Project Usage (30 Days)",
+      "avg_cpu": "Avg CPU Requests",
+      "cores": "cores",
+      "avg_memory": "Avg Memory Usage",
+      "gb": "GB"
+    },
+    "project_usage": {
+      "loading": "Loading usage metrics...",
+      "error": "Unable to retrieve usage metrics. Please check your connection.",
+      "title": "Total Lifetime Usage",
+      "total_memory": "Total Memory Usage",
+      "gb_hours": "GB·h",
+      "total_cpu": "Total CPU Usage",
+      "core_hours": "core·h",
+      "time_window": "Time Window"
+    },
+    "namespaces": {
+      "title": "Namespace Metrics",
+      "no_data": "No namespace data available",
+      "namespace": "Namespace",
+      "pods": "Pods",
+      "cpu_usage": "CPU Usage",
+      "memory_usage": "Memory Usage"
+    },
+    "billing": {
+      "loading": "Loading usage metrics...",
+      "error": "Unable to retrieve project usage metrics.",
+      "title": "Estimated Billing (30 Days)",
+      "cpu_cost": "CPU Cost",
+      "memory_cost": "Memory Cost",
+      "total_estimate": "Total Estimate",
+      "thirty_day_estimate": "30-day estimate",
+      "per_core": "/core",
+      "per_gb": "/GB"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "invoice": "invoice",
+      "invoices_plural": "invoices",
+      "no_invoices": "No invoices yet",
+      "invoices_appear": "Invoices will appear here once generated.",
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "failed_load": "Failed to load invoices",
+      "total_amount": "Total Amount",
+      "view_details": "View Details",
+      "status": "Status",
+      "project_id": "Project ID",
+      "usage_breakdown": "Usage Breakdown",
+      "payment_summary": "Payment Summary",
+      "subtotal": "Subtotal",
+      "taxes": "Taxes",
+      "total": "Total",
+      "pay_now": "Pay Now",
+      "processing": "Processing...",
+      "close": "Close"
+    }
   }
 }

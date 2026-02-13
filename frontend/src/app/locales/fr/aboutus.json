@@ -1,0 +1,110 @@
+{
+  "aboutus": {
+    "badge": "Conçu avec passion au Canada",
+    "hero_title_line1": "Kleff permet aux développeurs",
+    "hero_title_line2": "de créer sans limites.",
+    "hero_subtitle": "Nous rendons l'hébergement cloud de niveau entreprise accessible à tous — avec une tarification transparente, une infrastructure canadienne et des outils pensés pour les développeurs.",
+    "belief_line1": "Nous croyons qu'un",
+    "belief_highlight": "hébergement cloud performant",
+    "belief_line2": "ne devrait pas ruiner votre budget ni sacrifier l'expérience développeur.",
+    "why_kleff": {
+      "label": "Pourquoi Kleff",
+      "title": "Ce qui nous distingue",
+      "description": "Conçu par des développeurs, pour des développeurs, avec un accent sur la simplicité et la transparence.",
+      "features": {
+        "transparent_pricing": {
+          "title": "Tarification transparente",
+          "description": "Aucun frais caché. Payez uniquement pour ce que vous utilisez."
+        },
+        "proudly_canadian": {
+          "title": "Fièrement canadien",
+          "description": "Vos données restent au Canada. Toujours."
+        },
+        "lightning_fast": {
+          "title": "Ultra rapide",
+          "description": "Déployez en quelques secondes. Évoluez instantanément."
+        },
+        "enterprise_security": {
+          "title": "Sécurité entreprise",
+          "description": "Conforme SOC 2. Certifié LPRPDE."
+        }
+      }
+    },
+    "tech_stack": {
+      "label": "Stack technologique",
+      "title": "Construit avec des technologies modernes et éprouvées",
+      "description": "Notre infrastructure est alimentée par des outils et frameworks de premier plan.",
+      "backend": {
+        "title": "Services backend",
+        "description": "Architecture microservices haute performance et évolutive."
+      },
+      "frontend": {
+        "title": "Frontend",
+        "description": "Interfaces utilisateur modernes et responsives avec typage fort."
+      },
+      "database": {
+        "title": "Base de données",
+        "description": "Stockage de données fiable et évolutif avec forte cohérence."
+      },
+      "orchestration": {
+        "title": "Orchestration",
+        "description": "Orchestration de conteneurs avec mise à l'échelle automatique et auto-réparation."
+      },
+      "observability": {
+        "title": "Observabilité",
+        "description": "Surveillance en temps réel, métriques et traçage distribué."
+      },
+      "security_auth": {
+        "title": "Sécurité et authentification",
+        "description": "Authentification et autorisation de niveau entreprise."
+      }
+    },
+    "why_developers": {
+      "label": "Pourquoi les développeurs choisissent Kleff",
+      "subtitle": "Tout ce dont vous avez besoin pour passer de",
+      "subtitle_code": "git push",
+      "subtitle_end": "à la production.",
+      "deploy": {
+        "title": "Déployez en secondes",
+        "description": "Déploiements sans configuration. Environnements d'aperçu. Retours instantanés."
+      },
+      "scale": {
+        "title": "Évoluez automatiquement",
+        "description": "Gérez les pics de trafic sans intervention. Réduisez pour économiser."
+      },
+      "compliant": {
+        "title": "Restez conforme",
+        "description": "Souveraineté des données canadienne. Conforme LPRPDE. Certifié SOC 2."
+      }
+    },
+    "commitment": {
+      "title": "Notre engagement envers les",
+      "title_highlight": "développeurs",
+      "items": [
+        {
+          "title": "Toujours en amélioration",
+          "description": "Mises à jour continues basées sur vos retours"
+        },
+        {
+          "title": "Communication transparente",
+          "description": "Pas de surprises. Visibilité complète du changelog"
+        },
+        {
+          "title": "Tarification équitable",
+          "description": "Le succès ne devrait pas vous ruiner"
+        },
+        {
+          "title": "Open source avant tout",
+          "description": "Inspectez le code. Contribuez des fonctionnalités"
+        },
+        { "title": "Infrastructure canadienne", "description": "Soutenir l'écosystème tech local" }
+      ]
+    },
+    "cta": {
+      "title": "Prêt à déployer ?",
+      "subtitle": "Rejoignez des milliers de développeurs qui construisent l'avenir sur Kleff.",
+      "start_building": "Commencer gratuitement",
+      "view_pricing": "Voir les tarifs"
+    }
+  }
+}

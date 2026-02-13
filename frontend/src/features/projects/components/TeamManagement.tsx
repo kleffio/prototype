@@ -19,6 +19,11 @@ import {
   deleteInvitation,
   type Invitation
 } from "../api/invitations";
+import enTranslations from "@app/locales/en/projects.json";
+import frTranslations from "@app/locales/fr/projects.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface Collaborator {
   id: number;
@@ -36,13 +41,6 @@ interface TeamManagementProps {
   canManageCollaborators: boolean;
 }
 
-const ROLE_DESCRIPTIONS = {
-  OWNER: "Full access including project deletion",
-  ADMIN: "Manage team, deploy, and configure",
-  DEVELOPER: "Deploy containers and manage env vars",
-  VIEWER: "Read-only access"
-};
-
 export function TeamManagement({ projectId, canManageCollaborators }: TeamManagementProps) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -55,6 +53,17 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
   const [success, setSuccess] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<"ADMIN" | "DEVELOPER" | "VIEWER">("DEVELOPER");
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].teamManagement;
 
   const loadCollaborators = async () => {
     try {
@@ -64,7 +73,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
       setError(null);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "Failed to load team members");
+      setError(error.response?.data?.message || t.failed_load);
     } finally {
       setLoading(false);
     }
@@ -89,7 +98,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
     e.preventDefault();
 
     if (!inviteEmail) {
-      setError("Please enter an email address");
+      setError(t.please_enter_email);
       return;
     }
 
@@ -102,7 +111,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
         role: inviteRole
       });
 
-      setSuccess(`Invitation sent to ${inviteEmail}`);
+      setSuccess(`${t.invitation_sent} ${inviteEmail}`);
       setIsModalOpen(false);
       setInviteEmail("");
       setInviteRole("DEVELOPER");
@@ -112,7 +121,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "Failed to send invitation");
+      setError(error.response?.data?.message || t.failed_invite);
     } finally {
       setInviting(false);
     }
@@ -121,12 +130,12 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
   const handleRemove = async (userId: string) => {
     try {
       await deleteCollaborator(projectId, userId);
-      setSuccess("Collaborator removed");
+      setSuccess(t.collaborator_removed);
       await loadCollaborators();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "Failed to remove collaborator");
+      setError(error.response?.data?.message || t.failed_remove);
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -134,12 +143,12 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
   const handleDeleteInvitation = async (invitationId: number) => {
     try {
       await deleteInvitation(invitationId);
-      setSuccess("Invitation deleted");
+      setSuccess(t.invitation_deleted);
       await loadInvitations();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "Failed to delete invitation");
+      setError(error.response?.data?.message || t.failed_delete_invitation);
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -147,13 +156,13 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
   const handleUpdateRole = async (userId: string) => {
     try {
       await updateCollaboratorRole(projectId, userId, editingRole);
-      setSuccess("Role updated successfully");
+      setSuccess(t.role_updated);
       setEditingUserId(null);
       await loadCollaborators();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || "Failed to update role");
+      setError(error.response?.data?.message || t.failed_update_role);
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -164,7 +173,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
   };
 
   if (loading) {
-    return <div className="text-sm text-neutral-400">Loading team...</div>;
+    return <div className="text-sm text-neutral-400">{t.loading}</div>;
   }
 
   return (
@@ -172,11 +181,11 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-neutral-50">Team Members</h3>
+            <h3 className="text-lg font-semibold text-neutral-50">{t.title}</h3>
             <p className="text-sm text-neutral-400">
-              {collaborators.length} member{collaborators.length !== 1 ? "s" : ""}
+              {collaborators.length} {collaborators.length !== 1 ? t.members : t.member}
               {invitations.length > 0 &&
-                ` • ${invitations.length} pending invitation${invitations.length !== 1 ? "s" : ""}`}
+                ` • ${invitations.length} ${invitations.length !== 1 ? t.pending_invitations : t.pending_invitation}`}
             </p>
           </div>
 
@@ -187,7 +196,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
               className="rounded-full px-4 py-2 text-sm"
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Invite Member
+              {t.invite_member}
             </Button>
           )}
         </div>
@@ -208,11 +217,13 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
           <Table>
             <TableHeader>
               <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/5">
-                <TableHead>User ID</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                {canManageCollaborators && <TableHead className="w-[100px]">Actions</TableHead>}
+                <TableHead>{t.table.user_id}</TableHead>
+                <TableHead>{t.table.role}</TableHead>
+                <TableHead>{t.table.status}</TableHead>
+                <TableHead>{t.table.joined}</TableHead>
+                {canManageCollaborators && (
+                  <TableHead className="w-[100px]">{t.table.actions}</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -222,7 +233,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                     colSpan={canManageCollaborators ? 5 : 4}
                     className="py-8 text-center text-neutral-400"
                   >
-                    No team members yet
+                    {t.no_members}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -255,7 +266,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                             onClick={() => handleUpdateRole(collaborator.userId)}
                             className="h-8 bg-green-500/10 px-2 text-xs text-green-400 hover:bg-green-500/20"
                           >
-                            Save
+                            {t.save}
                           </Button>
                           <Button
                             variant="ghost"
@@ -263,7 +274,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                             onClick={() => setEditingUserId(null)}
                             className="h-8 px-2 text-xs"
                           >
-                            Cancel
+                            {t.cancel}
                           </Button>
                         </div>
                       ) : (
@@ -293,8 +304,10 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                     </TableCell>
                     <TableCell className="text-sm text-neutral-400">
                       {collaborator.acceptedAt
-                        ? new Date(collaborator.acceptedAt).toLocaleDateString()
-                        : "Pending"}
+                        ? new Date(collaborator.acceptedAt).toLocaleDateString(
+                            locale === "fr" ? "fr-CA" : "en-US"
+                          )
+                        : t.table.status}
                     </TableCell>
                     {canManageCollaborators && (
                       <TableCell>
@@ -305,7 +318,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                               size="sm"
                               onClick={() => startEditing(collaborator)}
                               className="p-2"
-                              title="Edit role"
+                              title={t.edit_role}
                             >
                               <Edit2 className="h-4 w-4 text-blue-400" />
                             </Button>
@@ -314,7 +327,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                               size="sm"
                               onClick={() => handleRemove(collaborator.userId)}
                               className="p-2"
-                              title="Remove collaborator"
+                              title={t.remove_collaborator}
                             >
                               <Trash2 className="h-4 w-4 text-red-400" />
                             </Button>
@@ -333,16 +346,18 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
         <div className="mt-6">
           <h4 className="text-md mb-3 flex items-center gap-2 font-semibold text-neutral-50">
             <Mail className="h-4 w-4" />
-            Pending Invitations
+            {t.pending_title}
           </h4>
           <div className="overflow-hidden rounded-lg border border-white/10">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/5">
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Sent</TableHead>
-                  {canManageCollaborators && <TableHead className="w-[100px]">Actions</TableHead>}
+                  <TableHead>{t.table.email}</TableHead>
+                  <TableHead>{t.table.role}</TableHead>
+                  <TableHead>{t.table.sent}</TableHead>
+                  {canManageCollaborators && (
+                    <TableHead className="w-[100px]">{t.table.actions}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,8 +369,8 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                     >
                       <div className="flex flex-col items-center gap-1">
                         <Mail className="mb-2 h-8 w-8 text-neutral-600" />
-                        <p className="text-sm">No pending invitations</p>
-                        <p className="text-xs text-neutral-500">Invited users will appear here</p>
+                        <p className="text-sm">{t.no_invitations}</p>
+                        <p className="text-xs text-neutral-500">{t.invited_appear}</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -380,7 +395,9 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-neutral-400">
-                        {new Date(invitation.createdAt).toLocaleDateString()}
+                        {new Date(invitation.createdAt).toLocaleDateString(
+                          locale === "fr" ? "fr-CA" : "en-US"
+                        )}
                       </TableCell>
                       {canManageCollaborators && (
                         <TableCell>
@@ -389,7 +406,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                             size="sm"
                             onClick={() => handleDeleteInvitation(invitation.id)}
                             className="p-2"
-                            title="Delete invitation"
+                            title={t.delete_invitation}
                           >
                             <Trash2 className="h-4 w-4 text-red-400" />
                           </Button>
@@ -414,7 +431,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
             <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
               <SoftPanel>
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-neutral-50">Invite Team Member</h3>
+                  <h3 className="text-lg font-semibold text-neutral-50">{t.invite_modal.title}</h3>
                   <button
                     onClick={() => setIsModalOpen(false)}
                     className="text-neutral-400 transition-colors hover:text-neutral-200"
@@ -423,19 +440,17 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                   </button>
                 </div>
 
-                <p className="mb-6 text-sm text-neutral-400">
-                  Send an invitation to collaborate on this project
-                </p>
+                <p className="mb-6 text-sm text-neutral-400">{t.invite_modal.description}</p>
 
                 <form onSubmit={handleInvite} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium text-neutral-200">
-                      Email Address
+                      {t.invite_modal.email_label}
                     </Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="colleague@example.com"
+                      placeholder={t.invite_modal.email_placeholder}
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       required
@@ -445,7 +460,7 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
 
                   <div className="space-y-2">
                     <Label htmlFor="role" className="text-sm font-medium text-neutral-200">
-                      Role
+                      {t.invite_modal.role_label}
                     </Label>
                     <Select
                       value={inviteRole}
@@ -457,11 +472,9 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ADMIN">Admin - {ROLE_DESCRIPTIONS.ADMIN}</SelectItem>
-                        <SelectItem value="DEVELOPER">
-                          Developer - {ROLE_DESCRIPTIONS.DEVELOPER}
-                        </SelectItem>
-                        <SelectItem value="VIEWER">Viewer - {ROLE_DESCRIPTIONS.VIEWER}</SelectItem>
+                        <SelectItem value="ADMIN">Admin - {t.roles.ADMIN}</SelectItem>
+                        <SelectItem value="DEVELOPER">Developer - {t.roles.DEVELOPER}</SelectItem>
+                        <SelectItem value="VIEWER">Viewer - {t.roles.VIEWER}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -473,14 +486,14 @@ export function TeamManagement({ projectId, canManageCollaborators }: TeamManage
                       onClick={() => setIsModalOpen(false)}
                       className="flex-1 rounded-full"
                     >
-                      Cancel
+                      {t.invite_modal.cancel}
                     </Button>
                     <Button
                       type="submit"
                       disabled={inviting}
                       className="bg-gradient-kleff flex-1 rounded-full font-semibold text-black"
                     >
-                      {inviting ? "Sending..." : "Send Invitation"}
+                      {inviting ? t.invite_modal.sending : t.invite_modal.send_invitation}
                     </Button>
                   </div>
                 </form>

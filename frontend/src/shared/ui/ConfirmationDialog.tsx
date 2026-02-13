@@ -4,6 +4,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@shared/lib/utils";
 import { Button } from "./Button";
 import { X, AlertTriangle, CheckCircle, Ban } from "lucide-react";
+import enTranslations from "@app/locales/en/components.json";
+import frTranslations from "@app/locales/fr/components.json";
+import { getLocale } from "@app/locales/locale";
 
 const dialogVariants = cva("fixed z-50 gap-4 bg-background p-6 shadow-lg", {
   variants: {
@@ -42,8 +45,8 @@ const ConfirmationDialog = React.forwardRef<
     {
       title,
       description,
-      confirmText = "Confirm",
-      cancelText = "Cancel",
+      confirmText,
+      cancelText,
       onConfirm,
       onCancel,
       variant = "destructive",
@@ -57,6 +60,17 @@ const ConfirmationDialog = React.forwardRef<
     ref
   ) => {
     const [isConfirming, setIsConfirming] = React.useState(false);
+    const [locale, setLocaleState] = React.useState(getLocale());
+    React.useEffect(() => {
+      const interval = setInterval(() => {
+        const currentLocale = getLocale();
+        if (currentLocale !== locale) setLocaleState(currentLocale);
+      }, 100);
+      return () => clearInterval(interval);
+    }, [locale]);
+    const tDialog = { en: enTranslations, fr: frTranslations }[locale].confirmationDialog;
+    const actualConfirmText = confirmText ?? tDialog.confirm;
+    const actualCancelText = cancelText ?? tDialog.cancel;
 
     const handleConfirm = async () => {
       if (isLoading || isConfirming || confirmDisabled) return;
@@ -137,7 +151,7 @@ const ConfirmationDialog = React.forwardRef<
                 className="border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-neutral-100"
               >
                 <Ban className="mr-2 h-4 w-4" />
-                {cancelText}
+                {actualCancelText}
               </Button>
               <Button
                 variant={getConfirmButtonVariant()}
@@ -146,7 +160,7 @@ const ConfirmationDialog = React.forwardRef<
                 className={variant === "destructive" ? "bg-red-600 hover:bg-red-700" : ""}
               >
                 {isConfirming && <CheckCircle className="mr-2 h-4 w-4 animate-pulse" />}
-                {isConfirming ? "Deleting..." : confirmText}
+                {isConfirming ? tDialog.deleting : actualConfirmText}
               </Button>
             </div>
           </DialogPrimitive.Content>

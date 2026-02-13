@@ -1,0 +1,101 @@
+{
+  "aboutus": {
+    "badge": "Built with passion in Canada",
+    "hero_title_line1": "Kleff empowers developers",
+    "hero_title_line2": "to build without limits.",
+    "hero_subtitle": "We're making enterprise-grade cloud hosting accessible to everyone—with transparent pricing, Canadian infrastructure, and developer-first tools.",
+    "belief_line1": "We believe",
+    "belief_highlight": "powerful cloud hosting",
+    "belief_line2": "shouldn't break the bank or sacrifice developer experience.",
+    "why_kleff": {
+      "label": "Why Kleff",
+      "title": "What sets us apart",
+      "description": "Built by developers, for developers, with a focus on simplicity and transparency.",
+      "features": {
+        "transparent_pricing": {
+          "title": "Transparent Pricing",
+          "description": "No hidden fees. Pay only for what you use."
+        },
+        "proudly_canadian": {
+          "title": "Proudly Canadian",
+          "description": "Your data stays in Canada. Always."
+        },
+        "lightning_fast": {
+          "title": "Lightning Fast",
+          "description": "Deploy in seconds. Scale instantly."
+        },
+        "enterprise_security": {
+          "title": "Enterprise Security",
+          "description": "SOC 2 compliant. PIPEDA certified."
+        }
+      }
+    },
+    "tech_stack": {
+      "label": "Technology Stack",
+      "title": "Built with modern, battle-tested technologies",
+      "description": "Our infrastructure is powered by industry-leading tools and frameworks.",
+      "backend": {
+        "title": "Backend Services",
+        "description": "High-performance, scalable microservices architecture."
+      },
+      "frontend": {
+        "title": "Frontend",
+        "description": "Modern, responsive user interfaces with type safety."
+      },
+      "database": {
+        "title": "Database",
+        "description": "Reliable, scalable data storage with strong consistency."
+      },
+      "orchestration": {
+        "title": "Orchestration",
+        "description": "Container orchestration with auto-scaling and self-healing."
+      },
+      "observability": {
+        "title": "Observability",
+        "description": "Real-time monitoring, metrics, and distributed tracing."
+      },
+      "security_auth": {
+        "title": "Security & Auth",
+        "description": "Enterprise-grade authentication and authorization."
+      }
+    },
+    "why_developers": {
+      "label": "Why developers choose Kleff",
+      "subtitle": "Everything you need to go from",
+      "subtitle_code": "git push",
+      "subtitle_end": "to production.",
+      "deploy": {
+        "title": "Deploy in seconds",
+        "description": "Zero-config deploys. Preview environments. Instant rollbacks."
+      },
+      "scale": {
+        "title": "Scale automatically",
+        "description": "Handle traffic spikes without intervention. Scale down to save costs."
+      },
+      "compliant": {
+        "title": "Stay compliant",
+        "description": "Canadian data sovereignty. PIPEDA compliant. SOC 2 certified."
+      }
+    },
+    "commitment": {
+      "title": "Our commitment to",
+      "title_highlight": "developers",
+      "items": [
+        { "title": "Always improving", "description": "Continuous updates based on your feedback" },
+        {
+          "title": "Transparent communication",
+          "description": "No surprises. Full changelog visibility"
+        },
+        { "title": "Fair pricing", "description": "Success shouldn't bankrupt you" },
+        { "title": "Open source first", "description": "Inspect the code. Contribute features" },
+        { "title": "Canadian infrastructure", "description": "Supporting local tech ecosystem" }
+      ]
+    },
+    "cta": {
+      "title": "Ready to ship?",
+      "subtitle": "Join thousands of developers building the future on Kleff.",
+      "start_building": "Start Building Free",
+      "view_pricing": "View Pricing"
+    }
+  }
+}

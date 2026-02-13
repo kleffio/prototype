@@ -8,6 +8,11 @@ import type { Invoice } from "@features/billing/types/Invoice";
 import { fetchInvoice } from "../api/viewInvoicesForProject";
 import { handlePayNow } from "../api/handlePayNow";
 import { usePermissions } from "@features/projects/hooks/usePermissions";
+import enTranslations from "@app/locales/en/dashboard.json";
+import frTranslations from "@app/locales/fr/dashboard.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface InvoiceTableProps {
   projectId: string;
@@ -22,6 +27,17 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const { canManageBilling, isLoading: permissionsLoading } = usePermissions(projectId);
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].dashboard.invoices;
 
   useEffect(() => {
     const loadInvoices = async () => {
@@ -37,7 +53,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
         setInvoices(data);
       } catch (err: unknown) {
         const error = err as { message?: string };
-        setError(error.message || "Failed to load invoices");
+        setError(error.message || t.failed_load);
       } finally {
         setLoading(false);
       }
@@ -50,9 +66,9 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
 
   const getStatusBadge = (status: string) => {
     const config = {
-      paid: { variant: "success" as const, label: "Paid" },
-      pending: { variant: "warning" as const, label: "Pending" },
-      overdue: { variant: "destructive" as const, label: "Overdue" }
+      paid: { variant: "success" as const, label: t.paid },
+      pending: { variant: "warning" as const, label: t.pending },
+      overdue: { variant: "destructive" as const, label: t.overdue }
     };
 
     const statusLower = status.toLowerCase();
@@ -102,9 +118,9 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
             <Receipt className="h-5 w-5 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-neutral-50">Invoices</h2>
+            <h2 className="text-lg font-bold text-neutral-50">{t.title}</h2>
             <p className="text-xs text-neutral-500">
-              {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"}
+              {invoices.length} {invoices.length === 1 ? t.invoice : t.invoices_plural}
             </p>
           </div>
         </div>
@@ -116,8 +132,8 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
           <div className="mx-auto mb-6 w-fit rounded-2xl bg-neutral-800/50 p-6">
             <DollarSign className="h-12 w-12 text-neutral-600" />
           </div>
-          <h3 className="mb-2 text-base font-semibold text-neutral-300">No invoices yet</h3>
-          <p className="text-sm text-neutral-500">Invoices will appear here once generated.</p>
+          <h3 className="mb-2 text-base font-semibold text-neutral-300">{t.no_invoices}</h3>
+          <p className="text-sm text-neutral-500">{t.invoices_appear}</p>
         </div>
       ) : (
         /* Invoices Grid */
@@ -147,7 +163,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
 
                 {/* Amount */}
                 <div>
-                  <p className="text-xs text-neutral-500">Total Amount</p>
+                  <p className="text-xs text-neutral-500">{t.total_amount}</p>
                   <p className="text-2xl font-bold text-neutral-50">${invoice.total.toFixed(2)}</p>
                 </div>
 
@@ -155,22 +171,28 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
                 <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                   <Calendar className="h-3.5 w-3.5" />
                   <span>
-                    {new Date(invoice.startDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric"
-                    })}{" "}
+                    {new Date(invoice.startDate).toLocaleDateString(
+                      locale === "fr" ? "fr-CA" : "en-US",
+                      {
+                        month: "short",
+                        day: "numeric"
+                      }
+                    )}{" "}
                     -{" "}
-                    {new Date(invoice.endDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric"
-                    })}
+                    {new Date(invoice.endDate).toLocaleDateString(
+                      locale === "fr" ? "fr-CA" : "en-US",
+                      {
+                        month: "short",
+                        day: "numeric"
+                      }
+                    )}
                   </span>
                 </div>
 
                 {/* View button */}
                 <div className="flex items-center gap-1.5 pt-2 text-xs font-medium text-emerald-400 transition-colors group-hover:text-emerald-300">
                   <Eye className="h-3.5 w-3.5" />
-                  View Details
+                  {t.view_details}
                 </div>
               </div>
             </button>
@@ -217,11 +239,11 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
               {/* Key Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
-                  <p className="mb-1 text-xs text-neutral-500">Status</p>
+                  <p className="mb-1 text-xs text-neutral-500">{t.status}</p>
                   {getStatusBadge(selectedInvoice.status)}
                 </div>
                 <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
-                  <p className="mb-1 text-xs text-neutral-500">Project ID</p>
+                  <p className="mb-1 text-xs text-neutral-500">{t.project_id}</p>
                   <p className="truncate text-sm font-medium text-neutral-200">
                     {selectedInvoice.projectId}
                   </p>
@@ -232,7 +254,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
               <div className="space-y-3 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
                   <TrendingUp className="text-kleff-primary h-4 w-4" />
-                  Usage Breakdown
+                  {t.usage_breakdown}
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -261,24 +283,24 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
               <div className="space-y-2 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
                   <CreditCard className="h-4 w-4 text-emerald-400" />
-                  Payment Summary
+                  {t.payment_summary}
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-neutral-400">Subtotal</span>
+                    <span className="text-neutral-400">{t.subtotal}</span>
                     <span className="font-medium text-neutral-200">
                       ${selectedInvoice.subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-neutral-400">Taxes</span>
+                    <span className="text-neutral-400">{t.taxes}</span>
                     <span className="font-medium text-neutral-200">
                       ${selectedInvoice.taxes.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-white/10 pt-2">
-                    <span className="font-semibold text-neutral-50">Total</span>
+                    <span className="font-semibold text-neutral-50">{t.total}</span>
                     <span className="text-lg font-bold text-emerald-400">
                       ${selectedInvoice.total.toFixed(2)}
                     </span>
@@ -304,12 +326,12 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
                   {payLoading ? (
                     <>
                       <Spinner size={16} />
-                      Processing...
+                      {t.processing}
                     </>
                   ) : (
                     <>
                       <CreditCard className="mr-2 h-4 w-4" />
-                      Pay Now
+                      {t.pay_now}
                     </>
                   )}
                 </Button>
@@ -319,7 +341,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
                 onClick={() => setSelectedInvoice(null)}
                 className="rounded-xl px-4 py-2.5 text-sm"
               >
-                Close
+                {t.close}
               </Button>
             </div>
           </div>
