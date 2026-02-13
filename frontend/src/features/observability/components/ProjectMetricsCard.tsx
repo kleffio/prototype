@@ -4,7 +4,7 @@ import type { ProjectUsage } from "@features/observability/types/projectUsage.ty
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { MiniCard } from "@shared/ui/MiniCard";
 import { GradientIcon } from "@shared/ui/GradientIcon";
-import { Cpu, HardDrive, Clock } from "lucide-react";
+import { Clock, Cpu, HardDrive } from "lucide-react";
 
 interface ProjectMetricsCardProps {
   projectId: string;
@@ -64,7 +64,7 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
         <h2 className="text-lg font-semibold text-neutral-50">Project Usage (30 Days)</h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <MiniCard title="Avg CPU Requests">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-neutral-400" />
@@ -82,13 +82,6 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
               {(usage.memoryUsageGB || 0).toFixed(2)}
             </span>
             <span className="text-xs text-neutral-400">GB</span>
-          </div>
-        </MiniCard>
-
-        <MiniCard title="Time Window">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-neutral-400" />
-            <span className="text-sm font-semibold text-neutral-50">{usage.window || "30d"}</span>
           </div>
         </MiniCard>
       </div>

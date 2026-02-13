@@ -3,6 +3,7 @@ import { getContainerLogs, type LogEntry } from "../api/getContainerLogs";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { FileText, RefreshCw } from "lucide-react";
+import { ExportLogsButton } from "./ExportLogsButton";
 
 interface SimpleLogsViewerProps {
   projectId: string;
@@ -75,9 +76,12 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
           <FileText className="h-5 w-5 text-blue-400" />
           <h2 className="text-lg font-semibold text-neutral-50">Logs: {containerName}</h2>
         </div>
-        <Button size="sm" variant="ghost" onClick={fetchLogs} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ExportLogsButton projectId={projectId} />
+          <Button size="sm" variant="ghost" onClick={fetchLogs} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-white/10 bg-black/40 p-4">

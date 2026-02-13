@@ -10,6 +10,7 @@ import type {
   NodeMetric,
   ResourceUtilization
 } from "@features/observability/types/metrics";
+import { ExportMetricsButton } from "@features/observability/components/ExportMetricsButton";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -86,6 +87,7 @@ export function MetricsDashboard() {
                 <span className="text-xs text-neutral-400">
                   Last updated: {lastUpdate.toLocaleTimeString()}
                 </span>
+                <ExportMetricsButton />
                 <button
                   onClick={() => fetchData()}
                   className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:border-white/40 hover:bg-white/10"

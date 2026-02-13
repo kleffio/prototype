@@ -104,7 +104,7 @@ export default function ProjectBillingEstimatesCard({
             <DollarSign className="h-4 w-4 text-neutral-400" />
             <span className="text-2xl font-semibold text-green-400">${totalCost.toFixed(2)}</span>
           </div>
-          <p className="mt-1 text-xs text-neutral-500">{usage.window || "30d"} period</p>
+          <p className="mt-1 text-xs text-neutral-500">30-day estimate</p>
         </MiniCard>
       </div>
     </SoftPanel>
