@@ -51,30 +51,22 @@ type NamespaceMetric struct {
 }
 
 type DatabaseMetrics struct {
-	DiskReadBytesPerSec        float64               `json:"diskReadBytesPerSec"`
-	DiskWriteBytesPerSec       float64               `json:"diskWriteBytesPerSec"`
-	DiskReadOpsPerSec          float64               `json:"diskReadOpsPerSec"`
-	DiskWriteOpsPerSec         float64               `json:"diskWriteOpsPerSec"`
-	NetworkReceiveBytesPerSec  float64               `json:"networkReceiveBytesPerSec"`
-	NetworkTransmitBytesPerSec float64               `json:"networkTransmitBytesPerSec"`
-	NetworkReceiveOpsPerSec    float64               `json:"networkReceiveOpsPerSec"`
-	NetworkTransmitOpsPerSec   float64               `json:"networkTransmitOpsPerSec"`
-	DiskReadHistory            []TimeSeriesDataPoint `json:"diskReadHistory"`
-	DiskWriteHistory           []TimeSeriesDataPoint `json:"diskWriteHistory"`
-	NetworkReceiveHistory      []TimeSeriesDataPoint `json:"networkReceiveHistory"`
-	NetworkTransmitHistory     []TimeSeriesDataPoint `json:"networkTransmitHistory"`
-	Source                     string                `json:"source"`
+	DiskReadBytesPerSec  float64               `json:"diskReadBytesPerSec"`
+	DiskWriteBytesPerSec float64               `json:"diskWriteBytesPerSec"`
+	DiskReadOpsPerSec    float64               `json:"diskReadOpsPerSec"`
+	DiskWriteOpsPerSec   float64               `json:"diskWriteOpsPerSec"`
+	DiskReadHistory      []TimeSeriesDataPoint `json:"diskReadHistory"`
+	DiskWriteHistory     []TimeSeriesDataPoint `json:"diskWriteHistory"`
+	Source               string                `json:"source"`
 }
 
 type ProjectUsageMetrics struct {
-	ProjectID                  string  `json:"projectID"`
-	MemoryUsageGB              float64 `json:"memoryUsageGB"`
-	CPURequestCores            float64 `json:"cpuRequestCores"`
-	NetworkReceiveBytesPerSec  float64 `json:"networkReceiveBytesPerSec"`
-	NetworkTransmitBytesPerSec float64 `json:"networkTransmitBytesPerSec"`
-	DiskReadBytesPerSec        float64 `json:"diskReadBytesPerSec"`
-	DiskWriteBytesPerSec       float64 `json:"diskWriteBytesPerSec"`
-	Window                     string  `json:"window"`
+	ProjectID            string  `json:"projectID"`
+	MemoryUsageGB        float64 `json:"memoryUsageGB"`
+	CPURequestCores      float64 `json:"cpuRequestCores"`
+	DiskReadBytesPerSec  float64 `json:"diskReadBytesPerSec"`
+	DiskWriteBytesPerSec float64 `json:"diskWriteBytesPerSec"`
+	Window               string  `json:"window"`
 }
 
 type ProjectTotalUsageMetrics struct {

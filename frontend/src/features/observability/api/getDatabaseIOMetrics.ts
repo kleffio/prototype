@@ -10,14 +10,8 @@ export interface DatabaseIOMetrics {
   diskWriteBytesPerSec: number;
   diskReadOpsPerSec: number;
   diskWriteOpsPerSec: number;
-  networkReceiveBytesPerSec: number;
-  networkTransmitBytesPerSec: number;
-  networkReceiveOpsPerSec: number;
-  networkTransmitOpsPerSec: number;
   diskReadHistory: TimeSeriesDataPoint[];
   diskWriteHistory: TimeSeriesDataPoint[];
-  networkReceiveHistory: TimeSeriesDataPoint[];
-  networkTransmitHistory: TimeSeriesDataPoint[];
   source: string;
 }
 

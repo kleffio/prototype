@@ -15,12 +15,11 @@ import {
   Activity,
   TrendingUp,
   BookOpen,
-  Network,
   Database
 } from "lucide-react";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { TutorialSheet } from "./components/TutorialSheet";
-import { NetworkDiskGraph } from "./components/NetworkDiskGraph";
+import { DiskGraph } from "./components/DiskGraph";
 
 export function DashboardPage() {
   const { projects: allProjects, isLoading: projectsLoading, reload } = useProjects();
@@ -93,14 +92,6 @@ export function DashboardPage() {
   // Calculate aggregated metrics
   const totalCpuCores = projectUsages.reduce((sum, usage) => sum + usage.cpuRequestCores, 0);
   const totalMemoryGB = projectUsages.reduce((sum, usage) => sum + usage.memoryUsageGB, 0);
-  const totalNetworkRx = projectUsages.reduce(
-    (sum, usage) => sum + (usage.networkReceiveBytesPerSec || 0),
-    0
-  );
-  const totalNetworkTx = projectUsages.reduce(
-    (sum, usage) => sum + (usage.networkTransmitBytesPerSec || 0),
-    0
-  );
   const totalDiskRead = projectUsages.reduce(
     (sum, usage) => sum + (usage.diskReadBytesPerSec || 0),
     0
@@ -188,19 +179,6 @@ export function DashboardPage() {
             <HardDrive className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
-        <MiniCard title="Current Network">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-lg font-bold">
-                In: {(totalNetworkRx / 1024 / 1024).toFixed(2)} MB/s
-              </span>
-              <span className="text-sm text-neutral-400">
-                Out: {(totalNetworkTx / 1024 / 1024).toFixed(2)} MB/s
-              </span>
-            </div>
-            <Network className="text-primary h-5 w-5" />
-          </div>
-        </MiniCard>
         <MiniCard title="Current Disk I/O">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
@@ -217,7 +195,7 @@ export function DashboardPage() {
       </div>
 
       {/* Graphs */}
-      <NetworkDiskGraph />
+      <DiskGraph />
 
       {/* Project Usage Table */}
       {projectUsages.length > 0 && (
@@ -233,7 +211,6 @@ export function DashboardPage() {
                   <TableHead>Project</TableHead>
                   <TableHead>CPU Cores</TableHead>
                   <TableHead>Memory (GB)</TableHead>
-                  <TableHead>Network (KB/s)</TableHead>
                   <TableHead>Disk (KB/s)</TableHead>
                   <TableHead>Window</TableHead>
                 </TableRow>
@@ -255,16 +232,6 @@ export function DashboardPage() {
                         </TableCell>
                         <TableCell>{usage.cpuRequestCores.toFixed(3)}</TableCell>
                         <TableCell>{usage.memoryUsageGB.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col text-xs">
-                            <span className="text-neutral-300">
-                              ↓ {((usage.networkReceiveBytesPerSec || 0) / 1024).toFixed(1)}
-                            </span>
-                            <span className="text-neutral-500">
-                              ↑ {((usage.networkTransmitBytesPerSec || 0) / 1024).toFixed(1)}
-                            </span>
-                          </div>
-                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col text-xs">
                             <span className="text-neutral-300">

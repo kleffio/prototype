@@ -14,7 +14,7 @@ import {
 } from "@features/observability/api/getDatabaseIOMetrics";
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { SoftPanel } from "@shared/ui/SoftPanel";
-import { Network, Database, RefreshCw } from "lucide-react";
+import { Database, RefreshCw } from "lucide-react";
 
 interface TooltipPayload {
   name: string;
@@ -22,7 +22,7 @@ interface TooltipPayload {
   color: string;
 }
 
-export function NetworkDiskGraph() {
+export function DiskGraph() {
   const { projects } = useProjects();
   const [metrics, setMetrics] = useState<DatabaseIOMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,31 +55,6 @@ export function NetworkDiskGraph() {
     return () => clearInterval(interval);
   }, [fetchData]); // Re-fetch when projects change
 
-  // Merge data for Recharts
-  const networkData = useMemo(() => {
-    if (!metrics?.networkReceiveHistory || !metrics?.networkTransmitHistory) return [];
-
-    // Create a map by timestamp
-    const map = new Map<number, { timestamp: number; rx: number; tx: number }>();
-
-    metrics.networkReceiveHistory.forEach((p) => {
-      map.set(p.timestamp, { timestamp: p.timestamp, rx: p.value, tx: 0 });
-    });
-
-    metrics.networkTransmitHistory.forEach((p) => {
-      const existing = map.get(p.timestamp);
-      if (existing) {
-        existing.tx = p.value;
-      } else {
-        // If timestamps don't perfectly align, we might lose some points or insert new ones.
-        // For Prometheus step queries, they typically align.
-        map.set(p.timestamp, { timestamp: p.timestamp, rx: 0, tx: p.value });
-      }
-    });
-
-    return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
-  }, [metrics]);
-
   const diskData = useMemo(() => {
     if (!metrics?.diskReadHistory || !metrics?.diskWriteHistory) return [];
 
@@ -100,11 +75,6 @@ export function NetworkDiskGraph() {
 
     return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [metrics]);
-
-  const isNetworkEmpty = useMemo(() => {
-    if (!networkData.length) return true;
-    return networkData.every((d) => d.rx === 0 && d.tx === 0);
-  }, [networkData]);
 
   const isDiskEmpty = useMemo(() => {
     if (!diskData.length) return true;
@@ -149,8 +119,7 @@ export function NetworkDiskGraph() {
 
   if (loading && !metrics) {
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="h-[350px] animate-pulse rounded-2xl border border-white/10 bg-black/20" />
+      <div className="grid grid-cols-1 gap-6">
         <div className="h-[350px] animate-pulse rounded-2xl border border-white/10 bg-black/20" />
       </div>
     );
@@ -159,90 +128,7 @@ export function NetworkDiskGraph() {
   if (error) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {/* Network Traffic Chart */}
-      <SoftPanel className="flex h-[350px] flex-col">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-2">
-              <Network className="h-5 w-5 text-green-400" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-neutral-200">Network Traffic</h3>
-              <p className="text-xs text-neutral-500">Inbound vs Outbound (Cluster)</p>
-            </div>
-          </div>
-          {loading && <RefreshCw className="h-4 w-4 animate-spin text-neutral-500" />}
-        </div>
-        <div className="relative min-h-0 w-full flex-1">
-          {isNetworkEmpty && (
-            <div className="absolute inset-0 z-10 mx-6 mb-4 flex items-center justify-center rounded-lg border border-dashed border-white/5 bg-black/50 backdrop-blur-sm">
-              <div className="text-center">
-                <Network className="mx-auto mb-2 h-8 w-8 text-neutral-600 opacity-50" />
-                <p className="text-sm font-medium text-neutral-500">No Network Activity</p>
-              </div>
-            </div>
-          )}
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={networkData}>
-              <defs>
-                <linearGradient id="colorRx" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorTx" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={(unix) =>
-                  new Date(unix).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                }
-                stroke="#525252"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                minTickGap={40}
-                dy={10}
-              />
-              <YAxis
-                tickFormatter={(val) => formatBytes(val)}
-                stroke="#525252"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                width={65}
-              />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{ stroke: "#ffffff20", strokeWidth: 1 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="rx"
-                name="Inbound"
-                stroke="#22c55e"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorRx)"
-              />
-              <Area
-                type="monotone"
-                dataKey="tx"
-                name="Outbound"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorTx)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </SoftPanel>
-
+    <div className="grid grid-cols-1 gap-6">
       {/* Disk I/O Chart */}
       <SoftPanel className="flex h-[350px] flex-col">
         <div className="mb-6 flex items-center justify-between">
@@ -254,6 +140,7 @@ export function NetworkDiskGraph() {
               <h3 className="font-semibold text-neutral-200">Disk I/O</h3>
               <p className="text-xs text-neutral-500">Read vs Write Throughput</p>
             </div>
+            {loading && <RefreshCw className="h-4 w-4 animate-spin text-neutral-500" />}
           </div>
         </div>
         <div className="relative min-h-0 w-full flex-1">
