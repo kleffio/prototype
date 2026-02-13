@@ -418,40 +418,30 @@ func (c *prometheusClient) GetDatabaseIOMetrics(ctx context.Context, duration st
 		Source: "Prometheus",
 	}
 
-	// Determine namespace filter
-	// If specific namespaces are provided, filter only those.
-	// Otherwise, exclude system namespaces.
 	namespaceFilter := `namespace!~"kube-system|monitoring|ingress-nginx|local-path-storage"`
 	if len(namespaces) > 0 {
 		namespaceFilter = fmt.Sprintf(`namespace=~"%s"`, strings.Join(namespaces, "|"))
 	}
 
-	// Helper to format query
 	formatQuery := func(metric string) string {
 		return fmt.Sprintf(`sum(rate(%s{container!="", container!="POD", %s}[5m]))`, metric, namespaceFilter)
 	}
 
-	// Disk Read Bytes
 	if resp, err := c.queryPrometheus(ctx, formatQuery("container_fs_reads_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskReadBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Disk Write Bytes
 	if resp, err := c.queryPrometheus(ctx, formatQuery("container_fs_writes_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskWriteBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Network Receive
 	if resp, err := c.queryPrometheus(ctx, formatQuery("container_network_receive_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.NetworkReceiveBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Network Transmit
 	if resp, err := c.queryPrometheus(ctx, formatQuery("container_network_transmit_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.NetworkTransmitBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
-
-	// History Queries (Range)
 
 	if resp, err := c.queryPrometheusRange(ctx, formatQuery("container_fs_reads_bytes_total"), duration); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskReadHistory = extractTimeSeries(resp.Data.Result[0].Values)
@@ -478,37 +468,31 @@ func (c *prometheusClient) GetProjectUsageMetrics(ctx context.Context, projectID
 		Window:    "current",
 	}
 
-	// Real-time Memory: Current Working Set
 	memoryQuery := fmt.Sprintf(`sum(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}) / (1024^3)`, projectID)
 	if resp, err := c.queryPrometheus(ctx, memoryQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.MemoryUsageGB, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Real-time CPU: Rate over last 5 minutes
 	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
 	if resp, err := c.queryPrometheus(ctx, cpuQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.CPURequestCores, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Real-time Network Receive: Rate over last 5 minutes
 	netRxQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
 	if resp, err := c.queryPrometheus(ctx, netRxQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.NetworkReceiveBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Real-time Network Transmit: Rate over last 5 minutes
 	netTxQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
 	if resp, err := c.queryPrometheus(ctx, netTxQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.NetworkTransmitBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Real-time Disk Read: Rate over last 5 minutes
 	diskReadQuery := fmt.Sprintf(`sum(rate(container_fs_reads_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
 	if resp, err := c.queryPrometheus(ctx, diskReadQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskReadBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	// Real-time Disk Write: Rate over last 5 minutes
 	diskWriteQuery := fmt.Sprintf(`sum(rate(container_fs_writes_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
 	if resp, err := c.queryPrometheus(ctx, diskWriteQuery); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskWriteBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
@@ -523,7 +507,6 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 		Window:    fmt.Sprintf("%dd", days),
 	}
 
-	// Memory query: sum(avg_over_time(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}[%dd])) / (1024^3)
 	memoryQuery := fmt.Sprintf(`sum(avg_over_time(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}[%dd])) / (1024^3)`, projectID, days)
 	memoryResp, err := c.queryPrometheus(ctx, memoryQuery)
 	if err == nil && len(memoryResp.Data.Result) > 0 {
@@ -531,9 +514,7 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 			metrics.MemoryUsageGB = val
 		}
 	}
-	// If no data, MemoryUsageGB remains 0.0
 
-	// CPU query: sum(avg_over_time(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m])[%dd:1m]))
 	cpuQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m])[%dd:1m]))`, projectID, days)
 	cpuResp, err := c.queryPrometheus(ctx, cpuQuery)
 	if err == nil && len(cpuResp.Data.Result) > 0 {
@@ -541,9 +522,7 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 			metrics.CPURequestCores = val
 		}
 	}
-	// If no data, CPURequestCores remains 0.0
 
-	// Network Receive query
 	netRxQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_network_receive_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
 	netRxResp, err := c.queryPrometheus(ctx, netRxQuery)
 	if err == nil && len(netRxResp.Data.Result) > 0 {
@@ -552,7 +531,6 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 		}
 	}
 
-	// Network Transmit query
 	netTxQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_network_transmit_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
 	netTxResp, err := c.queryPrometheus(ctx, netTxQuery)
 	if err == nil && len(netTxResp.Data.Result) > 0 {
@@ -561,7 +539,6 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 		}
 	}
 
-	// Disk Read query
 	diskReadQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_fs_reads_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
 	diskReadResp, err := c.queryPrometheus(ctx, diskReadQuery)
 	if err == nil && len(diskReadResp.Data.Result) > 0 {
@@ -570,7 +547,6 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 		}
 	}
 
-	// Disk Write query
 	diskWriteQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_fs_writes_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
 	diskWriteResp, err := c.queryPrometheus(ctx, diskWriteQuery)
 	if err == nil && len(diskWriteResp.Data.Result) > 0 {

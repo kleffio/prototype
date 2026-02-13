@@ -9,10 +9,7 @@ test.describe("Dashboard", () => {
     await dashboard.open();
     await dashboard.expectLoaded();
     
-    // Check Cards
     await dashboard.expectMetricsCardsVisible();
-
-    // Check Graphs
     await dashboard.expectGraphsVisible();
   });
 
@@ -21,15 +18,12 @@ test.describe("Dashboard", () => {
     await dashboard.open();
     await dashboard.expectLoaded();
 
-    // Open Tutorial
     await dashboard.openTutorial();
     await dashboard.expectTutorialOpen();
 
-    // Check content in tutorial
     await expect(page.getByText("Project Overview")).toBeVisible();
     await expect(page.getByText("Resource Monitoring")).toBeVisible();
 
-    // Close Tutorial
     await dashboard.closeTutorial();
     await dashboard.expectTutorialClosed();
   });
@@ -42,11 +36,9 @@ test.describe("Dashboard", () => {
     await dashboard.openTutorial();
     await dashboard.expectTutorialOpen();
 
-    // Find the first tutorial image
     const firstImage = page.locator("img[alt='Dashboard overview statistics cards']");
     await expect(firstImage).toBeVisible();
 
-    // Click to zoom
     await firstImage.click();
 
     await expect(page.getByRole("dialog")).toBeVisible();

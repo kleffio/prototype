@@ -20,18 +20,8 @@ export function NetworkDiskGraph() {
   );
 
   const fetchData = async () => {
-    // Wait until projects are loaded, otherwise do nothing or fetch a default set
-    // If no projects, the graph should probably show "No Data" or empty.
-    
     try {
       setLoading(true); 
-      // If we have projects, we ONLY fetch metrics for those projects.
-      // If we have NO projects, we pass an empty list which the backend interprets as "all namespaces" right now?
-      // No, we updated backend: if list > 0, filter by list.
-      // If list == 0, filter OUT system namespaces.
-      // So if user has 0 projects, params are empty => backend gets cluster total minus system. 
-      // Which is probably correct (maybe user has un-projected containers or we show cluster state).
-      // But the user asked to "get info specifically from these projects".
       
       const data = await getDatabaseIOMetrics("1h", activeProjectIds);
       setMetrics(data);
