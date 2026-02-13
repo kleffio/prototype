@@ -21,29 +21,31 @@ interface TutorialSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const TutorialImage = ({ src, alt, onClick }: { src: string; alt: string; onClick: (src: string) => void }) => (
+  <div 
+    className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-900/50 cursor-zoom-in"
+    onClick={() => onClick(src)}
+  >
+    <img 
+      src={src} 
+      alt={alt} 
+      className="w-full h-auto object-cover opacity-90 transition-all duration-300 group-hover:opacity-100 group-hover:scale-[1.02]"
+    />
+    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[1px]">
+      <div className="bg-black/50 p-2 rounded-full border border-white/20">
+        <ZoomIn className="h-5 w-5 text-white" />
+      </div>
+    </div>
+  </div>
+);
+
 export function TutorialSheet({ open, onOpenChange }: TutorialSheetProps) {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  const TutorialImage = ({ src, alt }: { src: string; alt: string }) => (
-    <div 
-      className="group relative overflow-hidden rounded-lg border border-white/10 bg-neutral-900/50 cursor-zoom-in"
-      onClick={() => {
-        setZoomedImage(src);
-        onOpenChange(false);
-      }}
-    >
-      <img 
-        src={src} 
-        alt={alt} 
-        className="w-full h-auto object-cover opacity-90 transition-all duration-300 group-hover:opacity-100 group-hover:scale-[1.02]"
-      />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[1px]">
-        <div className="bg-black/50 p-2 rounded-full border border-white/20">
-          <ZoomIn className="h-5 w-5 text-white" />
-        </div>
-      </div>
-    </div>
-  );
+  const handleImageClick = (src: string) => {
+    setZoomedImage(src);
+    onOpenChange(false);
+  };
 
   return (
     <>
@@ -71,7 +73,8 @@ export function TutorialSheet({ open, onOpenChange }: TutorialSheetProps) {
               </p>
               <TutorialImage 
                 src="/assets/tutorial/dashboard-overview.png" 
-                alt="Dashboard overview statistics cards" 
+                alt="Dashboard overview statistics cards"
+                onClick={handleImageClick}
               />
             </section>
 
@@ -92,6 +95,7 @@ export function TutorialSheet({ open, onOpenChange }: TutorialSheetProps) {
               <TutorialImage 
                 src="/assets/tutorial/project-resources.png" 
                 alt="Project resource usage table"
+                onClick={handleImageClick}
               />
             </section>
 
@@ -109,6 +113,7 @@ export function TutorialSheet({ open, onOpenChange }: TutorialSheetProps) {
               <TutorialImage 
                 src="/assets/tutorial/create-project.png" 
                 alt="Create project modal"
+                onClick={handleImageClick}
               />
             </section>
 
@@ -126,6 +131,7 @@ export function TutorialSheet({ open, onOpenChange }: TutorialSheetProps) {
               <TutorialImage 
                 src="/assets/tutorial/container-management.png" 
                 alt="Container management view"
+                onClick={handleImageClick}
               />
             </section>
 

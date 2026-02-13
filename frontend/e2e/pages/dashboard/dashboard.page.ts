@@ -1,7 +1,7 @@
 import { BasePage } from "../base.page";
 import { expectPath } from "../../utils/wait";
 import { ProjectModal } from "../../components/project-modal";
-import { expect, type Locator } from "@playwright/test";
+import { expect } from "@playwright/test";
 
 export class DashboardPage extends BasePage {
   async open() {

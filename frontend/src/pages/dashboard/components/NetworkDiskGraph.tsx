@@ -1,9 +1,23 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getDatabaseIOMetrics, type DatabaseIOMetrics } from "@features/observability/api/getDatabaseIOMetrics";
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Network, Database, RefreshCw } from "lucide-react";
+
+interface GraphDataPoint {
+    timestamp: number;
+    rx?: number;
+    tx?: number;
+    read?: number;
+    write?: number;
+}
+
+interface TooltipPayload {
+    name: string;
+    value: number;
+    color: string;
+}
 
 export function NetworkDiskGraph() {
   const { projects } = useProjects();
@@ -19,7 +33,7 @@ export function NetworkDiskGraph() {
     [projects]
   );
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true); 
       
@@ -32,13 +46,13 @@ export function NetworkDiskGraph() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeProjectIds]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000); // 30s refresh
     return () => clearInterval(interval);
-  }, [activeProjectIds]); // Re-fetch when projects change
+  }, [fetchData]); // Re-fetch when projects change
 
   // Merge data for Recharts
   const networkData = useMemo(() => {
@@ -105,12 +119,12 @@ export function NetworkDiskGraph() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i] + "/s";
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: TooltipPayload[], label?: number }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-neutral-900 border border-white/10 p-3 rounded-lg shadow-xl text-xs backdrop-blur-md z-50">
-          <p className="mb-2 font-medium text-neutral-300">{new Date(label).toLocaleTimeString()}</p>
-          {payload.map((p: any) => (
+          <p className="mb-2 font-medium text-neutral-300">{new Date(label!).toLocaleTimeString()}</p>
+          {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
                 <span className="text-neutral-400 capitalize">{p.name}:</span>

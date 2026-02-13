@@ -78,7 +78,7 @@ export function DashboardPage() {
       const interval = setInterval(fetchProjectMetrics, 30000);
       return () => clearInterval(interval);
     }
-  }, [projects, projectsLoading]);
+  }, [projectsLoading, fetchProjectMetrics]);
 
   // Calculate aggregated metrics
   const totalCpuCores = projectUsages.reduce((sum, usage) => sum + usage.cpuRequestCores, 0);

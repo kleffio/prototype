@@ -62,6 +62,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
     if (!permissionsLoading) {
       loadInvoices();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, canManageBilling, permissionsLoading]);
 
   const getStatusBadge = (status: string) => {
