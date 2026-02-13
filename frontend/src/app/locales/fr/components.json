@@ -84,7 +84,11 @@
       "nav_title": "Navigation Kleff",
       "nav_description": "Menu de navigation principal pour la plateforme Kleff, incluant les liens produit, développeur et solution.",
       "signin": "Se connecter",
-      "signup": "Commencez votre projet"
+      "signup": "Commencez votre projet",
+      "start": "Commencer",
+      "dashboard": "Tableau de bord",
+      "profile_settings": "Profil et paramètres",
+      "signout": "Se déconnecter"
     }
   },
 
@@ -181,5 +185,28 @@
     {
       "label": "Blog"
     }
-  ]
+  ],
+  "footer": {
+    "brand": "Plateforme Kleff",
+    "tagline": "Hébergement open-source conçu pour les équipes modernes.",
+    "product": "Produit",
+    "company": "Entreprise",
+    "legal": "Juridique",
+    "contact_us": "Nous contacter",
+    "docs": "Documentation",
+    "pricing": "Tarifs",
+    "status": "État",
+    "about": "À propos",
+    "faq": "FAQ",
+    "terms": "Conditions",
+    "privacy": "Confidentialité",
+    "linkedin": "Linkedin",
+    "email": "E-mail",
+    "copyright": "© {{year}} Kleff. Tous droits réservés."
+  },
+  "confirmationDialog": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "deleting": "Suppression..."
+  }
 }

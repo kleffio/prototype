@@ -1,15 +1,32 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronDown, Sparkles, Search, X } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { Section } from "@shared/ui/Section";
 import { Badge } from "@shared/ui/Badge";
 import { SoftPanel } from "@shared/ui/SoftPanel";
-import { faqData } from "@shared/config/faqData";
+import { getFaqData } from "@shared/config/faqData";
+import enTranslations from "@app/locales/en/legal.json";
+import frTranslations from "@app/locales/fr/legal.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function FAQPage() {
   const [activeCategory, setActiveCategory] = useState("getting-started");
   const [openQuestion, setOpenQuestion] = useState<number | null>(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].faq;
+  const faqData = getFaqData(locale);
 
   // Filter FAQs based on search query
   const filteredCategories = useMemo(() => {
@@ -26,7 +43,7 @@ export function FAQPage() {
         )
       }))
       .filter((category) => category.questions.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, faqData]);
 
   // Get current category or first filtered category
   const currentCategory = useMemo(() => {
@@ -51,19 +68,16 @@ export function FAQPage() {
             className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
           >
             <Sparkles className="h-3 w-3" />
-            <span>Frequently Asked Questions</span>
+            <span>{t.badge}</span>
           </Badge>
 
           <div className="space-y-4">
             <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl xl:text-6xl">
-              Ship faster.
+              {t.title_line1}
               <br />
-              <span className="text-gradient-kleff">Ask anything.</span>
+              <span className="text-gradient-kleff">{t.title_line2}</span>
             </h1>
-            <p className="text-xs text-neutral-300 sm:text-sm">
-              Everything you need to know about deploying, scaling, and managing your applications
-              on Kleff.
-            </p>
+            <p className="text-xs text-neutral-300 sm:text-sm">{t.subtitle}</p>
           </div>
 
           {/* Search Bar */}
@@ -72,7 +86,7 @@ export function FAQPage() {
               <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
-                placeholder="Search FAQs..."
+                placeholder={t.search_placeholder}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -122,8 +136,9 @@ export function FAQPage() {
           {/* Search Results Info */}
           {searchQuery && (
             <div className="text-xs text-neutral-400">
-              Found {filteredCategories.reduce((acc, cat) => acc + cat.questions.length, 0)}{" "}
-              result(s) for "{searchQuery}"
+              {t.results_found}{" "}
+              {filteredCategories.reduce((acc, cat) => acc + cat.questions.length, 0)}{" "}
+              {t.results_for} &ldquo;{searchQuery}&rdquo;
             </div>
           )}
         </div>
@@ -134,15 +149,13 @@ export function FAQPage() {
           {filteredCategories.length === 0 ? (
             <div className="glass-panel p-12 text-center">
               <div className="mb-4 text-4xl">🔍</div>
-              <h3 className="mb-2 text-lg font-semibold text-white">No results found</h3>
-              <p className="mb-6 text-sm text-neutral-400">
-                Try different keywords or browse by category
-              </p>
+              <h3 className="mb-2 text-lg font-semibold text-white">{t.no_results_title}</h3>
+              <p className="mb-6 text-sm text-neutral-400">{t.no_results_description}</p>
               <button
                 onClick={clearSearch}
                 className="bg-gradient-kleff inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-black shadow-md shadow-black/40 transition-all hover:brightness-110"
               >
-                Clear search
+                {t.clear_search}
               </button>
             </div>
           ) : (
@@ -263,17 +276,15 @@ export function FAQPage() {
         <div className="mx-auto max-w-2xl text-center">
           <SoftPanel className="p-6 sm:p-8">
             <h2 className="mb-3 text-xl font-semibold text-white sm:text-2xl">
-              Still have questions?
+              {t.still_have_questions}
             </h2>
-            <p className="mb-4 text-[11px] text-neutral-300 sm:mb-6 sm:text-xs">
-              Our team is here to help you get the most out of Kleff.
-            </p>
+            <p className="mb-4 text-[11px] text-neutral-300 sm:mb-6 sm:text-xs">{t.team_help}</p>
             <a
               href="mailto:support@kleff.ca"
               className="bg-gradient-kleff inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-semibold text-black shadow-md shadow-black/40 transition-all hover:brightness-110 sm:px-6 sm:py-2.5 sm:text-sm"
             >
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Contact Support
+              {t.contact_support}
             </a>
           </SoftPanel>
         </div>

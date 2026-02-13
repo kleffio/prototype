@@ -1,0 +1,46 @@
+{
+  "status": {
+    "page_title": "Kleff System Status",
+    "page_subtitle": "Real-time status and uptime monitoring",
+    "refresh": "Refresh",
+    "updated": "Updated",
+    "time_range": "Time Range",
+    "time_ranges": {
+      "24h": "Last 24 Hours",
+      "7d": "Last 7 Days",
+      "30d": "Last 30 Days",
+      "90d": "Last 90 Days"
+    },
+    "infrastructure_components": "Infrastructure Components",
+    "boot_time": "Boot Time",
+    "uptime": "Uptime",
+    "system_summary": "System Summary",
+    "total_nodes": "Total Nodes",
+    "average_uptime": "Average Uptime",
+    "system_uptime": "System Uptime",
+    "error": {
+      "title": "Unable to Load System Status",
+      "subtitle": "We're having trouble connecting to the monitoring system",
+      "error_details": "Error Details",
+      "possible_causes": "Possible Causes",
+      "causes": [
+        "Prometheus server is not running or not accessible",
+        "Network connectivity issues",
+        "CORS policy blocking the request",
+        "Incorrect API endpoint configuration"
+      ],
+      "troubleshooting": "Troubleshooting Steps",
+      "steps": [
+        "Verify Prometheus is running:",
+        "Check your API configuration in",
+        "Ensure CORS is properly configured on your backend",
+        "Check browser console for additional error details"
+      ],
+      "try_again": "Try Again",
+      "help_text": "Need help? Check the",
+      "documentation": "documentation",
+      "or": "or",
+      "contact_support": "contact support"
+    }
+  }
+}

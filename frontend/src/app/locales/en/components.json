@@ -84,7 +84,11 @@
       "nav_title": "Kleff navigation",
       "nav_description": "Main navigation menu for the Kleff platform, including product, developer, and solution links.",
       "signin": "Sign in",
-      "signup": "Start your project"
+      "signup": "Start your project",
+      "start": "Start",
+      "dashboard": "Dashboard",
+      "profile_settings": "Profile & settings",
+      "signout": "Sign out"
     }
   },
   "dashboardNavItems": [
@@ -180,5 +184,28 @@
     {
       "label": "Blog"
     }
-  ]
+  ],
+  "footer": {
+    "brand": "Kleff Platform",
+    "tagline": "Open-source-first hosting for modern teams.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "contact_us": "Contact Us",
+    "docs": "Docs",
+    "pricing": "Pricing",
+    "status": "Status",
+    "about": "About",
+    "faq": "FAQ",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "linkedin": "Linkedin",
+    "email": "Email",
+    "copyright": "© {{year}} Kleff. All rights reserved."
+  },
+  "confirmationDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "deleting": "Deleting..."
+  }
 }

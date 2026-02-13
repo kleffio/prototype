@@ -1,9 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { X } from "lucide-react";
 
 import createProject from "@features/projects/api/createProject";
+import enTranslations from "@app/locales/en/projects.json";
+import frTranslations from "@app/locales/fr/projects.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -16,6 +21,17 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].projectModal;
 
   if (!isOpen) return null;
 
@@ -28,7 +44,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError("Project name is required.");
+      setError(t.name_required);
       return;
     }
 
@@ -46,7 +62,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
       onClose();
     } catch (err) {
       console.error(err);
-      setError("Failed to create project. Please try again.");
+      setError(t.failed_create);
     } finally {
       setIsSubmitting(false);
     }
@@ -67,10 +83,8 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
         <SoftPanel className="border border-white/10 bg-black/70 shadow-2xl shadow-black/60">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-50">Create project</h2>
-              <p className="mt-1 text-xs text-neutral-400">
-                Define the basics of your project. You can configure deployments later.
-              </p>
+              <h2 className="text-lg font-semibold text-neutral-50">{t.title}</h2>
+              <p className="mt-1 text-xs text-neutral-400">{t.subtitle}</p>
             </div>
 
             <button
@@ -94,7 +108,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 htmlFor="project-name"
                 className="block text-xs font-medium tracking-wide text-neutral-300 uppercase"
               >
-                Project name <span className="text-red-400">*</span>
+                {t.project_name} <span className="text-red-400">*</span>
               </label>
               <input
                 id="project-name"
@@ -103,7 +117,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={inputBase}
-                placeholder="kleff-platform"
+                placeholder={t.project_name_placeholder}
               />
             </div>
 
@@ -112,7 +126,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 htmlFor="project-description"
                 className="block text-xs font-medium tracking-wide text-neutral-300 uppercase"
               >
-                Description
+                {t.description}
               </label>
               <textarea
                 id="project-description"
@@ -120,7 +134,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className={`${inputBase} min-h-20 resize-y`}
-                placeholder="Short summary of what this project does."
+                placeholder={t.description_placeholder}
               />
             </div>
 
@@ -131,14 +145,14 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
                 onClick={onClose}
                 className="border-white/20 bg-white/5 text-xs font-medium text-neutral-200 hover:border-white/40 hover:bg-white/10"
               >
-                Cancel
+                {t.cancel}
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="bg-gradient-kleff rounded-full px-5 py-2 text-xs font-semibold text-black shadow-md shadow-black/40 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "Creating…" : "Create project"}
+                {isSubmitting ? t.creating : t.create_button}
               </Button>
             </div>
           </form>

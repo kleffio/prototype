@@ -28,7 +28,13 @@ import { Skeleton } from "@shared/ui/Skeleton";
 import { KleffDot } from "@shared/ui/KleffDot";
 import { ROUTES } from "@app/routes/routes";
 
+import enTranslations from "@app/locales/en/settings.json";
+import frTranslations from "@app/locales/fr/settings.json";
+import { getLocale } from "@app/locales/locale";
+
 import type { AuditLog, AuditLogPage } from "@features/users/types/Audit";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 type NotificationType = "success" | "error" | null;
 
@@ -46,13 +52,17 @@ interface AuditPaginationProps {
   totalPages: number;
   isLoading: boolean;
   onPageChange: (page: number) => void;
+  previousLabel: string;
+  nextLabel: string;
 }
 
 function AuditPagination({
   currentPage,
   totalPages,
   isLoading,
-  onPageChange
+  onPageChange,
+  previousLabel,
+  nextLabel
 }: AuditPaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -71,7 +81,7 @@ function AuditPagination({
         onClick={() => handleClick(currentPage - 1)}
         className="inline-flex items-center gap-1 rounded-md border border-neutral-800 px-3 py-1.5 text-sm text-neutral-300 transition hover:border-neutral-700 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Previous
+        {previousLabel}
       </button>
 
       <div className="flex items-center gap-1">
@@ -102,7 +112,7 @@ function AuditPagination({
         onClick={() => handleClick(currentPage + 1)}
         className="inline-flex items-center gap-1 rounded-md border border-neutral-800 px-3 py-1.5 text-sm text-neutral-300 transition hover:border-neutral-700 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Next
+        {nextLabel}
       </button>
     </div>
   );
@@ -110,6 +120,17 @@ function AuditPagination({
 
 export function SettingsPage() {
   const navigate = useNavigate();
+
+  const [locale, setLocaleState] = useState(getLocale());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].settings;
 
   const { avatarUrl: oidcAvatar, user, isLoading, error: loadError, reload } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
@@ -151,7 +172,7 @@ export function SettingsPage() {
         setAuditTotal(total ?? 0);
         setAuditPage(page);
       } catch (err) {
-        setAuditError(err instanceof Error ? err.message : "Failed to load audit logs");
+        setAuditError(err instanceof Error ? err.message : t.messages.audit_failed);
       } finally {
         setAuditLoading(false);
       }
@@ -185,7 +206,7 @@ export function SettingsPage() {
     if (!formData.username.trim() || !formData.displayName.trim()) {
       setNotification({
         type: "error",
-        message: "Username and display name are required."
+        message: t.messages.username_required
       });
       return;
     }
@@ -213,7 +234,7 @@ export function SettingsPage() {
     if (Object.keys(updatePayload).length === 0) {
       setNotification({
         type: "success",
-        message: "No changes to save."
+        message: t.messages.no_changes
       });
       return;
     }
@@ -227,12 +248,12 @@ export function SettingsPage() {
 
       setNotification({
         type: "success",
-        message: "Profile updated successfully."
+        message: t.messages.profile_updated
       });
     } catch (err) {
       setNotification({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to update profile."
+        message: err instanceof Error ? err.message : t.messages.update_failed
       });
     } finally {
       setIsSaving(false);
@@ -252,7 +273,7 @@ export function SettingsPage() {
     } catch (err) {
       setNotification({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to deactivate account."
+        message: err instanceof Error ? err.message : t.messages.deactivation_failed
       });
     } finally {
       setIsDeactivating(false);
@@ -286,7 +307,7 @@ export function SettingsPage() {
         </div>
         <div className="relative z-10 mx-auto max-w-5xl px-4 py-8">
           <div className="rounded-md border border-red-500/30 bg-red-500/10 p-4 text-red-300">
-            {loadError?.message || "Failed to load user"}
+            {loadError?.message || t.failed_load_user}
           </div>
         </div>
       </div>
@@ -325,14 +346,14 @@ export function SettingsPage() {
                 LEFF
               </span>
               <span className="mx-2 text-neutral-600">|</span>
-              <span className="text-base font-medium text-neutral-400">Settings</span>
+              <span className="text-base font-medium text-neutral-400">{t.page_title}</span>
             </Link>
             <Link
               to={ROUTES.DASHBOARD}
               className="flex items-center gap-2 text-sm text-neutral-400 transition hover:text-neutral-50"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              {t.back_to_dashboard}
             </Link>
           </div>
         </div>
@@ -342,7 +363,7 @@ export function SettingsPage() {
       <main className="relative z-0 flex-1">
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Account Settings Heading - Required by E2E tests */}
-          <h1 className="sr-only">Account Settings</h1>
+          <h1 className="sr-only">{t.account_settings}</h1>
 
           <div className="flex gap-8">
             {/* Sidebar */}
@@ -357,7 +378,7 @@ export function SettingsPage() {
                   }`}
                 >
                   <User className="h-4 w-4" />
-                  Public profile
+                  {t.tabs.public_profile}
                 </button>
                 <button
                   onClick={() => setActiveTab("account")}
@@ -368,7 +389,7 @@ export function SettingsPage() {
                   }`}
                 >
                   <Shield className="h-4 w-4" />
-                  Account
+                  {t.tabs.account}
                 </button>
                 <button
                   onClick={() => setActiveTab("projects")}
@@ -376,7 +397,7 @@ export function SettingsPage() {
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
                   <FolderGit2 className="h-4 w-4" />
-                  Your projects
+                  {t.tabs.your_projects}
                 </button>
                 <button
                   onClick={() => setActiveTab("appearance")}
@@ -384,7 +405,7 @@ export function SettingsPage() {
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
                   <Palette className="h-4 w-4" />
-                  Appearance
+                  {t.tabs.appearance}
                 </button>
                 <button
                   onClick={() => setActiveTab("email")}
@@ -392,7 +413,7 @@ export function SettingsPage() {
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
                   <Mail className="h-4 w-4" />
-                  Email
+                  {t.tabs.email}
                 </button>
                 <button
                   onClick={() => setActiveTab("billing")}
@@ -400,7 +421,7 @@ export function SettingsPage() {
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
                   <CreditCard className="h-4 w-4" />
-                  Billing
+                  {t.tabs.billing}
                 </button>
               </nav>
             </aside>
@@ -432,10 +453,10 @@ export function SettingsPage() {
                     {/* Profile Section */}
                     <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
                       <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Public profile</h2>
-                        <p className="text-sm text-neutral-400">
-                          This information will be displayed publicly so be careful what you share.
-                        </p>
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">
+                          {t.profile.title}
+                        </h2>
+                        <p className="text-sm text-neutral-400">{t.profile.description}</p>
                       </div>
 
                       <form onSubmit={handleSubmit} className="space-y-8">
@@ -444,7 +465,7 @@ export function SettingsPage() {
                           <div className="flex-shrink-0">
                             <UserAvatar initial={initial} size="lg" src={displayAvatar} />
                             <p className="mt-3 text-center text-xs text-neutral-500">
-                              Member since
+                              {t.profile.member_since}
                               <br />
                               <span className="font-medium text-neutral-400">{createdAtLabel}</span>
                             </p>
@@ -454,7 +475,7 @@ export function SettingsPage() {
                               htmlFor="avatarUrl"
                               className="mb-2 block text-sm font-semibold text-neutral-200"
                             >
-                              Avatar URL
+                              {t.profile.avatar_url}
                             </Label>
                             <Input
                               id="avatarUrl"
@@ -462,12 +483,10 @@ export function SettingsPage() {
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, avatarUrl: e.target.value }))
                               }
-                              placeholder="https://example.com/avatar.png"
+                              placeholder={t.profile.avatar_placeholder}
                               className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
                             />
-                            <p className="mt-3 text-xs text-neutral-500">
-                              Enter a URL to your profile picture. File uploads coming soon.
-                            </p>
+                            <p className="mt-3 text-xs text-neutral-500">{t.profile.avatar_hint}</p>
                           </div>
                         </div>
 
@@ -477,7 +496,7 @@ export function SettingsPage() {
                             htmlFor="username"
                             className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
                           >
-                            Username
+                            {t.profile.username}
                           </Label>
                           <div className="md:col-span-2">
                             <Input
@@ -486,12 +505,11 @@ export function SettingsPage() {
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, username: e.target.value }))
                               }
-                              placeholder="your-username"
+                              placeholder={t.profile.username_placeholder}
                               className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
                             />
                             <p className="mt-3 text-xs text-neutral-500">
-                              Used in URLs and mentions. Only lowercase letters, numbers, dashes and
-                              underscores.
+                              {t.profile.username_hint}
                             </p>
                           </div>
                         </div>
@@ -502,7 +520,7 @@ export function SettingsPage() {
                             htmlFor="displayName"
                             className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
                           >
-                            Display Name
+                            {t.profile.display_name}
                           </Label>
                           <div className="md:col-span-2">
                             <Input
@@ -511,7 +529,7 @@ export function SettingsPage() {
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, displayName: e.target.value }))
                               }
-                              placeholder="How you appear in the app"
+                              placeholder={t.profile.display_name_placeholder}
                               className="border-neutral-800 bg-neutral-950/80 text-neutral-50"
                             />
                           </div>
@@ -523,7 +541,7 @@ export function SettingsPage() {
                             htmlFor="email"
                             className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
                           >
-                            Email
+                            {t.profile.email_label}
                           </Label>
                           <div className="md:col-span-2">
                             <Input
@@ -533,9 +551,7 @@ export function SettingsPage() {
                               disabled
                               className="cursor-not-allowed border-neutral-800 bg-neutral-900/80 text-neutral-500"
                             />
-                            <p className="mt-3 text-xs text-neutral-500">
-                              Email is managed by Authentik and cannot be changed here.
-                            </p>
+                            <p className="mt-3 text-xs text-neutral-500">{t.profile.email_hint}</p>
                           </div>
                         </div>
 
@@ -545,7 +561,7 @@ export function SettingsPage() {
                             htmlFor="bio"
                             className="text-sm font-semibold text-neutral-200 md:pt-3 md:text-right"
                           >
-                            Bio
+                            {t.profile.bio}
                           </Label>
                           <div className="md:col-span-2">
                             <textarea
@@ -557,12 +573,10 @@ export function SettingsPage() {
                               maxLength={512}
                               rows={5}
                               className="focus:border-kleff-gold focus:ring-kleff-gold/20 w-full resize-none rounded-lg border border-neutral-800 bg-neutral-950/80 px-4 py-3 text-sm text-neutral-50 transition outline-none focus:ring-2"
-                              placeholder="Tell people a bit about yourself."
+                              placeholder={t.profile.bio_placeholder}
                             />
                             <div className="mt-3 flex justify-between text-xs text-neutral-500">
-                              <span>
-                                You can @mention other users and organizations to link to them.
-                              </span>
+                              <span>{t.profile.bio_hint}</span>
                               <span className="font-medium">{formData.bio.length}/512</span>
                             </div>
                           </div>
@@ -576,7 +590,7 @@ export function SettingsPage() {
                             className="bg-gradient-kleff shadow-kleff-gold/20 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-neutral-950 shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Save className="h-4 w-4" />
-                            {isSaving ? "Saving..." : "Save"}
+                            {isSaving ? t.profile.saving : t.profile.save}
                           </Button>
                         </div>
                       </form>
@@ -585,10 +599,10 @@ export function SettingsPage() {
                     {/* Account Activity */}
                     <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
                       <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                        <h2 className="mb-2 text-xl font-bold text-neutral-50">Account activity</h2>
-                        <p className="text-sm text-neutral-400">
-                          Security-relevant events recorded by the user-service.
-                        </p>
+                        <h2 className="mb-2 text-xl font-bold text-neutral-50">
+                          {t.activity.title}
+                        </h2>
+                        <p className="text-sm text-neutral-400">{t.activity.description}</p>
                       </div>
 
                       {auditLoading && auditLogs.length === 0 && (
@@ -634,7 +648,7 @@ export function SettingsPage() {
 
                           {!auditLoading && !auditError && auditLogs.length === 0 && (
                             <p className="mt-6 text-center text-xs text-neutral-500 italic">
-                              No audit logs found.
+                              {t.activity.no_audit_logs}
                             </p>
                           )}
 
@@ -643,6 +657,8 @@ export function SettingsPage() {
                             totalPages={totalPages}
                             isLoading={auditLoading}
                             onPageChange={(page) => void loadAuditPage(page)}
+                            previousLabel={t.pagination.previous}
+                            nextLabel={t.pagination.next}
                           />
                         </>
                       )}
@@ -654,10 +670,8 @@ export function SettingsPage() {
                 {activeTab === "account" && (
                   <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-8 shadow-xl backdrop-blur-sm">
                     <div className="mb-6 border-b border-neutral-800/50 pb-6">
-                      <h2 className="mb-2 text-xl font-bold text-neutral-50">Account Management</h2>
-                      <p className="text-sm text-neutral-400">
-                        Manage your account settings and preferences.
-                      </p>
+                      <h2 className="mb-2 text-xl font-bold text-neutral-50">{t.account.title}</h2>
+                      <p className="text-sm text-neutral-400">{t.account.description}</p>
                     </div>
 
                     <div className="space-y-8">
@@ -669,12 +683,10 @@ export function SettingsPage() {
                           </div>
                           <div className="flex-1">
                             <h3 className="mb-2 text-lg font-semibold text-red-300">
-                              Deactivate Account
+                              {t.account.deactivate_title}
                             </h3>
                             <p className="mb-4 text-sm text-neutral-400">
-                              Deactivating your account will permanently remove all your data and
-                              cannot be undone. This action will immediately log you out and remove
-                              access to all your projects and data.
+                              {t.account.deactivate_description}
                             </p>
                             <Button
                               onClick={() => setShowDeactivationModal(true)}
@@ -682,7 +694,7 @@ export function SettingsPage() {
                               className="border-yellow-500/50 text-yellow-400 hover:border-yellow-400 hover:bg-yellow-500/10"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Deactivate Account
+                              {t.account.deactivate_button}
                             </Button>
                           </div>
                         </div>
@@ -710,21 +722,22 @@ export function SettingsPage() {
             <div className="rounded-xl border border-yellow-500/30 bg-neutral-900/95 p-6 shadow-2xl backdrop-blur-sm">
               <div className="mb-4 flex items-center gap-3">
                 <AlertTriangle className="h-6 w-6 text-yellow-400" />
-                <h3 className="text-lg font-semibold text-yellow-300">Deactivate Account</h3>
+                <h3 className="text-lg font-semibold text-yellow-300">
+                  {t.deactivation_modal.title}
+                </h3>
               </div>
 
               <div className="mb-6 space-y-3 text-sm text-neutral-300">
                 <p>
-                  <strong>This action cannot be undone.</strong> Deactivating your account will:
+                  <strong>{t.deactivation_modal.warning}</strong> {t.deactivation_modal.intro}
                 </p>
                 <ul className="ml-4 list-inside list-disc space-y-1 text-neutral-400">
-                  <li>Permanently delete all your data</li>
-                  <li>Remove access to all projects</li>
-                  <li>Log you out immediately</li>
-                  <li>Cannot be reversed</li>
+                  {t.deactivation_modal.consequences.map((item: string, i: number) => (
+                    <li key={i}>{item}</li>
+                  ))}
                 </ul>
                 <p className="font-medium text-yellow-300">
-                  Are you sure you want to deactivate your account?
+                  {t.deactivation_modal.confirm_question}
                 </p>
               </div>
 
@@ -735,14 +748,16 @@ export function SettingsPage() {
                   variant="secondary"
                   className="px-4 py-2"
                 >
-                  Cancel
+                  {t.deactivation_modal.cancel}
                 </Button>
                 <Button
                   onClick={handleDeactivateAccount}
                   disabled={isDeactivating}
                   className="bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
                 >
-                  {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
+                  {isDeactivating
+                    ? t.deactivation_modal.deactivating
+                    : t.deactivation_modal.confirm}
                 </Button>
               </div>
             </div>

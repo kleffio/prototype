@@ -3,6 +3,11 @@ import { getContainerLogs, type LogEntry } from "../api/getContainerLogs";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { FileText, RefreshCw } from "lucide-react";
+import enTranslations from "@app/locales/en/dashboard.json";
+import frTranslations from "@app/locales/fr/dashboard.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 import { ExportLogsButton } from "./ExportLogsButton";
 
 interface SimpleLogsViewerProps {
@@ -14,6 +19,17 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].dashboard;
 
   const fetchLogs = async () => {
     try {
@@ -22,8 +38,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       setLogs(data);
       setError(null);
     } catch {
-      setError("Failed to load logs");
-      // Error is handled by setting error state
+      setError(t.logs.failed_title);
     } finally {
       setLoading(false);
     }
@@ -31,7 +46,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
 
   useEffect(() => {
     fetchLogs();
-    const interval = setInterval(fetchLogs, 10000); // Refresh every 10 seconds
+    const interval = setInterval(fetchLogs, 10000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, containerName]);
@@ -45,7 +60,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
   if (loading && logs.length === 0) {
     return (
       <SoftPanel>
-        <p className="py-8 text-center text-sm text-neutral-400">Loading logs...</p>
+        <p className="py-8 text-center text-sm text-neutral-400">{t.logs.loading}</p>
       </SoftPanel>
     );
   }
@@ -54,15 +69,13 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
     return (
       <SoftPanel>
         <div style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
-          <h3 className="text-kleff-gold mb-3 text-xl font-semibold">Failed to Load Logs</h3>
+          <h3 className="text-kleff-gold mb-3 text-xl font-semibold">{t.logs.failed_title}</h3>
           <p className="mb-2 text-sm text-red-400">
-            Unable to retrieve logs for <span className="font-mono">{containerName}</span>
+            {t.logs.unable_to_retrieve} <span className="font-mono">{containerName}</span>
           </p>
-          <p className="mb-6 text-sm text-neutral-500">
-            This could be due to network issues or the observability service being unavailable.
-          </p>
+          <p className="mb-6 text-sm text-neutral-500">{t.logs.network_issue}</p>
           <Button onClick={fetchLogs} disabled={loading} size="sm">
-            {loading ? "Retrying..." : "Try Again"}
+            {loading ? t.logs.retrying : t.logs.try_again}
           </Button>
         </div>
       </SoftPanel>
@@ -74,7 +87,9 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-blue-400" />
-          <h2 className="text-lg font-semibold text-neutral-50">Logs: {containerName}</h2>
+          <h2 className="text-lg font-semibold text-neutral-50">
+            {t.logs.logs_prefix} {containerName}
+          </h2>
         </div>
         <div className="flex items-center gap-1">
           <ExportLogsButton projectId={projectId} />
@@ -87,7 +102,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       <div className="rounded-lg border border-white/10 bg-black/40 p-4">
         <div className="max-h-96 overflow-y-auto font-mono text-xs">
           {logs.length === 0 ? (
-            <p className="py-8 text-center text-neutral-400">No logs found</p>
+            <p className="py-8 text-center text-neutral-400">{t.logs.no_logs}</p>
           ) : (
             <div className="space-y-1">
               {logs.map((log, index) => (

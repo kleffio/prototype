@@ -16,28 +16,42 @@ import { cn } from "@shared/lib/utils";
 import { useUser } from "@features/users/hooks/useUser";
 import { usePlatformAdmin } from "@features/users/hooks/usePlatformRole";
 import { logoutEverywhere } from "@features/users/api/logout";
-import { DASHBOARD_NAV_ITEMS, isNavItemActive } from "@app/navigation/Navigation";
+import { getDashboardNavItems, isNavItemActive } from "@app/navigation/Navigation";
 import { ROUTES } from "@app/routes/routes";
 import { Brand } from "@shared/ui/Brand";
 import { UserAvatar } from "@shared/ui/UserAvatar";
 import { NavItem } from "@app/navigation/components/NavItem";
 
+import enTranslations from "@app/locales/en/components.json";
+import frTranslations from "@app/locales/fr/components.json";
 import LocaleSwitcher from "@app/navigation/components/LocaleSwitcher";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function DashboardNav() {
   const location = useLocation();
   const { isPlatformAdmin } = usePlatformAdmin();
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
 
   // Filter navigation items based on user's platform role
   const navItems = useMemo(() => {
-    return DASHBOARD_NAV_ITEMS.filter((item) => {
+    return getDashboardNavItems(locale).filter((item) => {
       // If item requires admin, only show to platform admins
       if (item.adminOnly) {
         return isPlatformAdmin;
       }
       return true;
     });
-  }, [isPlatformAdmin]);
+  }, [isPlatformAdmin, locale]);
 
   return (
     <>
@@ -78,17 +92,28 @@ function MobileHeader() {
   const navigate = useNavigate();
   const { auth, displayName, email, initial, avatarUrl, isAuthenticated } = useUser();
   const { isPlatformAdmin } = usePlatformAdmin();
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].header.mobile;
 
   // Filter navigation items based on user's platform role
   const navItems = useMemo(() => {
-    return DASHBOARD_NAV_ITEMS.filter((item) => {
+    return getDashboardNavItems(locale).filter((item) => {
       // If item requires admin, only show to platform admins
       if (item.adminOnly) {
         return isPlatformAdmin;
       }
       return true;
     });
-  }, [isPlatformAdmin]);
+  }, [isPlatformAdmin, locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,7 +167,7 @@ function MobileHeader() {
               </SheetClose>
             </div>
 
-            <SheetTitle className="sr-only">Dashboard Navigation</SheetTitle>
+            <SheetTitle className="sr-only">{t.dashboard}</SheetTitle>
           </SheetHeader>
 
           <nav className="flex-1 px-4 py-5">
@@ -180,14 +205,14 @@ function MobileHeader() {
                   className="flex items-center justify-center gap-2 border border-white/10 bg-white/5 py-2 font-medium text-neutral-200 hover:bg-white/10"
                 >
                   <Settings size={16} className="opacity-80" />
-                  Profile &amp; settings
+                  {t.profile_settings}
                 </Button>
                 <Button
                   onClick={handleLogout}
                   className="flex items-center justify-center gap-2 border border-red-500/20 bg-red-500/10 py-2 font-medium text-red-300 hover:bg-red-500/20"
                 >
                   <LogOut size={16} />
-                  Sign out
+                  {t.signout}
                 </Button>
               </div>
             </div>

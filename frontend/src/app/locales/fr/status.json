@@ -1,0 +1,46 @@
+{
+  "status": {
+    "page_title": "État du système Kleff",
+    "page_subtitle": "Surveillance de l'état et de la disponibilité en temps réel",
+    "refresh": "Actualiser",
+    "updated": "Mis à jour",
+    "time_range": "Période",
+    "time_ranges": {
+      "24h": "Dernières 24 heures",
+      "7d": "7 derniers jours",
+      "30d": "30 derniers jours",
+      "90d": "90 derniers jours"
+    },
+    "infrastructure_components": "Composants d'infrastructure",
+    "boot_time": "Heure de démarrage",
+    "uptime": "Disponibilité",
+    "system_summary": "Résumé du système",
+    "total_nodes": "Total des nœuds",
+    "average_uptime": "Disponibilité moyenne",
+    "system_uptime": "Disponibilité du système",
+    "error": {
+      "title": "Impossible de charger l'état du système",
+      "subtitle": "Nous avons des difficultés à nous connecter au système de surveillance",
+      "error_details": "Détails de l'erreur",
+      "possible_causes": "Causes possibles",
+      "causes": [
+        "Le serveur Prometheus n'est pas en cours d'exécution ou n'est pas accessible",
+        "Problèmes de connectivité réseau",
+        "La politique CORS bloque la requête",
+        "Configuration incorrecte du point de terminaison API"
+      ],
+      "troubleshooting": "Étapes de dépannage",
+      "steps": [
+        "Vérifiez que Prometheus fonctionne :",
+        "Vérifiez la configuration de votre API dans",
+        "Assurez-vous que CORS est correctement configuré sur votre backend",
+        "Consultez la console du navigateur pour plus de détails"
+      ],
+      "try_again": "Réessayer",
+      "help_text": "Besoin d'aide ? Consultez la",
+      "documentation": "documentation",
+      "or": "ou",
+      "contact_support": "contactez le support"
+    }
+  }
+}

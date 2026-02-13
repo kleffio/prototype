@@ -10,9 +10,14 @@ import type {
   NodeMetric,
   ResourceUtilization
 } from "@features/observability/types/metrics";
+import enTranslations from "@app/locales/en/dashboard.json";
+import frTranslations from "@app/locales/fr/dashboard.json";
+import { getLocale } from "@app/locales/locale";
 import { ExportMetricsButton } from "@features/observability/components/ExportMetricsButton";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function MetricsDashboard() {
   const [overview, setOverview] = useState<ClusterOverview | null>(null);
@@ -27,6 +32,17 @@ export function MetricsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [timeRange, setTimeRange] = useState<string>("1h");
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].dashboard;
 
   const fetchData = async () => {
     try {
@@ -45,9 +61,7 @@ export function MetricsDashboard() {
       setNamespaces(metrics.namespaces || []);
       setLastUpdate(new Date());
     } catch (err) {
-      setError(
-        "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible."
-      );
+      setError(t.cluster_error);
       console.error("Error fetching metrics:", err);
     } finally {
       setLoading(false);
@@ -78,14 +92,12 @@ export function MetricsDashboard() {
           <div className="mb-8">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-3xl font-semibold text-neutral-50">Metrics Overview</h1>
-                <p className="mt-1 text-sm text-neutral-400">
-                  Monitor your Kubernetes cluster metrics
-                </p>
+                <h1 className="text-3xl font-semibold text-neutral-50">{t.metrics_overview}</h1>
+                <p className="mt-1 text-sm text-neutral-400">{t.monitor_cluster}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-neutral-400">
-                  Last updated: {lastUpdate.toLocaleTimeString()}
+                  {t.last_updated} {lastUpdate.toLocaleTimeString()}
                 </span>
                 <ExportMetricsButton />
                 <button
@@ -93,7 +105,7 @@ export function MetricsDashboard() {
                   className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:border-white/40 hover:bg-white/10"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Refresh
+                  {t.refresh}
                 </button>
                 <select
                   value={timeRange}
@@ -103,30 +115,11 @@ export function MetricsDashboard() {
                     colorScheme: "dark"
                   }}
                 >
-                  <option value="5m" className="bg-neutral-900 text-neutral-200">
-                    Last 5 minutes
-                  </option>
-                  <option value="15m" className="bg-neutral-900 text-neutral-200">
-                    Last 15 minutes
-                  </option>
-                  <option value="30m" className="bg-neutral-900 text-neutral-200">
-                    Last 30 minutes
-                  </option>
-                  <option value="1h" className="bg-neutral-900 text-neutral-200">
-                    Last 1 hour
-                  </option>
-                  <option value="3h" className="bg-neutral-900 text-neutral-200">
-                    Last 3 hours
-                  </option>
-                  <option value="6h" className="bg-neutral-900 text-neutral-200">
-                    Last 6 hours
-                  </option>
-                  <option value="12h" className="bg-neutral-900 text-neutral-200">
-                    Last 12 hours
-                  </option>
-                  <option value="24h" className="bg-neutral-900 text-neutral-200">
-                    Last 24 hours
-                  </option>
+                  {(Object.entries(t.time_ranges) as [string, string][]).map(([value, label]) => (
+                    <option key={value} value={value} className="bg-neutral-900 text-neutral-200">
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -189,11 +182,11 @@ export function MetricsDashboard() {
               metric={
                 overview && overview.cpuUsagePercent != null
                   ? {
-                      title: "CPU Usage",
+                      title: t.cpu_usage,
                       value: `${overview.cpuUsagePercent.toFixed(1)}%`,
                       rawValue: overview.cpuUsagePercent,
                       changePercent: "+0.0%",
-                      changeLabel: "Cluster average",
+                      changeLabel: t.cluster_average,
                       status: overview.cpuUsagePercent > 80 ? "critical" : "good",
                       sparkline: []
                     }
@@ -212,10 +205,10 @@ export function MetricsDashboard() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 text-lg font-semibold text-neutral-50">Performance</h2>
+            <h2 className="mb-4 text-lg font-semibold text-neutral-50">{t.performance}</h2>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ResourceChart
-                title="CPU Utilization"
+                title={t.cpu_utilization}
                 data={
                   cpuData ?? {
                     currentValue: 0,
@@ -228,7 +221,7 @@ export function MetricsDashboard() {
                 loading={loading || !cpuData}
               />
               <ResourceChart
-                title="Memory Utilization"
+                title={t.memory_utilization}
                 data={
                   memoryData ?? {
                     currentValue: 0,
@@ -244,7 +237,7 @@ export function MetricsDashboard() {
           </div>
 
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-neutral-50">Infrastructure</h2>
+            <h2 className="mb-4 text-lg font-semibold text-neutral-50">{t.infrastructure}</h2>
             <div className="space-y-6">
               <NodesList nodes={nodes} loading={loading || nodes.length === 0} />
               <NamespacesTable

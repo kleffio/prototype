@@ -1,0 +1,52 @@
+{
+  "errorPage": {
+    "error_label": "Error",
+    "titles": {
+      "404": "Page Not Found",
+      "403": "Access Forbidden",
+      "401": "Unauthorized",
+      "500": "Internal Server Error",
+      "503": "Service Unavailable",
+      "default": "Something Went Wrong"
+    },
+    "descriptions": {
+      "404": "The page you're looking for doesn't exist or has been moved.",
+      "403": "You don't have permission to access this resource.",
+      "401": "You need to be authenticated to access this resource.",
+      "500": "Our server encountered an error processing your request.",
+      "503": "The service is temporarily unavailable. Please try again later.",
+      "default": "We encountered an unexpected error. Please try again."
+    },
+    "error_details": "Error Details",
+    "stack_trace": "Stack Trace (Development Only)",
+    "go_back": "Go Back",
+    "refresh_page": "Refresh Page",
+    "go_home": "Go Home",
+    "persist_message": "If this problem persists, please",
+    "contact_support": "contact support"
+  },
+  "deactivated": {
+    "badge": "Account Deactivated",
+    "status": "Status 403",
+    "title": "Account Deactivated",
+    "description": "Your account has been permanently deactivated and cannot be restored.",
+    "what_this_means": "What this means:",
+    "consequences": [
+      "Your account and all associated data have been permanently deleted",
+      "All projects, containers, and configurations have been removed",
+      "This action cannot be undone or reversed",
+      "You will need to create a new account to use Kleff again"
+    ],
+    "sign_out": "Sign Out",
+    "error_message": "If you believe this is an error, please contact support.",
+    "contact_support": "Contact Support"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "badge": "Component Error",
+    "description": "An error occurred while rendering this component.",
+    "error_message": "Error Message",
+    "stack_trace": "Stack Trace",
+    "try_again": "Try Again"
+  }
+}
