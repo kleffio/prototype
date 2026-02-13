@@ -84,7 +84,11 @@
       "nav_title": "Kleff navigation",
       "nav_description": "Main navigation menu for the Kleff platform, including product, developer, and solution links.",
       "signin": "Sign in",
-      "signup": "Start your project"
+      "signup": "Start your project",
+      "start": "Start",
+      "dashboard": "Dashboard",
+      "profile_settings": "Profile & settings",
+      "signout": "Sign out"
     }
   },
   "dashboardNavItems": [

@@ -15,7 +15,7 @@ import {
   NavigationMenuTrigger
 } from "./NavigationMenu";
 import { UnderlineLink } from "@shared/ui/UnderlineLink";
-import { MEGA_MENU_SECTIONS, SIMPLE_NAV_LINKS } from "@app/navigation/Navigation";
+import { getMegaMenuSections, getSimpleNavLinks } from "@app/navigation/Navigation";
 import { cn } from "@shared/lib/utils";
 import type { MegaMenuSection } from "@app/navigation/Navigation";
 
@@ -42,11 +42,13 @@ export function DesktopMegaMenu() {
   }, [locale]);
 
   const t = translations[locale].header;
+  const megaMenuSections = getMegaMenuSections(locale);
+  const simpleNavLinks = getSimpleNavLinks(locale);
 
   return (
     <NavigationMenu>
       <NavigationMenuList className="flex items-center gap-1 text-sm">
-        {MEGA_MENU_SECTIONS.map((section) => (
+        {megaMenuSections.map((section) => (
           <NavigationMenuItem key={section.key}>
             <NavigationMenuTrigger
               className={cn(
@@ -67,7 +69,7 @@ export function DesktopMegaMenu() {
           </NavigationMenuItem>
         ))}
 
-        {SIMPLE_NAV_LINKS.map((link) => (
+        {simpleNavLinks.map((link) => (
           <NavigationMenuItem key={link.href}>
             <NavigationMenuLink asChild>
               <UnderlineLink

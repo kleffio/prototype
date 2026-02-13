@@ -19,6 +19,10 @@
     "last_updated": "Dernière mise à jour :",
     "refresh": "Actualiser",
     "performance": "Performance",
+    "cpu_usage": "Utilisation CPU",
+    "cluster_average": "Moyenne du cluster",
+    "cpu_utilization": "Utilisation CPU",
+    "memory_utilization": "Utilisation mémoire",
     "time_ranges": {
       "5m": "5 dernières minutes",
       "15m": "15 dernières minutes",

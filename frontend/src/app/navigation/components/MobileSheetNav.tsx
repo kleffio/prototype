@@ -16,18 +16,36 @@ import { Button } from "@shared/ui/Button";
 import { cn } from "@shared/lib/utils";
 import { logoutEverywhere } from "@features/users/api/logout";
 import type { MegaMenuSection } from "../Navigation";
-import { MEGA_MENU_SECTIONS, SIMPLE_NAV_LINKS } from "../Navigation";
+import { getMegaMenuSections, getSimpleNavLinks } from "../Navigation";
 import { ROUTES } from "@app/routes/routes";
 import { Brand } from "@shared/ui/Brand";
 import { UserAvatar } from "@shared/ui/UserAvatar";
 
+import enTranslations from "@app/locales/en/components.json";
+import frTranslations from "@app/locales/fr/components.json";
 import LocaleSwitcher from "@app/navigation/components/LocaleSwitcher";
+import { getLocale } from "@app/locales/locale";
 import { useUser } from "@features/users/hooks/useUser";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function MobileSheetNav() {
   const { isAuthenticated } = useUser();
   const [open, setOpen] = React.useState(false);
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set(["product"]));
+  const [locale, setLocaleState] = React.useState(getLocale());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].header;
+  const megaMenuSections = getMegaMenuSections(locale);
+  const simpleNavLinks = getSimpleNavLinks(locale);
 
   React.useEffect(() => {
     if (!open) return;
@@ -78,15 +96,15 @@ export function MobileSheetNav() {
             </SheetClose>
           </div>
 
-          <SheetTitle className="sr-only">Kleff navigation</SheetTitle>
+          <SheetTitle className="sr-only">{t.mobile.nav_title}</SheetTitle>
           <SheetDescription className="sr-only">
-            Main navigation menu for the Kleff platform
+            {t.mobile.nav_description}
           </SheetDescription>
         </SheetHeader>
 
         <nav className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(100vh - 73px)" }}>
           <div className="space-y-4">
-            {MEGA_MENU_SECTIONS.map((section) => (
+            {megaMenuSections.map((section) => (
               <MegaMenuSectionItem
                 key={section.key}
                 section={section}
@@ -97,7 +115,7 @@ export function MobileSheetNav() {
             ))}
 
             <div className="space-y-1 border-t border-white/8 pt-4">
-              {SIMPLE_NAV_LINKS.map((link) => (
+              {simpleNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
@@ -111,9 +129,9 @@ export function MobileSheetNav() {
 
             <div className="border-t border-white/8 pt-4">
               {isAuthenticated ? (
-                <AuthenticatedSection onNavigate={closeSheet} />
+                <AuthenticatedSection onNavigate={closeSheet} locale={locale} />
               ) : (
-                <UnauthenticatedSection onNavigate={closeSheet} />
+                <UnauthenticatedSection onNavigate={closeSheet} locale={locale} />
               )}
             </div>
           </div>
@@ -196,69 +214,81 @@ const MegaMenuSectionItem = React.memo(
 
 MegaMenuSectionItem.displayName = "MegaMenuSectionItem";
 
-const AuthenticatedSection = React.memo(({ onNavigate }: { onNavigate: () => void }) => {
-  const { auth, displayName, email, initial, avatarUrl } = useUser();
+const AuthenticatedSection = React.memo(
+  ({ onNavigate, locale }: { onNavigate: () => void; locale: "en" | "fr" }) => {
+    const { auth, displayName, email, initial, avatarUrl } = useUser();
+    const t = translations[locale].header.mobile;
 
-  const handleLogout = React.useCallback(async () => {
-    onNavigate();
-    await logoutEverywhere(auth);
-  }, [onNavigate, auth]);
+    const handleLogout = React.useCallback(async () => {
+      onNavigate();
+      await logoutEverywhere(auth);
+    }, [onNavigate, auth]);
 
-  return (
-    <div className="space-y-3 px-2 pb-2">
-      <UserAvatar initial={initial} name={displayName} email={email} src={avatarUrl || undefined} />
+    return (
+      <div className="space-y-3 px-2 pb-2">
+        <UserAvatar
+          initial={initial}
+          name={displayName}
+          email={email}
+          src={avatarUrl || undefined}
+        />
 
-      <div className="flex flex-col gap-2">
-        <Link to={ROUTES.DASHBOARD} onClick={onNavigate}>
-          <Button className="bg-gradient-kleff flex w-full items-center justify-center gap-2 py-2 font-semibold text-black shadow-lg hover:brightness-110">
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
-          </Button>
-        </Link>
+        <div className="flex flex-col gap-2">
+          <Link to={ROUTES.DASHBOARD} onClick={onNavigate}>
+            <Button className="bg-gradient-kleff flex w-full items-center justify-center gap-2 py-2 font-semibold text-black shadow-lg hover:brightness-110">
+              <LayoutDashboard className="h-4 w-4" />
+              {t.dashboard}
+            </Button>
+          </Link>
 
-        <Link to={ROUTES.SETTINGS} onClick={onNavigate}>
+          <Link to={ROUTES.SETTINGS} onClick={onNavigate}>
+            <Button
+              variant="outline"
+              className="flex w-full items-center justify-center gap-2 border-white/10 bg-white/5 py-2 font-medium text-neutral-200 hover:border-white/20 hover:bg-white/10"
+            >
+              <Settings className="h-4 w-4 opacity-80" />
+              {t.profile_settings}
+            </Button>
+          </Link>
+
           <Button
+            onClick={handleLogout}
             variant="outline"
-            className="flex w-full items-center justify-center gap-2 border-white/10 bg-white/5 py-2 font-medium text-neutral-200 hover:border-white/20 hover:bg-white/10"
+            className="flex w-full items-center justify-center gap-2 border-red-500/20 bg-red-500/10 py-2 font-medium text-red-300 hover:border-red-500/30 hover:bg-red-500/20"
           >
-            <Settings className="h-4 w-4 opacity-80" />
-            Profile &amp; settings
+            <LogOut className="h-4 w-4" />
+            {t.signout}
           </Button>
-        </Link>
-
-        <Button
-          onClick={handleLogout}
-          variant="outline"
-          className="flex w-full items-center justify-center gap-2 border-red-500/20 bg-red-500/10 py-2 font-medium text-red-300 hover:border-red-500/30 hover:bg-red-500/20"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Button>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 AuthenticatedSection.displayName = "AuthenticatedSection";
 
-const UnauthenticatedSection = React.memo(({ onNavigate }: { onNavigate: () => void }) => {
-  return (
-    <div className="space-y-2 px-2">
-      <Link to={ROUTES.AUTH_SIGNIN} onClick={onNavigate} className="block">
-        <Button
-          variant="outline"
-          className="h-11 w-full border-white/20 bg-transparent font-medium hover:border-white/40 hover:bg-white/5"
-        >
-          Sign in
-        </Button>
-      </Link>
-      <Link to={ROUTES.AUTH_SIGNIN} onClick={onNavigate} className="block">
-        <Button className="bg-gradient-kleff h-11 w-full font-semibold text-black shadow-lg hover:brightness-110">
-          Start your project
-        </Button>
-      </Link>
-    </div>
-  );
-});
+const UnauthenticatedSection = React.memo(
+  ({ onNavigate, locale }: { onNavigate: () => void; locale: "en" | "fr" }) => {
+    const t = translations[locale].header.mobile;
+
+    return (
+      <div className="space-y-2 px-2">
+        <Link to={ROUTES.AUTH_SIGNIN} onClick={onNavigate} className="block">
+          <Button
+            variant="outline"
+            className="h-11 w-full border-white/20 bg-transparent font-medium hover:border-white/40 hover:bg-white/5"
+          >
+            {t.signin}
+          </Button>
+        </Link>
+        <Link to={ROUTES.AUTH_SIGNIN} onClick={onNavigate} className="block">
+          <Button className="bg-gradient-kleff h-11 w-full font-semibold text-black shadow-lg hover:brightness-110">
+            {t.signup}
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+);
 
 UnauthenticatedSection.displayName = "UnauthenticatedSection";

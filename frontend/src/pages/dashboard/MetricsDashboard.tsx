@@ -182,11 +182,11 @@ export function MetricsDashboard() {
               metric={
                 overview && overview.cpuUsagePercent != null
                   ? {
-                      title: "CPU Usage",
+                      title: t.cpu_usage,
                       value: `${overview.cpuUsagePercent.toFixed(1)}%`,
                       rawValue: overview.cpuUsagePercent,
                       changePercent: "+0.0%",
-                      changeLabel: "Cluster average",
+                      changeLabel: t.cluster_average,
                       status: overview.cpuUsagePercent > 80 ? "critical" : "good",
                       sparkline: []
                     }
@@ -205,10 +205,10 @@ export function MetricsDashboard() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 text-lg font-semibold text-neutral-50">Performance</h2>
+            <h2 className="mb-4 text-lg font-semibold text-neutral-50">{t.performance}</h2>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ResourceChart
-                title="CPU Utilization"
+                title={t.cpu_utilization}
                 data={
                   cpuData ?? {
                     currentValue: 0,
@@ -221,7 +221,7 @@ export function MetricsDashboard() {
                 loading={loading || !cpuData}
               />
               <ResourceChart
-                title="Memory Utilization"
+                title={t.memory_utilization}
                 data={
                   memoryData ?? {
                     currentValue: 0,
@@ -237,7 +237,7 @@ export function MetricsDashboard() {
           </div>
 
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-neutral-50">Infrastructure</h2>
+            <h2 className="mb-4 text-lg font-semibold text-neutral-50">{t.infrastructure}</h2>
             <div className="space-y-6">
               <NodesList nodes={nodes} loading={loading || nodes.length === 0} />
               <NamespacesTable

@@ -74,7 +74,7 @@ export function AppFooter() {
                     href={ROUTES.ABOUT}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    About
+                    {t.about}
                   </UnderlineLink>
                 </li>
                 <li>
@@ -82,7 +82,7 @@ export function AppFooter() {
                     href={ROUTES.FAQ}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    FAQ
+                    {t.faq}
                   </UnderlineLink>
                 </li>
               </ul>
@@ -90,14 +90,14 @@ export function AppFooter() {
 
             {/* Legal Column */}
             <div className="min-w-[120px]">
-              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Legal</h3>
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">{t.legal}</h3>
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
                     href={ROUTES.TERMS}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Terms
+                    {t.terms}
                   </UnderlineLink>
                 </li>
                 <li>
@@ -105,7 +105,7 @@ export function AppFooter() {
                     href={ROUTES.PRIVACY}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Privacy
+                    {t.privacy}
                   </UnderlineLink>
                 </li>
               </ul>
@@ -113,14 +113,14 @@ export function AppFooter() {
 
             {/* Contact Us Column */}
             <div>
-              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">Contact Us</h3>
+              <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">{t.contact_us}</h3>
               <ul className="space-y-2">
                 <li>
                   <UnderlineLink
                     href={"https://www.linkedin.com/company/kleffio/"}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Linkedin
+                    {t.linkedin}
                   </UnderlineLink>
                 </li>
                 <li>
@@ -128,7 +128,7 @@ export function AppFooter() {
                     href={"mailto:kleffioapp@gmail.com"}
                     className="text-[14px] text-neutral-500 hover:text-neutral-200"
                   >
-                    Email
+                    {t.email}
                   </UnderlineLink>
                 </li>
               </ul>
@@ -138,7 +138,7 @@ export function AppFooter() {
 
         {/* Copyright */}
         <div className="mt-8 border-t border-white/5 pt-6 text-center text-[14px] text-neutral-600">
-          &copy; {new Date().getFullYear()} Kleff. All rights reserved.
+          {t.copyright.replace("{{year}}", String(new Date().getFullYear()))}
         </div>
       </div>
     </footer>

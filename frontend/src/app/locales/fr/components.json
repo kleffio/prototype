@@ -84,7 +84,11 @@
       "nav_title": "Navigation Kleff",
       "nav_description": "Menu de navigation principal pour la plateforme Kleff, incluant les liens produit, développeur et solution.",
       "signin": "Se connecter",
-      "signup": "Commencez votre projet"
+      "signup": "Commencez votre projet",
+      "start": "Commencer",
+      "dashboard": "Tableau de bord",
+      "profile_settings": "Profil et paramètres",
+      "signout": "Se déconnecter"
     }
   },
 
