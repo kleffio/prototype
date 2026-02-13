@@ -3,7 +3,6 @@ package com.kleff.billingservice.buisnesslayer;
 import com.kleff.billingservice.datalayer.Allocation.ReservedAllocation;
 import com.kleff.billingservice.datalayer.Invoice.Invoice;
 import com.kleff.billingservice.datalayer.Pricing.Price;
-import com.kleff.billingservice.datalayer.Record.UsageRecord;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,8 +10,6 @@ import java.util.List;
 @Service
 public interface BillingService {
     public Invoice createInvoice(Invoice invoice);
-    public void createUsageRecord(UsageRecord record);
-    public List<UsageRecord> getUsageRecordsForProject(String projectId);
     public void payInvoice(String invoiceId);
     public void createReservedAllocation(ReservedAllocation reservedAllocation);
     public List<Invoice> getInvoicesForAProject(String projectId);
@@ -22,7 +19,6 @@ public interface BillingService {
     public long computeOutstandingCents(String invoiceId);
     public List<Price> getPrices();
     public Invoice generateFinalInvoice(String projectId, String username);
-
     public List<Invoice> getNotificationsForProject(String projectId);
     public void markInvoiceAsPaid(String invoiceId, String stripeSessionId);
     public List<Invoice> getAllNotificationsForUser(List<String> projectIds);
