@@ -68,7 +68,10 @@
       "avg_cpu": "Avg CPU Requests",
       "cores": "cores",
       "avg_memory": "Avg Memory Usage",
-      "gb": "GB"
+      "gb": "GB",
+      "avg_network": "Avg Network (In/Out)",
+      "avg_disk": "Avg Disk (Read/Write)",
+      "kbps": "KB/s"
     },
     "cores": "cores",
     "gb": "GB",

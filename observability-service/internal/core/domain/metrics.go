@@ -67,10 +67,14 @@ type DatabaseMetrics struct {
 }
 
 type ProjectUsageMetrics struct {
-	ProjectID       string  `json:"projectID"`
-	MemoryUsageGB   float64 `json:"memoryUsageGB"`
-	CPURequestCores float64 `json:"cpuRequestCores"`
-	Window          string  `json:"window"`
+	ProjectID                  string  `json:"projectID"`
+	MemoryUsageGB              float64 `json:"memoryUsageGB"`
+	CPURequestCores            float64 `json:"cpuRequestCores"`
+	NetworkReceiveBytesPerSec  float64 `json:"networkReceiveBytesPerSec"`
+	NetworkTransmitBytesPerSec float64 `json:"networkTransmitBytesPerSec"`
+	DiskReadBytesPerSec        float64 `json:"diskReadBytesPerSec"`
+	DiskWriteBytesPerSec       float64 `json:"diskWriteBytesPerSec"`
+	Window                     string  `json:"window"`
 }
 
 type ProjectTotalUsageMetrics struct {

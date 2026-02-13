@@ -1,7 +1,9 @@
 ---
 name: Build and Push to ACR
-"on":
+on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:

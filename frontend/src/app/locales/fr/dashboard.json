@@ -70,7 +70,10 @@
       "avg_cpu": "Moy. requêtes CPU",
       "cores": "cœurs",
       "avg_memory": "Moy. utilisation mémoire",
-      "gb": "Go"
+      "gb": "Go",
+      "avg_network": "Moy. E/S Réseau",
+      "avg_disk": "Moy. E/S Disque",
+      "kbps": "Ko/s"
     },
     "project_usage": {
       "loading": "Chargement des métriques d'utilisation...",

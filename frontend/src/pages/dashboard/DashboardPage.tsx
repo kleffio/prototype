@@ -5,9 +5,12 @@ import type { ProjectUsage } from "@features/observability/types/projectUsage.ty
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { MiniCard } from "@shared/ui/MiniCard";
 import { Button } from "@shared/ui/Button";
-import { RefreshCw, Server, Cpu, HardDrive, Activity, TrendingUp, BookOpen } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/ui/Table";
+import { SoftPanel } from "@shared/ui/SoftPanel";
+import { RefreshCw, Server, Cpu, HardDrive, Activity, TrendingUp, BookOpen, Network, Database } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { TutorialSheet } from "./components/TutorialSheet";
+import { NetworkDiskGraph } from "./components/NetworkDiskGraph";
 
 export function DashboardPage() {
   const { projects: allProjects, isLoading: projectsLoading, reload } = useProjects();
@@ -80,6 +83,11 @@ export function DashboardPage() {
   // Calculate aggregated metrics
   const totalCpuCores = projectUsages.reduce((sum, usage) => sum + usage.cpuRequestCores, 0);
   const totalMemoryGB = projectUsages.reduce((sum, usage) => sum + usage.memoryUsageGB, 0);
+  const totalNetworkRx = projectUsages.reduce((sum, usage) => sum + (usage.networkReceiveBytesPerSec || 0), 0);
+  const totalNetworkTx = projectUsages.reduce((sum, usage) => sum + (usage.networkTransmitBytesPerSec || 0), 0);
+  const totalDiskRead = projectUsages.reduce((sum, usage) => sum + (usage.diskReadBytesPerSec || 0), 0);
+  const totalDiskWrite = projectUsages.reduce((sum, usage) => sum + (usage.diskWriteBytesPerSec || 0), 0);
+  
   const activeProjects = projects.length;
   const projectsWithUsage = projectUsages.length;
 
@@ -133,8 +141,8 @@ export function DashboardPage() {
       )}
 
       {/* Project Overview Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MiniCard title="Total Projects">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <MiniCard title="Active Projects">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{activeProjects}</div>
             <Server className="h-5 w-5 text-primary" />
@@ -146,66 +154,99 @@ export function DashboardPage() {
             <Activity className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
-        <MiniCard title="Total CPU Usage">
+        <MiniCard title="Real-time CPU Load">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{totalCpuCores.toFixed(2)} cores</div>
             <Cpu className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
-        <MiniCard title="Total Memory Usage">
+        <MiniCard title="Real-time Memory">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{totalMemoryGB.toFixed(2)} GB</div>
             <HardDrive className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
+        <MiniCard title="Current Network">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+               <span className="text-lg font-bold">In: {(totalNetworkRx / 1024 / 1024).toFixed(2)} MB/s</span>
+               <span className="text-sm text-neutral-400">Out: {(totalNetworkTx / 1024 / 1024).toFixed(2)} MB/s</span>
+            </div>
+            <Network className="h-5 w-5 text-primary" />
+          </div>
+        </MiniCard>
+        <MiniCard title="Current Disk I/O">
+          <div className="flex items-center justify-between">
+             <div className="flex flex-col">
+               <span className="text-lg font-bold">R: {(totalDiskRead / 1024 / 1024).toFixed(2)} MB/s</span>
+               <span className="text-sm text-neutral-400">W: {(totalDiskWrite / 1024 / 1024).toFixed(2)} MB/s</span>
+            </div>
+            <Database className="h-5 w-5 text-primary" />
+          </div>
+        </MiniCard>
       </div>
+
+      {/* Graphs */}
+      <NetworkDiskGraph />
 
       {/* Project Usage Table */}
       {projectUsages.length > 0 && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Resource Usage by Project
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-3 font-medium">Project</th>
-                    <th className="pb-3 font-medium">CPU Cores</th>
-                    <th className="pb-3 font-medium">Memory (GB)</th>
-                    <th className="pb-3 font-medium">Window</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projectUsages
-                    .sort((a, b) => b.cpuRequestCores - a.cpuRequestCores)
-                    .map((usage) => {
-                      const project = projects.find(p => p.projectId === usage.projectID);
-                      
-                      // Filter out usages for projects that no longer exist in the main list
-                      if (!project) return null;
-                      
-                      return (
-                        <tr key={usage.projectID} className="border-b last:border-0">
-                          <td className="py-3">
-                            <div className="font-medium">{project.name}</div>
-                            <div className="text-xs text-muted-foreground">{usage.projectID}</div>
-                          </td>
-                          <td className="py-3">{usage.cpuRequestCores.toFixed(2)}</td>
-                          <td className="py-3">{usage.memoryUsageGB.toFixed(2)}</td>
-                          <td className="py-3">
-                            <span className="text-xs text-muted-foreground">{usage.window}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
+        <SoftPanel>
+          <div className="mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-neutral-400" />
+            <h3 className="text-lg font-semibold text-neutral-50">Resource Usage by Project</h3>
           </div>
-        </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Project</TableHead>
+                  <TableHead>CPU Cores</TableHead>
+                  <TableHead>Memory (GB)</TableHead>
+                  <TableHead>Network (KB/s)</TableHead>
+                  <TableHead>Disk (KB/s)</TableHead>
+                  <TableHead>Window</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projectUsages
+                  .sort((a, b) => b.cpuRequestCores - a.cpuRequestCores)
+                  .map((usage) => {
+                    const project = projects.find(p => p.projectId === usage.projectID);
+                    
+                    // Filter out usages for projects that no longer exist in the main list
+                    if (!project) return null;
+                    
+                    return (
+                      <TableRow key={usage.projectID}>
+                        <TableCell>
+                          <div className="font-medium">{project.name}</div>
+                          <div className="text-xs text-neutral-500">{usage.projectID}</div>
+                        </TableCell>
+                        <TableCell>{usage.cpuRequestCores.toFixed(3)}</TableCell>
+                        <TableCell>{usage.memoryUsageGB.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col text-xs">
+                             <span className="text-neutral-300">↓ {((usage.networkReceiveBytesPerSec || 0) / 1024).toFixed(1)}</span>
+                             <span className="text-neutral-500">↑ {((usage.networkTransmitBytesPerSec || 0) / 1024).toFixed(1)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col text-xs">
+                             <span className="text-neutral-300">R: {((usage.diskReadBytesPerSec || 0) / 1024).toFixed(1)}</span>
+                             <span className="text-neutral-500">W: {((usage.diskWriteBytesPerSec || 0) / 1024).toFixed(1)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs text-neutral-500">{usage.window}</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          </div>
+        </SoftPanel>
       )}
 
       {/* Empty State */}
