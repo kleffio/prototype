@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { FileText, RefreshCw, XCircle } from "lucide-react";
@@ -19,7 +19,111 @@ export function BuildLogsViewer({ projectId, containerId }: BuildLogsViewerProps
   const isValidParams =
     projectId && containerId && projectId !== "undefined" && containerId !== "undefined";
 
-  const fetchLogs = () => {
+  // Auto-scroll to bottom when new logs are added
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  // Handle log streaming
+  useEffect(() => {
+    if (!isValidParams) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Create a new fetch request to handle streaming
+    fetch(
+      `${(import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080").replace(/\/$/, "")}/api/v1/build/logs/${projectId}/${containerId}`,
+      {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-cache",
+          Accept: "text/plain"
+        },
+        signal
+      }
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch build logs: ${response.status} ${response.statusText}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error("Response body is not readable");
+        }
+
+        // Reset state only when we start receiving data
+        setLoading(true);
+        setError(null);
+        setLogs([]);
+        setIsStreaming(true);
+
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        // Read the stream
+        const read = () => {
+          reader
+            .read()
+            .then(({ done, value }) => {
+              if (done) {
+                // Process any remaining data in the buffer
+                if (buffer.trim()) {
+                  setLogs((prev) => [...prev, buffer.trim()]);
+                }
+                setIsStreaming(false);
+                setLoading(false);
+                return;
+              }
+
+              // Decode and process the chunk
+              buffer += decoder.decode(value, { stream: true });
+
+              // Split buffer into lines
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+              lines
+                .filter((line) => line.trim())
+                .forEach((line) => {
+                  setLogs((prev) => [...prev, line.trim()]);
+                  setLoading(false);
+                });
+
+              read(); // Continue reading
+            })
+            .catch((error) => {
+              // Only report error if it's not an abort error
+              if (error.name !== "AbortError") {
+                setError(error.message);
+                setLoading(false);
+                setIsStreaming(false);
+              }
+            });
+        };
+
+        read();
+      })
+      .catch((error) => {
+        // Only report error if it's not an abort error
+        if (error.name !== "AbortError") {
+          setError(error.message);
+          setLoading(false);
+          setIsStreaming(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [isValidParams, projectId, containerId]);
+
+  const fetchLogs = useCallback(() => {
     if (!isValidParams) {
       setError("Invalid parameters: projectId and containerId are required");
       setLoading(false);
@@ -114,105 +218,7 @@ export function BuildLogsViewer({ projectId, containerId }: BuildLogsViewerProps
     return () => {
       controller.abort();
     };
-  };
-
-  // Auto-scroll to bottom when new logs are added
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  useEffect(() => {
-    if (!projectId || !containerId || projectId === "undefined" || containerId === "undefined") {
-      // Handle invalid parameters - don't set state in effect
-      return;
-    }
-
-    const controller = new AbortController();
-    const signal = controller.signal;
-
-    // Create a new fetch request to handle streaming
-    fetch(
-      `${(import.meta.env.VITE_BACKEND_URL ?? "http://localhost:8080").replace(/\/$/, "")}/api/v1/build/logs/${projectId}/${containerId}`,
-      {
-        method: "GET",
-        headers: {
-          "Cache-Control": "no-cache",
-          Accept: "text/plain"
-        },
-        signal
-      }
-    )
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to fetch build logs: ${response.status} ${response.statusText}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("Response body is not readable");
-        }
-
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-
-        // Read the stream
-        const read = () => {
-          reader
-            .read()
-            .then(({ done, value }) => {
-              if (done) {
-                // Process any remaining data in the buffer
-                if (buffer.trim()) {
-                  setLogs((prev) => [...prev, buffer.trim()]);
-                }
-                setIsStreaming(false);
-                setLoading(false);
-                return;
-              }
-
-              // Decode and process the chunk
-              buffer += decoder.decode(value, { stream: true });
-
-              // Split buffer into lines
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-              lines
-                .filter((line) => line.trim())
-                .forEach((line) => {
-                  setLogs((prev) => [...prev, line.trim()]);
-                  setLoading(false);
-                });
-
-              read(); // Continue reading
-            })
-            .catch((error) => {
-              // Only report error if it's not an abort error
-              if (error.name !== "AbortError") {
-                setError(error.message);
-                setLoading(false);
-                setIsStreaming(false);
-              }
-            });
-        };
-
-        read();
-      })
-      .catch((error) => {
-        // Only report error if it's not an abort error
-        if (error.name !== "AbortError") {
-          setError(error.message);
-          setLoading(false);
-          setIsStreaming(false);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [projectId, containerId]);
+  }, [isValidParams, projectId, containerId]);
 
   // Handle invalid parameters synchronously - before any conditional returns
   if (!isValidParams) {
