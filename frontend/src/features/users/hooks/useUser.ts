@@ -16,8 +16,20 @@ export function useUser() {
   const auth = useAuth();
   const ctx = useContext(UserSettingsContext);
 
+  // Return default values if context is not available (during initial render)
   if (!ctx) {
-    throw new Error("useUser must be used inside a <UserSettingsProvider>");
+    return {
+      auth,
+      displayName: "",
+      email: "",
+      initial: "",
+      avatarUrl: null,
+      isAuthenticated: false,
+      user: null,
+      isLoading: true,
+      error: null,
+      reload: () => Promise.resolve()
+    };
   }
 
   const { settings, isLoading: settingsLoading, error, reload } = ctx;
