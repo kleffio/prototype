@@ -357,10 +357,6 @@ func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 		DiskWriteBytesPerSec:       512000.0,
 		DiskReadOpsPerSec:          100.0,
 		DiskWriteOpsPerSec:         50.0,
-		NetworkReceiveBytesPerSec:  2048000.0,
-		NetworkTransmitBytesPerSec: 1536000.0,
-		NetworkReceiveOpsPerSec:    200.0,
-		NetworkTransmitOpsPerSec:   150.0,
 		Source:                     "prometheus",
 	}
 
@@ -1396,21 +1392,11 @@ func TestMetricsService_GetAllMetrics_AllFieldsPopulated(t *testing.T) {
 			DiskWriteBytesPerSec:       512000,
 			DiskReadOpsPerSec:          150,
 			DiskWriteOpsPerSec:         75,
-			NetworkReceiveBytesPerSec:  2048000,
-			NetworkTransmitBytesPerSec: 1536000,
-			NetworkReceiveOpsPerSec:    1000,
-			NetworkTransmitOpsPerSec:   800,
 			DiskReadHistory: []domain.TimeSeriesDataPoint{
 				{Timestamp: 1640995200000, Value: 1000000},
 			},
 			DiskWriteHistory: []domain.TimeSeriesDataPoint{
 				{Timestamp: 1640995200000, Value: 500000},
-			},
-			NetworkReceiveHistory: []domain.TimeSeriesDataPoint{
-				{Timestamp: 1640995200000, Value: 2000000},
-			},
-			NetworkTransmitHistory: []domain.TimeSeriesDataPoint{
-				{Timestamp: 1640995200000, Value: 1500000},
 			},
 			Source: "Prometheus",
 		},
