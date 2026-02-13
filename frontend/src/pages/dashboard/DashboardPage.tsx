@@ -5,16 +5,24 @@ import type { ProjectUsage } from "@features/observability/types/projectUsage.ty
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { MiniCard } from "@shared/ui/MiniCard";
 import { Button } from "@shared/ui/Button";
-import { RefreshCw, Server, Cpu, HardDrive, Activity, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { RefreshCw, Server, Cpu, HardDrive, Activity, TrendingUp, BookOpen } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { TutorialSheet } from "./components/TutorialSheet";
 
 export function DashboardPage() {
-  const { projects, isLoading: projectsLoading } = useProjects();
+  const { projects: allProjects, isLoading: projectsLoading, reload } = useProjects();
+  // Filter out deleted projects to match ProjectsPage behavior
+  const projects = useMemo(() => 
+    allProjects.filter(p => p.projectStatus !== "DELETED"),
+    [allProjects]
+  );
+
   const [projectUsages, setProjectUsages] = useState<ProjectUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [locale, setLocaleState] = useState(getLocale());
 
   // Listen for locale changes
@@ -32,6 +40,7 @@ export function DashboardPage() {
     if (projectsLoading) return;
     
     if (projects.length === 0) {
+      setProjectUsages([]);
       setLoading(false);
       return;
     }
@@ -92,13 +101,22 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsTutorialOpen(true)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <BookOpen className="h-4 w-4" />
+            Guide
+          </Button>
+          <Button
             variant="outline"
             size="sm"
-            onClick={fetchProjectMetrics}
-            disabled={loading}
+            onClick={() => reload()}
+            disabled={loading || projectsLoading}
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading || projectsLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button onClick={() => setIsModalOpen(true)}>
@@ -119,25 +137,25 @@ export function DashboardPage() {
         <MiniCard title="Total Projects">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{activeProjects}</div>
-            <Server className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Server className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
         <MiniCard title="Projects with Data">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{projectsWithUsage}</div>
-            <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <Activity className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
         <MiniCard title="Total CPU Usage">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{totalCpuCores.toFixed(2)} cores</div>
-            <Cpu className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <Cpu className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
         <MiniCard title="Total Memory Usage">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{totalMemoryGB.toFixed(2)} GB</div>
-            <HardDrive className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <HardDrive className="h-5 w-5 text-primary" />
           </div>
         </MiniCard>
       </div>
@@ -165,10 +183,14 @@ export function DashboardPage() {
                     .sort((a, b) => b.cpuRequestCores - a.cpuRequestCores)
                     .map((usage) => {
                       const project = projects.find(p => p.projectId === usage.projectID);
+                      
+                      // Filter out usages for projects that no longer exist in the main list
+                      if (!project) return null;
+                      
                       return (
                         <tr key={usage.projectID} className="border-b last:border-0">
                           <td className="py-3">
-                            <div className="font-medium">{project?.name || usage.projectID}</div>
+                            <div className="font-medium">{project.name}</div>
                             <div className="text-xs text-muted-foreground">{usage.projectID}</div>
                           </td>
                           <td className="py-3">{usage.cpuRequestCores.toFixed(2)}</td>
@@ -204,6 +226,11 @@ export function DashboardPage() {
       <CreateProjectModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <TutorialSheet 
+        open={isTutorialOpen} 
+        onOpenChange={setIsTutorialOpen} 
       />
     </div>
   );
