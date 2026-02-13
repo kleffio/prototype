@@ -35,6 +35,9 @@ dependencies {
     implementation 'org.mapstruct:mapstruct:1.6.2'
 
     runtimeOnly 'org.postgresql:postgresql'
+    
+    // Apache HTTP Client for RestTemplate PATCH support
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
