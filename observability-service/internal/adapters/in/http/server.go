@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, userServiceURL string) *gin.Engine {
+func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, exportHandler *ExportHandler, userServiceURL string) *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
@@ -54,6 +54,9 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, userServiceU
 		api.GET("/projects/:projectID/usage/:days", handler.GetProjectUsageMetricsWithDays)
 		api.GET("/projects/:projectID/usage", handler.GetProjectUsageMetrics)
 		api.GET("/projects/:projectID/totalusage", handler.GetProjectTotalUsageMetrics)
+
+		api.GET("/export/logs", exportHandler.ExportLogs)
+		api.GET("/export/metrics", exportHandler.ExportMetrics)
 	}
 
 	router.GET("/health", func(c *gin.Context) {

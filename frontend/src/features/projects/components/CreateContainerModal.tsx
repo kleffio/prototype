@@ -19,7 +19,7 @@ interface ContainerModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
-  onSuccess?: () => void;
+  onSuccess?: (container?: Container) => void;
   container?: Container | null; // Added: if null, we are creating. If object, we are editing.
 }
 
@@ -185,13 +185,14 @@ export function ContainerModal({
         storageSizeGB: enableDatabase ? storageSizeGB : undefined
       };
 
+      let createdContainer: Container | undefined;
       if (isEditMode && container) {
         await updateContainer(container.containerId, payload);
       } else {
-        await createContainer(payload);
+        createdContainer = await createContainer(payload);
       }
 
-      onSuccess?.();
+      onSuccess?.(createdContainer);
       onClose();
     } catch {
       setError(t.failed_save);

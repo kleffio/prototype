@@ -135,6 +135,7 @@
       "edit_container": "Edit Container",
       "visit_app": "Visit App",
       "view_logs": "View Logs",
+      "view_build_logs": "View Build Logs",
       "unknown": "Unknown",
       "copied": "Copied!",
       "restart": "Restart",

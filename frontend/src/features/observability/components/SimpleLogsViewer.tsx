@@ -8,6 +8,7 @@ import frTranslations from "@app/locales/fr/dashboard.json";
 import { getLocale } from "@app/locales/locale";
 
 const translations = { en: enTranslations, fr: frTranslations };
+import { ExportLogsButton } from "./ExportLogsButton";
 
 interface SimpleLogsViewerProps {
   projectId: string;
@@ -90,9 +91,12 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
             {t.logs.logs_prefix} {containerName}
           </h2>
         </div>
-        <Button size="sm" variant="ghost" onClick={fetchLogs} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ExportLogsButton projectId={projectId} />
+          <Button size="sm" variant="ghost" onClick={fetchLogs} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-white/10 bg-black/40 p-4">

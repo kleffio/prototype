@@ -33,7 +33,11 @@ func main() {
 
 	logsHandler := http.NewLogsHandler(logsService)
 
-	router := http.SetupRouter(metricsHandler, logsHandler, cfg.UserServiceURL)
+	exportService := services.NewExportService(lokiClient, prometheusClient)
+
+	exportHandler := http.NewExportHandler(exportService)
+
+	router := http.SetupRouter(metricsHandler, logsHandler, exportHandler, cfg.UserServiceURL)
 
 	log.Printf("Server listening on port %s", cfg.ServerPort)
 	if err := router.Run(":" + cfg.ServerPort); err != nil {

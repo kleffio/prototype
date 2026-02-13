@@ -13,6 +13,7 @@ import type {
 import enTranslations from "@app/locales/en/dashboard.json";
 import frTranslations from "@app/locales/fr/dashboard.json";
 import { getLocale } from "@app/locales/locale";
+import { ExportMetricsButton } from "@features/observability/components/ExportMetricsButton";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -98,6 +99,7 @@ export function MetricsDashboard() {
                 <span className="text-xs text-neutral-400">
                   {t.last_updated} {lastUpdate.toLocaleTimeString()}
                 </span>
+                <ExportMetricsButton />
                 <button
                   onClick={() => fetchData()}
                   className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:border-white/40 hover:bg-white/10"
