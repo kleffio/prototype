@@ -5,14 +5,6 @@ import { useProjects } from "@features/projects/hooks/useProjects";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Network, Database, RefreshCw } from "lucide-react";
 
-interface GraphDataPoint {
-    timestamp: number;
-    rx?: number;
-    tx?: number;
-    read?: number;
-    write?: number;
-}
-
 interface TooltipPayload {
     name: string;
     value: number;

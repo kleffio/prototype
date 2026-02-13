@@ -8,7 +8,7 @@ import { Button } from "@shared/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/ui/Table";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { RefreshCw, Server, Cpu, HardDrive, Activity, TrendingUp, BookOpen, Network, Database } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { TutorialSheet } from "./components/TutorialSheet";
 import { NetworkDiskGraph } from "./components/NetworkDiskGraph";
 
@@ -39,7 +39,7 @@ export function DashboardPage() {
     return () => clearInterval(interval);
   }, [locale]);
 
-  const fetchProjectMetrics = async () => {
+  const fetchProjectMetrics = useCallback(async () => {
     if (projectsLoading) return;
     
     if (projects.length === 0) {
@@ -70,7 +70,7 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projects, projectsLoading]);
 
   useEffect(() => {
     if (!projectsLoading) {
