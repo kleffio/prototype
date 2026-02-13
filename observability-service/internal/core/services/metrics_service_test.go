@@ -353,11 +353,11 @@ func TestGetNamespaces_Success(t *testing.T) {
 
 func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	expectedMetrics := &domain.DatabaseMetrics{
-		DiskReadBytesPerSec:        1024000.0,
-		DiskWriteBytesPerSec:       512000.0,
-		DiskReadOpsPerSec:          100.0,
-		DiskWriteOpsPerSec:         50.0,
-		Source:                     "prometheus",
+		DiskReadBytesPerSec:  1024000.0,
+		DiskWriteBytesPerSec: 512000.0,
+		DiskReadOpsPerSec:    100.0,
+		DiskWriteOpsPerSec:   50.0,
+		Source:               "prometheus",
 	}
 
 	mockRepo := &mockMetricsRepository{
@@ -1388,10 +1388,10 @@ func TestMetricsService_GetAllMetrics_AllFieldsPopulated(t *testing.T) {
 			},
 		},
 		DatabaseIOMetrics: &domain.DatabaseMetrics{
-			DiskReadBytesPerSec:        1024000,
-			DiskWriteBytesPerSec:       512000,
-			DiskReadOpsPerSec:          150,
-			DiskWriteOpsPerSec:         75,
+			DiskReadBytesPerSec:  1024000,
+			DiskWriteBytesPerSec: 512000,
+			DiskReadOpsPerSec:    150,
+			DiskWriteOpsPerSec:   75,
 			DiskReadHistory: []domain.TimeSeriesDataPoint{
 				{Timestamp: 1640995200000, Value: 1000000},
 			},
