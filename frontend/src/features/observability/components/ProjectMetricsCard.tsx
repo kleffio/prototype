@@ -4,7 +4,7 @@ import type { ProjectUsage } from "@features/observability/types/projectUsage.ty
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { MiniCard } from "@shared/ui/MiniCard";
 import { GradientIcon } from "@shared/ui/GradientIcon";
-import { Clock, Cpu, HardDrive } from "lucide-react";
+import { Clock, Cpu, HardDrive, Database } from "lucide-react";
 import enTranslations from "@app/locales/en/dashboard.json";
 import frTranslations from "@app/locales/fr/dashboard.json";
 import { getLocale } from "@app/locales/locale";
@@ -79,7 +79,7 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
         <h2 className="text-lg font-semibold text-neutral-50">{t.project_metrics.title}</h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MiniCard title={t.project_metrics.avg_cpu}>
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-neutral-400" />
@@ -97,6 +97,19 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
               {(usage.memoryUsageGB || 0).toFixed(2)}
             </span>
             <span className="text-xs text-neutral-400">{t.project_metrics.gb}</span>
+          </div>
+        </MiniCard>
+
+        <MiniCard title={t.project_metrics.avg_disk}>
+          <div className="flex items-center gap-2">
+            <Database className="h-4 w-4 text-neutral-400" />
+            <div className="flex flex-col">
+              <span className="text-lg leading-tight font-semibold text-neutral-50">
+                R:{((usage.diskReadBytesPerSec || 0) / 1024).toFixed(1)} / W:
+                {((usage.diskWriteBytesPerSec || 0) / 1024).toFixed(1)}
+              </span>
+              <span className="text-xs text-neutral-400">{t.project_metrics.kbps}</span>
+            </div>
           </div>
         </MiniCard>
       </div>

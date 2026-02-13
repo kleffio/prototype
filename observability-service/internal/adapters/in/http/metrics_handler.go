@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"prometheus-metrics-api/internal/core/ports"
 
@@ -126,8 +127,14 @@ func (h *MetricsHandler) GetNamespaces(c *gin.Context) {
 
 func (h *MetricsHandler) GetDatabaseIOMetrics(c *gin.Context) {
 	duration := c.DefaultQuery("duration", "1h")
+	namespacesStr := c.Query("namespaces")
 
-	metrics, err := h.metricsService.GetDatabaseIOMetrics(c.Request.Context(), duration)
+	var namespaces []string
+	if namespacesStr != "" {
+		namespaces = strings.Split(namespacesStr, ",")
+	}
+
+	metrics, err := h.metricsService.GetDatabaseIOMetrics(c.Request.Context(), duration, namespaces)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

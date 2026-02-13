@@ -34,6 +34,23 @@
       "24h": "Last 24 hours"
     },
     "cluster_error": "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible.",
+    "project_filter": "Project",
+    "select_project": "Select a project",
+    "loading_projects": "Loading projects...",
+    "all_projects": "All Projects",
+    "cluster_wide": "Cluster-wide",
+    "no_projects_available": "No projects available",
+    "prometheus_unavailable": "Metrics Temporarily Unavailable",
+    "prometheus_error": "Unable to connect to monitoring system. Displaying cached data or placeholders.",
+    "real_time_metrics": "Real-time Metrics",
+    "project_overview": "Project Overview",
+    "total_pods": "Total Pods",
+    "running_pods": "Running Pods",
+    "pod_count": "Pod Count",
+    "namespace_cpu": "Namespace CPU Usage",
+    "namespace_memory": "Namespace Memory Usage",
+    "requests_per_second": "Requests/sec",
+    "no_data_available": "No data available for this namespace",
     "logs": {
       "loading": "Loading logs...",
       "failed_title": "Failed to Load Logs",
@@ -51,8 +68,13 @@
       "avg_cpu": "Avg CPU Requests",
       "cores": "cores",
       "avg_memory": "Avg Memory Usage",
-      "gb": "GB"
+      "gb": "GB",
+      "avg_network": "Avg Network (In/Out)",
+      "avg_disk": "Avg Disk (Read/Write)",
+      "kbps": "KB/s"
     },
+    "cores": "cores",
+    "gb": "GB",
     "project_usage": {
       "loading": "Loading usage metrics...",
       "error": "Unable to retrieve usage metrics. Please check your connection.",

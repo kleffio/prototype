@@ -49,6 +49,7 @@ export function MetricsDashboard() {
       setLoading(true);
       setError(null);
 
+      // Fetch cluster-wide metrics
       const metrics = await getAllMetrics(timeRange);
 
       setOverview(metrics.overview);
@@ -59,6 +60,7 @@ export function MetricsDashboard() {
       setMemoryData(metrics.memoryUtilization);
       setNodes(metrics.nodes || []);
       setNamespaces(metrics.namespaces || []);
+
       setLastUpdate(new Date());
     } catch (err) {
       setError(t.cluster_error);
@@ -90,37 +92,40 @@ export function MetricsDashboard() {
       <div className="flex-1 overflow-auto">
         <div className="app-container py-8">
           <div className="mb-8">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h1 className="text-3xl font-semibold text-neutral-50">{t.metrics_overview}</h1>
                 <p className="mt-1 text-sm text-neutral-400">{t.monitor_cluster}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-neutral-400">
-                  {t.last_updated} {lastUpdate.toLocaleTimeString()}
-                </span>
-                <ExportMetricsButton />
-                <button
-                  onClick={() => fetchData()}
-                  className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:border-white/40 hover:bg-white/10"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  {t.refresh}
-                </button>
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-sm text-neutral-200 hover:border-white/40 hover:bg-white/10 focus:ring-2 focus:ring-white/20 focus:outline-none"
-                  style={{
-                    colorScheme: "dark"
-                  }}
-                >
-                  {(Object.entries(t.time_ranges) as [string, string][]).map(([value, label]) => (
-                    <option key={value} value={value} className="bg-neutral-900 text-neutral-200">
-                      {label}
-                    </option>
-                  ))}
-                </select>
+
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-neutral-400">
+                    {t.last_updated} {lastUpdate.toLocaleTimeString()}
+                  </span>
+                  <ExportMetricsButton />
+                  <button
+                    onClick={() => fetchData()}
+                    className="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:border-white/40 hover:bg-white/10"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {t.refresh}
+                  </button>
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-sm text-neutral-200 hover:border-white/40 hover:bg-white/10 focus:ring-2 focus:ring-white/20 focus:outline-none"
+                    style={{
+                      colorScheme: "dark"
+                    }}
+                  >
+                    {(Object.entries(t.time_ranges) as [string, string][]).map(([value, label]) => (
+                      <option key={value} value={value} className="bg-neutral-900 text-neutral-200">
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -135,6 +140,7 @@ export function MetricsDashboard() {
             </div>
           )}
 
+          {/* Render cluster-wide metrics */}
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               metric={

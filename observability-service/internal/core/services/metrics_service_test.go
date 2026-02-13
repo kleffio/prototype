@@ -22,7 +22,7 @@ type mockMetricsRepository struct {
 	getMemoryUtilizationFunc                func(ctx context.Context, duration string) (*domain.ResourceUtilization, error)
 	getNodesFunc                            func(ctx context.Context) ([]domain.NodeMetric, error)
 	getNamespacesFunc                       func(ctx context.Context) ([]domain.NamespaceMetric, error)
-	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error)
+	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
 	getProjectUsageMetricsFunc              func(ctx context.Context, projectID string) (*domain.ProjectUsageMetrics, error)
 	getProjectUsageMetricsWithDaysFunc      func(ctx context.Context, projectID string, days int) (*domain.ProjectUsageMetrics, error)
 	getProjectTotalUsageMetricsFunc         func(ctx context.Context, projectID string) (*domain.ProjectTotalUsageMetrics, error)
@@ -101,9 +101,9 @@ func (m *mockMetricsRepository) GetNamespaces(ctx context.Context) ([]domain.Nam
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockMetricsRepository) GetDatabaseIOMetrics(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+func (m *mockMetricsRepository) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 	if m.getDatabaseIOMetricsFunc != nil {
-		return m.getDatabaseIOMetricsFunc(ctx, duration)
+		return m.getDatabaseIOMetricsFunc(ctx, duration, namespaces)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -353,19 +353,15 @@ func TestGetNamespaces_Success(t *testing.T) {
 
 func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	expectedMetrics := &domain.DatabaseMetrics{
-		DiskReadBytesPerSec:        1024000.0,
-		DiskWriteBytesPerSec:       512000.0,
-		DiskReadOpsPerSec:          100.0,
-		DiskWriteOpsPerSec:         50.0,
-		NetworkReceiveBytesPerSec:  2048000.0,
-		NetworkTransmitBytesPerSec: 1536000.0,
-		NetworkReceiveOpsPerSec:    200.0,
-		NetworkTransmitOpsPerSec:   150.0,
-		Source:                     "prometheus",
+		DiskReadBytesPerSec:  1024000.0,
+		DiskWriteBytesPerSec: 512000.0,
+		DiskReadOpsPerSec:    100.0,
+		DiskWriteOpsPerSec:   50.0,
+		Source:               "prometheus",
 	}
 
 	mockRepo := &mockMetricsRepository{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return expectedMetrics, nil
 		},
 	}
@@ -373,7 +369,7 @@ func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	service := NewMetricsService(mockRepo)
 	ctx := context.Background()
 
-	result, err := service.GetDatabaseIOMetrics(ctx, "1h")
+	result, err := service.GetDatabaseIOMetrics(ctx, "1h", nil)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -688,7 +684,7 @@ func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	expectedError := errors.New("database io error")
 
 	mockRepo := &mockMetricsRepository{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return nil, expectedError
 		},
 	}
@@ -696,7 +692,7 @@ func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	service := NewMetricsService(mockRepo)
 	ctx := context.Background()
 
-	result, err := service.GetDatabaseIOMetrics(ctx, "1h")
+	result, err := service.GetDatabaseIOMetrics(ctx, "1h", nil)
 
 	if err == nil {
 		t.Fatal("Expected error, got nil")
@@ -1392,25 +1388,15 @@ func TestMetricsService_GetAllMetrics_AllFieldsPopulated(t *testing.T) {
 			},
 		},
 		DatabaseIOMetrics: &domain.DatabaseMetrics{
-			DiskReadBytesPerSec:        1024000,
-			DiskWriteBytesPerSec:       512000,
-			DiskReadOpsPerSec:          150,
-			DiskWriteOpsPerSec:         75,
-			NetworkReceiveBytesPerSec:  2048000,
-			NetworkTransmitBytesPerSec: 1536000,
-			NetworkReceiveOpsPerSec:    1000,
-			NetworkTransmitOpsPerSec:   800,
+			DiskReadBytesPerSec:  1024000,
+			DiskWriteBytesPerSec: 512000,
+			DiskReadOpsPerSec:    150,
+			DiskWriteOpsPerSec:   75,
 			DiskReadHistory: []domain.TimeSeriesDataPoint{
 				{Timestamp: 1640995200000, Value: 1000000},
 			},
 			DiskWriteHistory: []domain.TimeSeriesDataPoint{
 				{Timestamp: 1640995200000, Value: 500000},
-			},
-			NetworkReceiveHistory: []domain.TimeSeriesDataPoint{
-				{Timestamp: 1640995200000, Value: 2000000},
-			},
-			NetworkTransmitHistory: []domain.TimeSeriesDataPoint{
-				{Timestamp: 1640995200000, Value: 1500000},
 			},
 			Source: "Prometheus",
 		},
