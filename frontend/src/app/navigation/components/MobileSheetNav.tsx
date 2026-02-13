@@ -97,9 +97,7 @@ export function MobileSheetNav() {
           </div>
 
           <SheetTitle className="sr-only">{t.mobile.nav_title}</SheetTitle>
-          <SheetDescription className="sr-only">
-            {t.mobile.nav_description}
-          </SheetDescription>
+          <SheetDescription className="sr-only">{t.mobile.nav_description}</SheetDescription>
         </SheetHeader>
 
         <nav className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(100vh - 73px)" }}>

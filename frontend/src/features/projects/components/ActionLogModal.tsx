@@ -323,9 +323,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
               </div>
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-white">{t.title}</h2>
-                <p className="mt-0.5 text-sm text-neutral-400">
-                  {t.subtitle}
-                </p>
+                <p className="mt-0.5 text-sm text-neutral-400">{t.subtitle}</p>
               </div>
             </div>
 

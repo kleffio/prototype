@@ -84,9 +84,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-neutral-50">{t.title}</h2>
-              <p className="mt-1 text-xs text-neutral-400">
-                {t.subtitle}
-              </p>
+              <p className="mt-1 text-xs text-neutral-400">{t.subtitle}</p>
             </div>
 
             <button
