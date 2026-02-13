@@ -33,7 +33,7 @@ export class DashboardPage extends BasePage {
   }
 
   async closeTutorial() {
-    // Click outside or press escape, or find the close button. 
+    // Click outside or press escape, or find the close button.
     // Standard sheet usually has a close button (X).
     await this.page.keyboard.press("Escape");
   }
@@ -44,26 +44,26 @@ export class DashboardPage extends BasePage {
 
   // Cards Verification
   async expectMetricsCardsVisible() {
-     const cards = [
-         "Active Projects",
-         "Projects with Data",
-         "Real-time CPU Load",
-         "Real-time Memory",
-         "Current Network",
-         "Current Disk I/O"
-     ];
+    const cards = [
+      "Active Projects",
+      "Projects with Data",
+      "Real-time CPU Load",
+      "Real-time Memory",
+      "Current Network",
+      "Current Disk I/O"
+    ];
 
-     for (const title of cards) {
-         await expect(this.page.locator("div").filter({ hasText: title }).first()).toBeVisible();
-     }
+    for (const title of cards) {
+      await expect(this.page.locator("div").filter({ hasText: title }).first()).toBeVisible();
+    }
   }
 
   // Graph Verification
   async expectGraphsVisible() {
-      // We look for the graph titles from NetworkDiskGraph.tsx
-      await expect(this.page.getByText("Network Traffic")).toBeVisible();
-      await expect(this.page.getByText("Disk I/O")).toBeVisible();
-      // Check for Recharts container
-      await expect(this.page.locator(".recharts-surface").first()).toBeVisible();
+    // We look for the graph titles from NetworkDiskGraph.tsx
+    await expect(this.page.getByText("Network Traffic")).toBeVisible();
+    await expect(this.page.getByText("Disk I/O")).toBeVisible();
+    // Check for Recharts container
+    await expect(this.page.locator(".recharts-surface").first()).toBeVisible();
   }
 }

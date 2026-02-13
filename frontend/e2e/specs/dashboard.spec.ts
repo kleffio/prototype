@@ -3,12 +3,11 @@ import { DashboardPage } from "../pages/dashboard/dashboard.page";
 import { expect } from "@playwright/test";
 
 test.describe("Dashboard", () => {
-    
   test("loads correctly with all components", async ({ page }) => {
     const dashboard = new DashboardPage(page);
     await dashboard.open();
     await dashboard.expectLoaded();
-    
+
     await dashboard.expectMetricsCardsVisible();
     await dashboard.expectGraphsVisible();
   });
@@ -42,10 +41,12 @@ test.describe("Dashboard", () => {
     await firstImage.click();
 
     await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByRole("dialog").locator("img")).toHaveAttribute("src", "/assets/tutorial/dashboard-overview.png");
-    
+    await expect(page.getByRole("dialog").locator("img")).toHaveAttribute(
+      "src",
+      "/assets/tutorial/dashboard-overview.png"
+    );
+
     await page.getByRole("dialog").locator("button").click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
   });
-
 });

@@ -104,8 +104,9 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
           <div className="flex items-center gap-2">
             <Network className="h-4 w-4 text-neutral-400" />
             <div className="flex flex-col">
-              <span className="text-lg font-semibold text-neutral-50 leading-tight">
-                ↓{((usage.networkReceiveBytesPerSec || 0) / 1024).toFixed(1)} / ↑{((usage.networkTransmitBytesPerSec || 0) / 1024).toFixed(1)}
+              <span className="text-lg leading-tight font-semibold text-neutral-50">
+                ↓{((usage.networkReceiveBytesPerSec || 0) / 1024).toFixed(1)} / ↑
+                {((usage.networkTransmitBytesPerSec || 0) / 1024).toFixed(1)}
               </span>
               <span className="text-xs text-neutral-400">{t.project_metrics.kbps}</span>
             </div>
@@ -116,8 +117,9 @@ export default function ProjectMetricsCard({ projectId }: ProjectMetricsCardProp
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-neutral-400" />
             <div className="flex flex-col">
-              <span className="text-lg font-semibold text-neutral-50 leading-tight">
-                R:{((usage.diskReadBytesPerSec || 0) / 1024).toFixed(1)} / W:{((usage.diskWriteBytesPerSec || 0) / 1024).toFixed(1)}
+              <span className="text-lg leading-tight font-semibold text-neutral-50">
+                R:{((usage.diskReadBytesPerSec || 0) / 1024).toFixed(1)} / W:
+                {((usage.diskWriteBytesPerSec || 0) / 1024).toFixed(1)}
               </span>
               <span className="text-xs text-neutral-400">{t.project_metrics.kbps}</span>
             </div>

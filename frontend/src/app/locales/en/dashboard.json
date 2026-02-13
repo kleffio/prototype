@@ -46,7 +46,7 @@
     "project_overview": "Project Overview",
     "total_pods": "Total Pods",
     "running_pods": "Running Pods",
-    "pod_count": "Pod Count",  
+    "pod_count": "Pod Count",
     "namespace_cpu": "Namespace CPU Usage",
     "namespace_memory": "Namespace Memory Usage",
     "requests_per_second": "Requests/sec",

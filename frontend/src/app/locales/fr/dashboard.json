@@ -47,7 +47,7 @@
     "total_pods": "Pods totaux",
     "running_pods": "Pods en cours",
     "pod_count": "Nombre de pods",
-    "namespace_cpu": "Utilisation CPU du namespace", 
+    "namespace_cpu": "Utilisation CPU du namespace",
     "namespace_memory": "Utilisation mémoire du namespace",
     "requests_per_second": "Requêtes/sec",
     "no_data_available": "Aucune donnée disponible pour ce namespace",

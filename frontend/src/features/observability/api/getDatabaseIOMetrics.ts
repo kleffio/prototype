@@ -21,12 +21,15 @@ export interface DatabaseIOMetrics {
   source: string;
 }
 
-export async function getDatabaseIOMetrics(duration = "1h", namespaces: string[] = []): Promise<DatabaseIOMetrics> {
+export async function getDatabaseIOMetrics(
+  duration = "1h",
+  namespaces: string[] = []
+): Promise<DatabaseIOMetrics> {
   const params: Record<string, string> = { duration };
   if (namespaces.length > 0) {
     params.namespaces = namespaces.join(",");
   }
-  
+
   const response = await client.get<DatabaseIOMetrics>("/api/v1/systems/database-io", {
     params
   });
