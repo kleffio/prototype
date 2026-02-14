@@ -1,5 +1,6 @@
 package com.kleff.billingservice.buisnesslayer;
 
+import com.kleff.billingservice.config.UrlNormalizer;
 import com.kleff.billingservice.datalayer.Allocation.ReservedAllocation;
 import com.kleff.billingservice.datalayer.Allocation.ReservedAllocationRepository;
 import com.kleff.billingservice.datalayer.Invoice.Invoice;
@@ -13,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestClient;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
@@ -42,14 +44,16 @@ public class BillingServiceImpl implements BillingService {
             UsageRecordRepository usageRecordRepository,
             PriceRepository priceRepository,
             ApiService apiService,
-            RestClient.Builder restClientBuilder
+            RestClient.Builder restClientBuilder,
+            @Value("${vite.backend.url:http://project-management-service:8080}") String backendUrl
     ) {
         this.reservedAllocationRepository = reservedAllocationRepository;
         this.invoiceRepository = invoiceRepository;
         this.usageRecordRepository = usageRecordRepository;
         this.priceRepository = priceRepository;
         this.apiService = apiService;
-        this.restClient = restClientBuilder.build();
+        String normalizedBackendUrl = UrlNormalizer.toAbsoluteBaseUrl(backendUrl, "vite.backend.url");
+        this.restClient = restClientBuilder.baseUrl(normalizedBackendUrl).build();
     }
 
     //All the invoice logic
@@ -396,7 +400,6 @@ public class BillingServiceImpl implements BillingService {
         return savedInvoice;
     }
 }
-
 
 
 

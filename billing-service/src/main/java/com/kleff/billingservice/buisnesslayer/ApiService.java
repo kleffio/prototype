@@ -1,5 +1,6 @@
 package com.kleff.billingservice.buisnesslayer;
 
+import com.kleff.billingservice.config.UrlNormalizer;
 import com.kleff.billingservice.datalayer.Record.UsageMonth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,20 +11,20 @@ import java.util.List;
 @Service
 public class ApiService {
 
-    @Value("${vite.backend.url}")
-    private String backendUrl;
-
     private final RestClient restClient;
 
-    public ApiService(RestClient.Builder restClientBuilder) {
+    public ApiService(
+            RestClient.Builder restClientBuilder,
+            @Value("${vite.backend.url:http://project-management-service:8080}") String backendUrl) {
+        String normalizedBackendUrl = UrlNormalizer.toAbsoluteBaseUrl(backendUrl, "vite.backend.url");
         this.restClient = restClientBuilder
-                .baseUrl(backendUrl)
+                .baseUrl(normalizedBackendUrl)
                 .build();
     }
 
     public List<String> getListOfProjectIds() {
         return restClient.get()
-                .uri("api/v1/projects/ListID")
+                .uri("/api/v1/projects/ListID")
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<String>>() {});
     }
@@ -31,7 +32,7 @@ public class ApiService {
     // GET request that returns a single JSON object
     public UsageMonth usageRecordForLastMonth(String id, int days) {
         return restClient.get()
-                .uri("api/v1/systems/projects/{id}/{days}", id, days)
+                .uri("/api/v1/systems/projects/{id}/{days}", id, days)
                 .retrieve()
                 .body(UsageMonth.class);
     }

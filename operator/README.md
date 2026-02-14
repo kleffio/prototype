@@ -1,8 +1,22 @@
-# operator
-// TODO(user): Add simple overview of use/purpose
+# Kleff.io WebApp Operator
+
+A Kubernetes Operator built to simplify the deployment and management of web applications on Kubernetes clusters. This operator focuses on providing a simple, easy-to-use interface for deploying web apps with minimal Kubernetes expertise required.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+
+The Kleff.io WebApp Operator is designed to make deploying web applications on Kubernetes as simple as possible. It abstracts away the complexity of managing multiple Kubernetes resources (such as Deployments, Services, Ingresses, and Databases) by providing a single, declarative custom resource called `WebApp`.
+
+Key features that enable simple, easy deployments:
+
+- **Single Custom Resource**: Define your entire web application deployment in one YAML file
+- **Automatic Resource Management**: The operator automatically creates and manages all necessary Kubernetes resources
+- **Built-in Ingress Routing**: Integrated with Envoy Gateway for automatic HTTP routing with custom domains
+- **Optional Database Provisioning**: Easily add a PostgreSQL database with CloudNativePG integration
+- **Secret Management**: Automatic handling of database credentials and other sensitive information
+- **Simplified Configuration**: Minimal required fields with sensible defaults for most settings
+- **Status Tracking**: Real-time status updates and health checks for your applications
+
+This operator is perfect for developers who want to deploy their applications to Kubernetes without having to learn all the intricacies of Kubernetes resource management.
 
 ## Getting Started
 

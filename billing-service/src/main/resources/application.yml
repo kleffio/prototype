@@ -1,7 +1,7 @@
 ---
 vite:
   backend:
-    url: ${VITE_BACKEND_URL}
+    url: ${VITE_BACKEND_URL:http://project-management-service:8080}
 stripe:
   api:
     key: ${STRIPE_API_KEY}

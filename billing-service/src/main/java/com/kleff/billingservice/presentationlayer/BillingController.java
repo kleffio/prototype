@@ -1,6 +1,7 @@
 package com.kleff.billingservice.presentationlayer;
 
 import com.kleff.billingservice.buisnesslayer.BillingService;
+import com.kleff.billingservice.config.UrlNormalizer;
 import com.kleff.billingservice.datalayer.Allocation.ReservedAllocation;
 import com.kleff.billingservice.datalayer.Invoice.Invoice;
 import com.kleff.billingservice.datalayer.Pricing.Price;
@@ -35,16 +36,18 @@ public class BillingController {
 
     @Value("${frontend.url}")
     private String frontend;
-    @Value("${vite.backend.url}")
     private String backendUrl;
     
     private final BillingService billingService;
     private final RestClient restClient;
 
-    public BillingController(BillingService billingService, RestClient.Builder restClientBuilder, @Value("${vite.backend.url}") String backendUrl) {
+    public BillingController(
+            BillingService billingService,
+            RestClient.Builder restClientBuilder,
+            @Value("${vite.backend.url:http://project-management-service:8080}") String backendUrl) {
         this.billingService = billingService;
-        this.restClient = restClientBuilder.baseUrl(backendUrl).build();
-        this.backendUrl = backendUrl;
+        this.backendUrl = UrlNormalizer.toAbsoluteBaseUrl(backendUrl, "vite.backend.url");
+        this.restClient = restClientBuilder.baseUrl(this.backendUrl).build();
     }
     
     private String getUserIdFromAuth(Authentication authentication) {
@@ -308,11 +311,11 @@ public class BillingController {
         return billingService.getPrices();
     }
 
-/**
+    /**
      * Generates a final invoice for a project being deleted.
-     * Only the project owner can generate a final invoice.
+     * Supports POST as the primary action endpoint and DELETE for backward compatibility.
      */
-    @DeleteMapping("/{projectId}/final-invoice")
+    @RequestMapping(value = "/{projectId}/final-invoice", method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<?> generateFinalInvoice(
             @PathVariable String projectId,
             Authentication authentication,
@@ -320,10 +323,10 @@ public class BillingController {
         try {
             String userId = getUserIdFromAuth(authentication);
             
-            if (!hasPermission(userId, projectId, "OWNER", authHeader)) {
-                logger.warn("User {} attempted to generate final invoice for project {} without OWNER permission", userId, projectId);
+            if (!hasPermission(userId, projectId, "DELETE_PROJECT", authHeader)) {
+                logger.warn("User {} attempted to generate final invoice for project {} without DELETE_PROJECT permission", userId, projectId);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Only project owners can generate final invoices"));
+                    .body(Map.of("error", "You don't have permission to generate a final invoice for this project"));
             }
             
             Invoice finalInvoice = billingService.generateFinalInvoice(projectId, userId);
