@@ -11,5 +11,3 @@ export interface Suggestion {
   text: string;
   category: string;
 }
-
-
