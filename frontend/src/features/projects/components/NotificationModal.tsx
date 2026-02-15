@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/ui/Table";
@@ -58,7 +58,7 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
         }).format(amount);
     };
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -133,7 +133,7 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
         } finally {
             setLoading(false);
         }
-    };
+    }, [t.project_invitation]);
 
     const isUpcomingBillWeek = () => {
         const today = new Date();
@@ -149,7 +149,7 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
         if (isOpen) {
             loadData();
         }
-    }, [isOpen]);
+    }, [isOpen, loadData]);
 
     const handleAccept = async (invitationId: number) => {
         try {
@@ -191,9 +191,9 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
         if (!sortConfig) return 0;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let aValue: any = a[sortConfig.key];
+        const aValue: any = a[sortConfig.key];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let bValue: any = b[sortConfig.key];
+        const bValue: any = b[sortConfig.key];
 
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
