@@ -1,6 +1,9 @@
 node_modules
 .git
 .github
+.vscode
+.idea
+.env
 .env.*
 dist
 build
@@ -10,3 +13,6 @@ e2e
 playwright-report
 Dockerfile
 .dockerignore
+*.log
+npm-debug.log
+yarn-error.log
