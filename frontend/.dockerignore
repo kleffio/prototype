@@ -1,0 +1,12 @@
+node_modules
+.git
+.github
+.env.*
+dist
+build
+coverage
+test-results
+e2e
+playwright-report
+Dockerfile
+.dockerignore
