@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.vscode
+.idea
+*.log
+npm-debug.log
+yarn-error.log
+coverage
+test-results
+e2e/storage
+playwright-report
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
