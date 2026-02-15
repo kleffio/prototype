@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import { client } from "../../shared/lib/client";
 import type { Message, Suggestion } from "./types";
-
-const API_URL = "http://localhost:8086/api/v1/chat";
 
 export const useChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +34,8 @@ export const useChatWidget = () => {
 
   const fetchSuggestions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/suggested-questions`);
+      // Use relative path proxied by Nginx or base URL from client
+      const response = await client.get("/api/v1/chat/suggested-questions");
       setSuggestions(response.data);
     } catch (error) {
       console.error("Failed to fetch suggestions:", error);
@@ -58,7 +57,7 @@ export const useChatWidget = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/message`, { message: text });
+      const response = await client.post("/api/v1/chat/message", { message: text });
 
       const botMsg: Message = {
         id: crypto.randomUUID(),

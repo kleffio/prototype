@@ -11,8 +11,16 @@ const app = express();
 
 // Security & Middleware
 app.use(helmet());
+const corsOrigin = process.env.CORS_ORIGIN;
+
+if (process.env.NODE_ENV === 'production') {
+    if (!corsOrigin || corsOrigin === '*') {
+        throw new Error('CORS_ORIGIN must be set to a specific origin in production.');
+    }
+}
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*', // Lock this down in production
+    origin: corsOrigin || '*', // In production, this is guaranteed not to be '*'
     methods: ['GET', 'POST']
 }));
 app.use(express.json());

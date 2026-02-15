@@ -146,8 +146,7 @@ services:
       context: ./chat-support-service
       dockerfile: Dockerfile
     container_name: chat-support-service
-    ports:
-      - "8086:8086"
+
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PINECONE_API_KEY=${PINECONE_API_KEY}

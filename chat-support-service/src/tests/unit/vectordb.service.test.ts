@@ -85,12 +85,6 @@ describe('VectorDBService', () => {
 
         it('should handle upsert errors', async () => {
             mockUpsert.mockRejectedValue(new Error('Upsert Failed'));
-            // It should log error but not throw (based on current implementation? No, let's see code. 
-            // Actually code doesn't have try-catch in upsertVectors probably.
-            // Let's assume it might throw.
-
-            // Wait, looking at previous coverage report, upsertVectors was NOT covered.
-            // I'll check the file content if I can, but I assume it just delegates.
             await expect(vectorDBService.upsertVectors([])).rejects.toThrow('Upsert Failed');
         });
     });

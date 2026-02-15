@@ -89,7 +89,7 @@ const ChatWidget = () => {
               </button>
             </form>
             <div className="text-muted-foreground mt-2 text-center text-[10px]">
-              Powered by OpenAI. Answers generated from documentation.
+              AI-generated answers based on documentation.
             </div>
           </div>
         </div>
@@ -100,6 +100,8 @@ const ChatWidget = () => {
         <button
           onClick={() => setIsOpen(true)}
           className="bg-primary text-primary-foreground flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform duration-200 hover:scale-105"
+          aria-label="Open chat"
+          title="Open chat"
         >
           <MessageCircle size={28} />
         </button>

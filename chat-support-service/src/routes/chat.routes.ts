@@ -31,7 +31,13 @@ router.post('/message', chatLimiter, async (req, res) => {
         // Security: Filter out low-relevance matches. 
         // Debugging: Log the best score to help tune the threshold.
         const bestScore = similarDocs.length > 0 ? similarDocs[0].score : 0;
-        console.log(`Query: "${message}" | Best Score: ${bestScore}`);
+
+        // Only log content in non-production environments
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`Query: "${message}" | Best Score: ${bestScore}`);
+        } else {
+            console.log(`Query processed | Best Score: ${bestScore}`);
+        }
 
         // Threshold lowered to 0.65 based on user feedback.
         const relevantDocs = similarDocs.filter(doc => doc.score && doc.score > 0.65);
@@ -56,7 +62,7 @@ router.post('/message', chatLimiter, async (req, res) => {
 
         res.json({
             message: response,
-            sources: similarDocs.map(doc => ({ source: doc.source, score: doc.score }))
+            sources: relevantDocs.map(doc => ({ source: doc.source, score: doc.score }))
         });
 
     } catch (error) {
@@ -67,6 +73,12 @@ router.post('/message', chatLimiter, async (req, res) => {
 
 // Admin endpoint to index docs (protected in production)
 router.post('/index-docs', async (req, res) => {
+    // Basic security: Disable in production or require stricter auth
+    if (process.env.NODE_ENV === 'production') {
+        res.status(403).json({ error: 'Indexing is disabled in production' });
+        return;
+    }
+
     try {
         const { text, metadata } = req.body;
         if (!text || !metadata) {

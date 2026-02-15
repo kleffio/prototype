@@ -1,5 +1,4 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import OpenAI from 'openai';
 
 // Mock the OpenAI class constructor
 const mockCompletionsCreate = jest.fn() as any;
@@ -20,7 +19,7 @@ jest.mock('openai', () => {
 });
 
 // Import service AFTER mocking
-import { openAIService, OpenAIService } from '../../services/openai.service.js';
+import { openAIService } from '../../services/openai.service.js';
 
 describe('OpenAIService', () => {
 

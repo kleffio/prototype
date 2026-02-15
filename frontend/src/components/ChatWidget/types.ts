@@ -12,8 +12,4 @@ export interface Suggestion {
   category: string;
 }
 
-export interface SupportTicket {
-  contactEmail: string;
-  message: string;
-  history: Message[];
-}
+

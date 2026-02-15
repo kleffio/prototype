@@ -153,12 +153,8 @@ async function run() {
 
   // Clear old data first!
   console.log('Clearing old index data...');
-  // We access the service directly since it's exported as a class instance? No, embeddingsService uses it internally.
-  // Wait, I need to import vectorDBService here to call deleteAll, or add it to EmbeddingsService?
-  // Let's import it.
 
-  // Actually, embeddingsService.indexDocument loops. I should probably add a clear method to EmbeddingsService or call vectorDBService directly.
-  // I'll call vectorDBService directly.
+  // Clear existing vector index before seeding new documents
   const { vectorDBService } = await import('../services/vectordb.service.js');
   await vectorDBService.deleteAll();
 

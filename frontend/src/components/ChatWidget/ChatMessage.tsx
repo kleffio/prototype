@@ -1,7 +1,7 @@
 import React from "react";
-// import { Bot, User } from 'lucide-react';
+
 import ReactMarkdown from "react-markdown";
-import { cn } from "../../lib/utils";
+import { cn } from "../../shared/lib/utils";
 import type { Message } from "./types";
 
 interface ChatMessageProps {
@@ -61,7 +61,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                           ? typeof s.source === "string" &&
                             (s.source.includes("http") || s.source.startsWith("/"))
                             ? new URL(s.source, "http://dummy.com").pathname.split("/").pop() ||
-                              s.source
+                            s.source
                             : s.source
                           : "Unknown Source"}
                       </a>
