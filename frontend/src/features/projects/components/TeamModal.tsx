@@ -400,314 +400,310 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div className="w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-        <div className="relative flex max-h-[85vh] flex-col rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-500/10 p-2">
-                <Users className="h-6 w-6 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-neutral-50">{t.title}</h2>
-                <p className="text-sm text-neutral-400">
-                  {collaborators.length} member{collaborators.length !== 1 ? "s" : ""}
-                  {canViewInvitations &&
-                    invitations.length > 0 &&
-                    ` • ${invitations.length} pending invitation${invitations.length !== 1 ? "s" : ""}`}
-                </p>
-              </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      <SoftPanel className="relative z-10 flex max-h-[85vh] w-full max-w-6xl flex-col border border-white/10 bg-black/80 shadow-2xl ring-1 shadow-black/80 ring-white/5">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-white/5 p-6">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-2.5 shadow-inner shadow-blue-500/5">
+              <Users className="h-5 w-5 text-blue-400" />
             </div>
-            <div className="flex items-center gap-2">
-              {canManageTeam && (
-                <Button
-                  size="sm"
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="bg-gradient-kleff rounded-full px-4 py-2 text-sm font-semibold text-black"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  {t.invite_member}
-                </Button>
-              )}
-              <button
-                onClick={onClose}
-                className="rounded-full p-2 transition-colors hover:bg-white/10"
-              >
-                <X className="h-6 w-6 text-neutral-400 hover:text-neutral-200" />
-              </button>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-white">{t.title}</h2>
+              <p className="mt-0.5 text-sm text-neutral-400">
+                {collaborators.length} member{collaborators.length !== 1 ? "s" : ""}
+                {canViewInvitations &&
+                  invitations.length > 0 &&
+                  ` • ${invitations.length} pending invitation${invitations.length !== 1 ? "s" : ""}`}
+              </p>
             </div>
           </div>
 
-          <div className="space-y-6 overflow-y-auto p-6">
-            {success && (
-              <div className="rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-400">
-                {success}
-              </div>
+          <div className="flex items-center gap-3">
+            {canManageTeam && (
+              <Button
+                size="sm"
+                onClick={() => setIsInviteModalOpen(true)}
+                className="bg-gradient-kleff shadow-kleff-primary/20 hover:shadow-kleff-primary/40 rounded-xl px-4 py-2 text-sm font-bold text-black shadow-lg transition-all"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                {t.invite_member}
+              </Button>
             )}
+            <button
+              onClick={onClose}
+              className="group rounded-full border border-transparent p-2 transition-colors hover:border-white/10 hover:bg-white/10"
+            >
+              <X className="h-5 w-5 text-neutral-500 transition-colors group-hover:text-white" />
+            </button>
+          </div>
+        </div>
 
+        <div className="space-y-6 overflow-y-auto p-6">
+          {success && (
+            <div className="rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-400">
+              {success}
+            </div>
+          )}
+
+          <div>
+            <h3 className="text-md mb-3 font-semibold text-neutral-50">{t.team_members}</h3>
+
+            <div className="overflow-hidden rounded-lg border border-white/10">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/5">
+                    <TableHead>{t.table.user}</TableHead>
+                    <TableHead>{t.table.role}</TableHead>
+                    <TableHead>{t.table.status}</TableHead>
+                    <TableHead>{t.table.invited_at}</TableHead>
+                    {canManageTeam && (
+                      <TableHead className="w-[120px]">{t.table.actions}</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={canManageTeam ? 5 : 4}
+                        className="py-8 text-center text-neutral-400"
+                      >
+                        {t.loading}
+                      </TableCell>
+                    </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={canManageTeam ? 5 : 4} className="py-8 text-center">
+                        <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+                          {error}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : collaborators.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={canManageTeam ? 5 : 4}
+                        className="py-8 text-center text-neutral-400"
+                      >
+                        {t.no_members}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    collaborators.map((collaborator) => {
+                      const username = usernames[collaborator.userId];
+                      if (!username) {
+                        return null; // Skip rendering if username not available
+                      }
+
+                      return (
+                        <TableRow key={collaborator.id} className="hover:bg-white/5">
+                          <TableCell className="font-mono text-sm text-neutral-300">
+                            {username}
+                          </TableCell>
+                          <TableCell>
+                            {editingUserId === collaborator.userId && canManageTeam ? (
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={
+                                    editingRoleType === "builtin"
+                                      ? editingRole
+                                      : `custom-${editingCustomRoleId}`
+                                  }
+                                  onValueChange={(value) => {
+                                    if (value.startsWith("custom-")) {
+                                      setEditingRoleType("custom");
+                                      setEditingCustomRoleId(Number(value.replace("custom-", "")));
+                                    } else {
+                                      setEditingRoleType("builtin");
+                                      setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER");
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 w-40 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1.5 text-xs font-semibold text-neutral-400">
+                                      {t.inviteModal.builtin}
+                                    </div>
+                                    <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
+                                    <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
+                                    <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
+                                    {customRoles.length > 0 && (
+                                      <>
+                                        <div className="mt-2 border-t border-white/10 px-2 py-1.5 text-xs font-semibold text-neutral-400">
+                                          {t.custom_roles}
+                                        </div>
+                                        {customRoles.map((role) => (
+                                          <SelectItem key={role.id} value={`custom-${role.id}`}>
+                                            {role.name}
+                                          </SelectItem>
+                                        ))}
+                                      </>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleUpdateRole(collaborator.userId)}
+                                  className="h-8 bg-green-500/10 px-2 text-xs text-green-400 hover:bg-green-500/20"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingUserId(null)}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge
+                                variant={
+                                  collaborator.role === "OWNER"
+                                    ? "info"
+                                    : collaborator.role === "ADMIN"
+                                      ? "info"
+                                      : collaborator.role === "DEVELOPER"
+                                        ? "success"
+                                        : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {collaborator.customRoleName || collaborator.role}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={collaborator.acceptedAt ? "success" : "warning"}
+                              className="text-xs"
+                            >
+                              {collaborator.collaboratorStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-neutral-400">
+                            {collaborator.acceptedAt
+                              ? new Date(collaborator.acceptedAt).toLocaleDateString()
+                              : "Pending"}
+                          </TableCell>
+                          {canManageTeam && (
+                            <TableCell>
+                              {collaborator.role !== "OWNER" && (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => startEditing(collaborator)}
+                                    className="p-2"
+                                    title="Edit role"
+                                  >
+                                    <Edit2 className="h-4 w-4 text-blue-400" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemove(collaborator.userId)}
+                                    className="p-2"
+                                    title="Remove collaborator"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-400" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {canViewInvitations && (
             <div>
-              <h3 className="text-md mb-3 font-semibold text-neutral-50">{t.team_members}</h3>
-
+              <h3 className="text-md mb-3 flex items-center gap-2 font-semibold text-neutral-50">
+                <Mail className="h-4 w-4" />
+                {t.pending_invitations}
+              </h3>
               <div className="overflow-hidden rounded-lg border border-white/10">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/5">
-                      <TableHead>{t.table.user}</TableHead>
+                      <TableHead>{t.table.email}</TableHead>
                       <TableHead>{t.table.role}</TableHead>
-                      <TableHead>{t.table.status}</TableHead>
                       <TableHead>{t.table.invited_at}</TableHead>
                       {canManageTeam && (
-                        <TableHead className="w-[120px]">{t.table.actions}</TableHead>
+                        <TableHead className="w-[100px]">{t.table.actions}</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loading ? (
+                    {invitations.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={canManageTeam ? 5 : 4}
+                          colSpan={canManageTeam ? 4 : 3}
                           className="py-8 text-center text-neutral-400"
                         >
-                          {t.loading}
-                        </TableCell>
-                      </TableRow>
-                    ) : error ? (
-                      <TableRow>
-                        <TableCell colSpan={canManageTeam ? 5 : 4} className="py-8 text-center">
-                          <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
-                            {error}
+                          <div className="flex flex-col items-center gap-1">
+                            <Mail className="mb-2 h-8 w-8 text-neutral-600" />
+                            <p className="text-sm">{t.no_invitations}</p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : collaborators.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={canManageTeam ? 5 : 4}
-                          className="py-8 text-center text-neutral-400"
-                        >
-                          {t.no_members}
-                        </TableCell>
-                      </TableRow>
                     ) : (
-                      collaborators.map((collaborator) => {
-                        const username = usernames[collaborator.userId];
-                        if (!username) {
-                          return null; // Skip rendering if username not available
-                        }
-
-                        return (
-                          <TableRow key={collaborator.id} className="hover:bg-white/5">
-                            <TableCell className="font-mono text-sm text-neutral-300">
-                              {username}
-                            </TableCell>
+                      invitations.map((invitation) => (
+                        <TableRow key={invitation.id} className="hover:bg-white/5">
+                          <TableCell className="font-mono text-sm text-neutral-300">
+                            {invitation.inviteeEmail}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                invitation.role === "ADMIN"
+                                  ? "info"
+                                  : invitation.role === "DEVELOPER"
+                                    ? "success"
+                                    : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {invitation.customRoleName || invitation.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-neutral-400">
+                            {new Date(invitation.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          {canManageTeam && (
                             <TableCell>
-                              {editingUserId === collaborator.userId && canManageTeam ? (
-                                <div className="flex items-center gap-2">
-                                  <Select
-                                    value={
-                                      editingRoleType === "builtin"
-                                        ? editingRole
-                                        : `custom-${editingCustomRoleId}`
-                                    }
-                                    onValueChange={(value) => {
-                                      if (value.startsWith("custom-")) {
-                                        setEditingRoleType("custom");
-                                        setEditingCustomRoleId(
-                                          Number(value.replace("custom-", ""))
-                                        );
-                                      } else {
-                                        setEditingRoleType("builtin");
-                                        setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER");
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-8 w-40 text-xs">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <div className="px-2 py-1.5 text-xs font-semibold text-neutral-400">
-                                        {t.inviteModal.builtin}
-                                      </div>
-                                      <SelectItem value="ADMIN">{t.roles.ADMIN}</SelectItem>
-                                      <SelectItem value="DEVELOPER">{t.roles.DEVELOPER}</SelectItem>
-                                      <SelectItem value="VIEWER">{t.roles.VIEWER}</SelectItem>
-                                      {customRoles.length > 0 && (
-                                        <>
-                                          <div className="mt-2 border-t border-white/10 px-2 py-1.5 text-xs font-semibold text-neutral-400">
-                                            {t.custom_roles}
-                                          </div>
-                                          {customRoles.map((role) => (
-                                            <SelectItem key={role.id} value={`custom-${role.id}`}>
-                                              {role.name}
-                                            </SelectItem>
-                                          ))}
-                                        </>
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleUpdateRole(collaborator.userId)}
-                                    className="h-8 bg-green-500/10 px-2 text-xs text-green-400 hover:bg-green-500/20"
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingUserId(null)}
-                                    className="h-8 px-2 text-xs"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Badge
-                                  variant={
-                                    collaborator.role === "OWNER"
-                                      ? "info"
-                                      : collaborator.role === "ADMIN"
-                                        ? "info"
-                                        : collaborator.role === "DEVELOPER"
-                                          ? "success"
-                                          : "secondary"
-                                  }
-                                  className="text-xs"
-                                >
-                                  {collaborator.customRoleName || collaborator.role}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={collaborator.acceptedAt ? "success" : "warning"}
-                                className="text-xs"
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteInvitation(invitation.id)}
+                                className="p-2"
+                                title="Delete invitation"
                               >
-                                {collaborator.collaboratorStatus}
-                              </Badge>
+                                <Trash2 className="h-4 w-4 text-red-400" />
+                              </Button>
                             </TableCell>
-                            <TableCell className="text-sm text-neutral-400">
-                              {collaborator.acceptedAt
-                                ? new Date(collaborator.acceptedAt).toLocaleDateString()
-                                : "Pending"}
-                            </TableCell>
-                            {canManageTeam && (
-                              <TableCell>
-                                {collaborator.role !== "OWNER" && (
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => startEditing(collaborator)}
-                                      className="p-2"
-                                      title="Edit role"
-                                    >
-                                      <Edit2 className="h-4 w-4 text-blue-400" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleRemove(collaborator.userId)}
-                                      className="p-2"
-                                      title="Remove collaborator"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-400" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        );
-                      })
+                          )}
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
               </div>
             </div>
-
-            {canViewInvitations && (
-              <div>
-                <h3 className="text-md mb-3 flex items-center gap-2 font-semibold text-neutral-50">
-                  <Mail className="h-4 w-4" />
-                  {t.pending_invitations}
-                </h3>
-                <div className="overflow-hidden rounded-lg border border-white/10">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-b border-white/10 bg-white/5 hover:bg-white/5">
-                        <TableHead>{t.table.email}</TableHead>
-                        <TableHead>{t.table.role}</TableHead>
-                        <TableHead>{t.table.invited_at}</TableHead>
-                        {canManageTeam && (
-                          <TableHead className="w-[100px]">{t.table.actions}</TableHead>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invitations.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={canManageTeam ? 4 : 3}
-                            className="py-8 text-center text-neutral-400"
-                          >
-                            <div className="flex flex-col items-center gap-1">
-                              <Mail className="mb-2 h-8 w-8 text-neutral-600" />
-                              <p className="text-sm">{t.no_invitations}</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        invitations.map((invitation) => (
-                          <TableRow key={invitation.id} className="hover:bg-white/5">
-                            <TableCell className="font-mono text-sm text-neutral-300">
-                              {invitation.inviteeEmail}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  invitation.role === "ADMIN"
-                                    ? "info"
-                                    : invitation.role === "DEVELOPER"
-                                      ? "success"
-                                      : "secondary"
-                                }
-                                className="text-xs"
-                              >
-                                {invitation.customRoleName || invitation.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-neutral-400">
-                              {new Date(invitation.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            {canManageTeam && (
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteInvitation(invitation.id)}
-                                  className="p-2"
-                                  title="Delete invitation"
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-400" />
-                                </Button>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      </SoftPanel>
 
       {isInviteModalOpen &&
         createPortal(
