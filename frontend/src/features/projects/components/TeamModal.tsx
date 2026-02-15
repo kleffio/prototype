@@ -425,7 +425,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
               <Button
                 size="sm"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="bg-gradient-kleff rounded-xl px-4 py-2 text-sm font-bold text-black shadow-lg shadow-kleff-primary/20 transition-all hover:shadow-kleff-primary/40"
+                className="bg-gradient-kleff shadow-kleff-primary/20 hover:shadow-kleff-primary/40 rounded-xl px-4 py-2 text-sm font-bold text-black shadow-lg transition-all"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 {t.invite_member}
@@ -514,9 +514,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                                   onValueChange={(value) => {
                                     if (value.startsWith("custom-")) {
                                       setEditingRoleType("custom");
-                                      setEditingCustomRoleId(
-                                        Number(value.replace("custom-", ""))
-                                      );
+                                      setEditingCustomRoleId(Number(value.replace("custom-", "")));
                                     } else {
                                       setEditingRoleType("builtin");
                                       setEditingRole(value as "ADMIN" | "DEVELOPER" | "VIEWER");
@@ -824,7 +822,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
                         {(selectedRoleType === "builtin"
                           ? ROLE_DEFAULT_PERMISSIONS[inviteRole]
                           : customRoles.find((r) => r.id === selectedCustomRoleId)?.permissions ||
-                          []
+                            []
                         ).map((permission) => {
                           const perm = AVAILABLE_PERMISSIONS.find((p) => p.value === permission);
                           return perm ? (
@@ -861,8 +859,7 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
           document.body
         )}
 
-      {
-        isCreateRoleModalOpen &&
+      {isCreateRoleModalOpen &&
         createPortal(
           <div
             className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
@@ -978,9 +975,8 @@ export function TeamModal({ isOpen, onClose, projectId, userRole }: TeamModalPro
             </div>
           </div>,
           document.body
-        )
-      }
-    </div >,
+        )}
+    </div>,
     document.body
   );
 }
