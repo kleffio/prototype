@@ -67,7 +67,6 @@ export function ProjectsPage() {
   const t = translations[locale].projects;
   const tModal = translations[locale].projectModal;
 
-
   const currentUserId = auth.user?.profile?.sub;
 
   const refreshNotificationCount = async () => {
@@ -361,8 +360,6 @@ export function ProjectsPage() {
         : "projects";
   };
 
-
-
   return (
     <section className="min-h-screen" data-testid="projects-page">
       <div className="app-container space-y-6 py-8">
@@ -456,10 +453,11 @@ export function ProjectsPage() {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${showFilters
-                ? "border-kleff-primary/30 bg-kleff-primary/10 text-kleff-primary"
-                : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10"
-                }`}
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+                showFilters
+                  ? "border-kleff-primary/30 bg-kleff-primary/10 text-kleff-primary"
+                  : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10"
+              }`}
             >
               <Filter className="h-4 w-4" />
               {t.filters.button}
@@ -485,10 +483,11 @@ export function ProjectsPage() {
                     <button
                       key={option.value}
                       onClick={() => setFilterBy(option.value)}
-                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${filterBy === option.value
-                        ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
-                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
-                        }`}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                        filterBy === option.value
+                          ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
+                          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
+                      }`}
                     >
                       <option.icon className="h-3.5 w-3.5" />
                       {option.label}
@@ -511,10 +510,11 @@ export function ProjectsPage() {
                     <button
                       key={option.value}
                       onClick={() => setSortBy(option.value as SortOption)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${sortBy === option.value
-                        ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
-                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
-                        }`}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                        sortBy === option.value
+                          ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
+                          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
+                      }`}
                     >
                       {option.label}
                     </button>
