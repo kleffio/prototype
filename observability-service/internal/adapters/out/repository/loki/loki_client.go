@@ -179,22 +179,25 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 		}
 
 		if options.Severity != "" {
+			// Use LogQL json parser for robust numeric level filtering
 			// Pino/Bunyan levels: trace=10, debug=20, info=30, warn=40, error=50, fatal=60
-			// We build a regex that matches either the text label OR the JSON numeric level
-			var severityRegex string
 			switch strings.ToLower(options.Severity) {
 			case "info":
-				severityRegex = `(?i)(info|"level":30)`
+				// Match Info (30) and above
+				query += " | json | level >= 30"
 			case "warn", "warning":
-				severityRegex = `(?i)(warn|"level":40)`
+				// Match Warn (40) and above
+				query += " | json | level >= 40"
 			case "error":
-				severityRegex = `(?i)(error|exception|fatal|"level":50|"level":60)`
+				// Match Error (50) and above
+				query += " | json | level >= 50"
 			case "fatal":
-				severityRegex = `(?i)(fatal|"level":60)`
+				// Match Fatal (60) and above
+				query += " | json | level >= 60"
 			default:
-				severityRegex = fmt.Sprintf(`(?i)%s`, options.Severity)
+				// Fallback to text search for custom levels
+				query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
 			}
-			query += fmt.Sprintf(` |~ "%s"`, severityRegex)
 		}
 		// If no filters, ensure at least empty filter to make it valid LogQL if needed, but base selector is valid.
 		if options.SearchText == "" && options.Severity == "" {
@@ -225,20 +228,18 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 				query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
 			}
 			if options.Severity != "" {
-				var severityRegex string
 				switch strings.ToLower(options.Severity) {
 				case "info":
-					severityRegex = `(?i)(info|"level":30)`
+					query += " | json | level >= 30"
 				case "warn", "warning":
-					severityRegex = `(?i)(warn|"level":40)`
+					query += " | json | level >= 40"
 				case "error":
-					severityRegex = `(?i)(error|exception|fatal|"level":50|"level":60)`
+					query += " | json | level >= 50"
 				case "fatal":
-					severityRegex = `(?i)(fatal|"level":60)`
+					query += " | json | level >= 60"
 				default:
-					severityRegex = fmt.Sprintf(`(?i)%s`, options.Severity)
+					query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
 				}
-				query += fmt.Sprintf(` |~ "%s"`, severityRegex)
 			}
 			log.Printf("[DEBUG] Loki LogQL query (fallback) for container %s: %s", containerName, query)
 			lokiResp, err = c.queryLokiRange(ctx, query, start, end, limit, "backward")

@@ -221,15 +221,17 @@ func TestLogsService_GetProjectContainerLogs_EmptyContainers(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectID := "empty-project"
-	containerNames := []string{}
-	limit := 50
-	duration := "30m"
+	options := domain.LogFilterOptions{
+		ProjectID:      "empty-project",
+		ContainerNames: []string{},
+		Limit:          50,
+		Duration:       "30m",
+	}
 
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return(expectedLogs, nil)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return(expectedLogs, nil)
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.NoError(t, err)
@@ -250,19 +252,21 @@ func TestLogsService_GetProjectContainerLogs_ContextCancellation(t *testing.T) {
 	service := NewLogsService(mockRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	projectID := "test-project"
-	containerNames := []string{"app-container"}
-	limit := 100
-	duration := "1h"
+	options := domain.LogFilterOptions{
+		ProjectID:      "test-project",
+		ContainerNames: []string{"app-container"},
+		Limit:          100,
+		Duration:       "1h",
+	}
 
 	expectedError := context.Canceled
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return((*domain.ProjectLogs)(nil), expectedError)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return((*domain.ProjectLogs)(nil), expectedError)
 
 	// Cancel context before calling service
 	cancel()
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.Error(t, err)
@@ -284,16 +288,18 @@ func TestLogsService_GetProjectContainerLogs_ParameterPassing(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectID := "param-test"
-	containerNames := []string{"container1", "container2", "container3"}
-	limit := 500
-	duration := "24h"
+	options := domain.LogFilterOptions{
+		ProjectID:      "param-test",
+		ContainerNames: []string{"container1", "container2", "container3"},
+		Limit:          500,
+		Duration:       "24h",
+	}
 
 	// Verify exact parameter matching
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return(expectedLogs, nil)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return(expectedLogs, nil)
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.NoError(t, err)
