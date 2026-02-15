@@ -177,8 +177,24 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 		if options.SearchText != "" {
 			query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
 		}
+
 		if options.Severity != "" {
-			query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
+			// Pino/Bunyan levels: trace=10, debug=20, info=30, warn=40, error=50, fatal=60
+			// We build a regex that matches either the text label OR the JSON numeric level
+			var severityRegex string
+			switch strings.ToLower(options.Severity) {
+			case "info":
+				severityRegex = `(?i)(info|"level":30)`
+			case "warn", "warning":
+				severityRegex = `(?i)(warn|"level":40)`
+			case "error":
+				severityRegex = `(?i)(error|exception|fatal|"level":50|"level":60)`
+			case "fatal":
+				severityRegex = `(?i)(fatal|"level":60)`
+			default:
+				severityRegex = fmt.Sprintf(`(?i)%s`, options.Severity)
+			}
+			query += fmt.Sprintf(` |~ "%s"`, severityRegex)
 		}
 		// If no filters, ensure at least empty filter to make it valid LogQL if needed, but base selector is valid.
 		if options.SearchText == "" && options.Severity == "" {
@@ -203,6 +219,27 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 				query += ` |= ""`
 			}
 
+			// We need to re-apply the smarter filter to the fallback query
+			query = baseQuery
+			if options.SearchText != "" {
+				query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
+			}
+			if options.Severity != "" {
+				var severityRegex string
+				switch strings.ToLower(options.Severity) {
+				case "info":
+					severityRegex = `(?i)(info|"level":30)`
+				case "warn", "warning":
+					severityRegex = `(?i)(warn|"level":40)`
+				case "error":
+					severityRegex = `(?i)(error|exception|fatal|"level":50|"level":60)`
+				case "fatal":
+					severityRegex = `(?i)(fatal|"level":60)`
+				default:
+					severityRegex = fmt.Sprintf(`(?i)%s`, options.Severity)
+				}
+				query += fmt.Sprintf(` |~ "%s"`, severityRegex)
+			}
 			log.Printf("[DEBUG] Loki LogQL query (fallback) for container %s: %s", containerName, query)
 			lokiResp, err = c.queryLokiRange(ctx, query, start, end, limit, "backward")
 			if err != nil {
@@ -223,11 +260,19 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 
 		errorCount := 0
 		warningCount := 0
-		for _, log := range logs {
-			logLine := strings.ToLower(log.Log)
-			if strings.Contains(logLine, "error") || strings.Contains(logLine, "exception") || strings.Contains(logLine, "fatal") {
+		for _, logEntry := range logs {
+			// Check for string match first
+			logLineLower := strings.ToLower(logEntry.Log)
+			strIsError := strings.Contains(logLineLower, "error") || strings.Contains(logLineLower, "exception") || strings.Contains(logLineLower, "fatal")
+			strIsWarn := strings.Contains(logLineLower, "warn") || strings.Contains(logLineLower, "warning")
+
+			// Simple heuristic for JSON levels without full parsing for performance
+			jsonIsError := strings.Contains(logLineLower, "\"level\":50") || strings.Contains(logLineLower, "\"level\":60")
+			jsonIsWarn := strings.Contains(logLineLower, "\"level\":40")
+
+			if strIsError || jsonIsError {
 				errorCount++
-			} else if strings.Contains(logLine, "warn") || strings.Contains(logLine, "warning") {
+			} else if strIsWarn || jsonIsWarn {
 				warningCount++
 			}
 		}
