@@ -90,7 +90,64 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
     const date = new Date(ms);
     return date.toLocaleTimeString();
   };
-  
+
+  const getLogLevel = (logCheck: string): { level: string; color: string } => {
+    try {
+      // Try to parse as JSON first
+      if (logCheck.trim().startsWith("{") && logCheck.trim().endsWith("}")) {
+        const parsed = JSON.parse(logCheck);
+        if (parsed.level) {
+          if (parsed.level >= 60) return { level: "FATAL", color: "text-red-600 font-bold" };
+          if (parsed.level >= 50) return { level: "ERROR", color: "text-red-500 font-bold" };
+          if (parsed.level >= 40) return { level: "WARN", color: "text-yellow-500 font-bold" };
+          if (parsed.level >= 30) return { level: "INFO", color: "text-blue-400" };
+          if (parsed.level >= 20) return { level: "DEBUG", color: "text-neutral-400" };
+          return { level: "TRACE", color: "text-neutral-500" };
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+
+    const lowerLog = logCheck.toLowerCase();
+    if (lowerLog.includes("fatal")) return { level: "FATAL", color: "text-red-600 font-bold" };
+    if (lowerLog.includes("error") || lowerLog.includes("exception")) return { level: "ERROR", color: "text-red-500 font-bold" };
+    if (lowerLog.includes("warn")) return { level: "WARN", color: "text-yellow-500 font-bold" };
+    if (lowerLog.includes("info")) return { level: "INFO", color: "text-blue-400" };
+    if (lowerLog.includes("debug")) return { level: "DEBUG", color: "text-neutral-400" };
+    
+    return { level: "LOG", color: "text-neutral-300" };
+  };
+
+  const formatLogMessage = (logText: string) => {
+    try {
+      if (logText.trim().startsWith("{") && logText.trim().endsWith("}")) {
+        const parsed = JSON.parse(logText);
+        // If it's a structured log, try to format it nicely
+        if (parsed.msg || parsed.message) {
+           const msg = parsed.msg || parsed.message;
+           // Add method/url if present (common in HTTP logs)
+           const reqInfo = parsed.req ? ` ${parsed.req.method} ${parsed.req.url}` : '';
+           const statusInfo = parsed.res ? ` ${parsed.res.statusCode}` : '';
+           const duration = parsed.responseTime ? ` (${Math.round(parsed.responseTime)}ms)` : '';
+           
+           return (
+             <span>
+               <span className="text-white">{msg}</span>
+               {reqInfo && <span className="text-neutral-400">{reqInfo}</span>}
+               {statusInfo && <span className={`ml-1 ${parsed.res.statusCode >= 400 ? 'text-red-400' : 'text-green-400'}`}>{statusInfo}</span>}
+               {duration && <span className="text-neutral-500 text-[10px]">{duration}</span>}
+               {/* Hidden details that can be expanded later if we add that feature */}
+             </span>
+           );
+        }
+      }
+    } catch {
+      // Verify failed
+    }
+    return <span className="break-all">{logText}</span>;
+  };
+
   const clearFilters = () => {
     setSearchText("");
     setSeverity("all");
@@ -217,12 +274,18 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
             <p className="py-8 text-center text-neutral-400">{t.logs.no_logs}</p>
           ) : (
             <div className="space-y-1">
-              {logs.map((log, index) => (
-                <div key={`${log.timestamp}-${index}`} className="flex gap-2 text-neutral-300">
-                  <span className="text-neutral-500">{formatTimestamp(log.timestamp)}</span>
-                  <span>{log.log}</span>
-                </div>
-              ))}
+              {logs.map((log, index) => {
+                const logInfo = getLogLevel(log.log);
+                return (
+                  <div key={`${log.timestamp}-${index}`} className="flex gap-2 text-neutral-300 hover:bg-white/5 p-1 rounded transition-colors group border-b border-white/5 last:border-0">
+                    <span className="text-neutral-500 w-[70px] shrink-0 font-mono text-[10px] pt-0.5 select-none">{formatTimestamp(log.timestamp)}</span>
+                    <span className={`w-[50px] shrink-0 font-mono font-bold text-[10px] pt-0.5 uppercase ${logInfo.color} select-none text-center bg-white/5 rounded h-fit px-1`}>{logInfo.level}</span>
+                    <div className="flex-1 min-w-0 break-words font-mono text-xs">
+                      {formatLogMessage(log.log)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
