@@ -7,5 +7,5 @@ import (
 )
 
 type LogsService interface {
-	GetProjectContainerLogs(ctx context.Context, projectID string, containerNames []string, limit int, duration string) (*domain.ProjectLogs, error)
+	GetProjectContainerLogs(ctx context.Context, options domain.LogFilterOptions) (*domain.ProjectLogs, error)
 }

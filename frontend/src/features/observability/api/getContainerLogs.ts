@@ -24,17 +24,47 @@ export interface ContainerLogsResponse {
   timestamp: number;
 }
 
+export interface GetContainerLogsOptions {
+  projectId: string;
+  containerName: string;
+  limit?: number;
+  duration?: string;
+  searchText?: string;
+  severity?: string;
+  start?: string;
+  end?: string;
+}
+
 export async function getContainerLogs(
-  projectId: string,
-  containerName: string
+  optionsOrProjectId: string | GetContainerLogsOptions,
+  containerName?: string
 ): Promise<LogEntry[]> {
+  let options: GetContainerLogsOptions;
+
+  if (typeof optionsOrProjectId === "string") {
+    options = {
+      projectId: optionsOrProjectId,
+      containerName: containerName!,
+      limit: 200,
+      duration: "1h",
+    };
+  } else {
+    options = optionsOrProjectId;
+  }
+
+  const { projectId, containerName: cName, ...rest } = options;
+
   const response = await client.post<ContainerLogsResponse>(
     "/api/v1/systems/logs/project-containers",
     {
       projectId,
-      containerNames: [containerName],
-      limit: 200,
-      duration: "1h"
+      containerNames: [cName],
+      limit: rest.limit || 200,
+      duration: rest.duration || "1h",
+      text: rest.searchText,
+      severity: rest.severity,
+      start: rest.start,
+      end: rest.end
     }
   );
 

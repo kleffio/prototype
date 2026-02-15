@@ -19,7 +19,7 @@ type exportMockLogsRepo struct {
 	err  error
 }
 
-func (m *exportMockLogsRepo) GetProjectContainerLogs(_ context.Context, _ string, _ []string, _ int, _ string) (*domain.ProjectLogs, error) {
+func (m *exportMockLogsRepo) GetProjectContainerLogs(_ context.Context, _ domain.LogFilterOptions) (*domain.ProjectLogs, error) {
 	return m.logs, m.err
 }
 

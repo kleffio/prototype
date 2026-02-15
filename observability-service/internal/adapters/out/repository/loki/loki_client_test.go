@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"prometheus-metrics-api/internal/core/domain"
 	"strings"
 	"testing"
 	"time"
@@ -85,10 +86,12 @@ func TestGetProjectContainerLogs_SuccessWithPrimaryQuery(t *testing.T) {
 	// Test the debug logging by calling GetProjectContainerLogs
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -206,10 +209,12 @@ func TestGetProjectContainerLogs_FallbackQuery(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -264,10 +269,12 @@ func TestGetProjectContainerLogs_BothQueriesFail(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -334,10 +341,12 @@ func TestGetProjectContainerLogs_ErrorAndWarningCounting(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -412,10 +421,12 @@ func TestGetProjectContainerLogs_MultipleContainers(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"container1", "container2"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"container1", "container2"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -476,10 +487,12 @@ func TestGetProjectContainerLogs_HasMoreFlag(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		5, // Set limit to exactly match number of returned logs
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          5, // Set limit to exactly match number of returned logs
+			Duration:       "1h",
+		},
 	)
 
 	assert.NoError(t, err)
@@ -499,10 +512,12 @@ func TestGetProjectContainerLogs_HTTPError(t *testing.T) {
 
 	result, err := client.GetProjectContainerLogs(
 		context.Background(),
-		"test-project",
-		[]string{"test-container"},
-		100,
-		"1h",
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"test-container"},
+			Limit:          100,
+			Duration:       "1h",
+		},
 	)
 
 	// Should still return a result with empty containers rather than error

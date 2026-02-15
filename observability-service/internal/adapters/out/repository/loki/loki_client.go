@@ -124,40 +124,85 @@ func convertToLogEntries(lokiResp *LokiResponse) []domain.LogEntry {
 	return logs
 }
 
-func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, projectID string, containerNames []string, limit int, duration string) (*domain.ProjectLogs, error) {
-	log.Printf("[DEBUG] Loki client GetProjectContainerLogs called - ProjectID: %s, ContainerNames: %v, Limit: %d, Duration: %s",
-		projectID, containerNames, limit, duration)
+func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain.LogFilterOptions) (*domain.ProjectLogs, error) {
+	log.Printf("[DEBUG] Loki client GetProjectContainerLogs called - ProjectID: %s, ContainerNames: %v, Limit: %d",
+		options.ProjectID, options.ContainerNames, options.Limit)
 
+	limit := options.Limit
 	if limit <= 0 {
 		limit = 100
 	}
 
-	dur, err := parseDuration(duration)
-	if err != nil {
-		dur = 1 * time.Hour
+	var start, end time.Time
+	var err error
+
+	if options.StartTime != "" && options.EndTime != "" {
+		start, err = time.Parse(time.RFC3339, options.StartTime)
+		if err != nil {
+			log.Printf("[WARN] Failed to parse start time %s: %v", options.StartTime, err)
+		}
+		end, err = time.Parse(time.RFC3339, options.EndTime)
+		if err != nil {
+			log.Printf("[WARN] Failed to parse end time %s: %v", options.EndTime, err)
+		}
 	}
 
-	end := time.Now()
-	start := end.Add(-dur)
+	if start.IsZero() || end.IsZero() {
+		duration := options.Duration
+		if duration == "" {
+			duration = "1h"
+		}
+		dur, err := parseDuration(duration)
+		if err != nil {
+			dur = 1 * time.Hour
+		}
+		end = time.Now()
+		start = end.Add(-dur)
+	}
 
 	projectLogs := &domain.ProjectLogs{
-		ProjectID:     projectID,
+		ProjectID:     options.ProjectID,
 		TotalLogs:     0,
 		TotalErrors:   0,
 		TotalWarnings: 0,
-		Containers:    make([]domain.ContainerLogs, 0, len(containerNames)),
+		Containers:    make([]domain.ContainerLogs, 0, len(options.ContainerNames)),
 		Timestamp:     time.Now().Unix(),
 	}
 
-	for _, containerName := range containerNames {
+	for _, containerName := range options.ContainerNames {
 
-		query := fmt.Sprintf(`{k8s_namespace_name="%s", k8s_deployment_name="app-%s"} |= ""`, projectID, containerName)
+		baseQuery := fmt.Sprintf(`{k8s_namespace_name="%s", k8s_deployment_name="app-%s"}`, options.ProjectID, containerName)
+		query := baseQuery
+
+		if options.SearchText != "" {
+			query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
+		}
+		if options.Severity != "" {
+			query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
+		}
+		// If no filters, ensure at least empty filter to make it valid LogQL if needed, but base selector is valid.
+		if options.SearchText == "" && options.Severity == "" {
+			query += ` |= ""`
+		}
+
 		log.Printf("[DEBUG] Loki LogQL query (primary) for container %s: %s", containerName, query)
 
 		lokiResp, err := c.queryLokiRange(ctx, query, start, end, limit, "backward")
 		if err != nil || len(lokiResp.Data.Result) == 0 {
 
-			query = fmt.Sprintf(`{namespace="%s", deployment="app-%s"} |= ""`, projectID, containerName)
+			// Fallback query
+			baseQuery = fmt.Sprintf(`{namespace="%s", deployment="app-%s"}`, options.ProjectID, containerName)
+			query = baseQuery
+			if options.SearchText != "" {
+				query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
+			}
+			if options.Severity != "" {
+				query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
+			}
+			if options.SearchText == "" && options.Severity == "" {
+				query += ` |= ""`
+			}
+
 			log.Printf("[DEBUG] Loki LogQL query (fallback) for container %s: %s", containerName, query)
 			lokiResp, err = c.queryLokiRange(ctx, query, start, end, limit, "backward")
 			if err != nil {

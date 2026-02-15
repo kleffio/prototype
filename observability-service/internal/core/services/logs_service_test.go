@@ -16,8 +16,8 @@ type mockLogsRepository struct {
 	mock.Mock
 }
 
-func (m *mockLogsRepository) GetProjectContainerLogs(ctx context.Context, projectID string, containerNames []string, limit int, duration string) (*domain.ProjectLogs, error) {
-	args := m.Called(ctx, projectID, containerNames, limit, duration)
+func (m *mockLogsRepository) GetProjectContainerLogs(ctx context.Context, options domain.LogFilterOptions) (*domain.ProjectLogs, error) {
+	args := m.Called(ctx, options)
 	return args.Get(0).(*domain.ProjectLogs), args.Error(1)
 }
 
@@ -72,15 +72,17 @@ func TestLogsService_GetProjectContainerLogs_Success(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectID := "test-project"
-	containerNames := []string{"app-container"}
-	limit := 100
-	duration := "1h"
+	options := domain.LogFilterOptions{
+		ProjectID:      "test-project",
+		ContainerNames: []string{"app-container"},
+		Limit:          100,
+		Duration:       "1h",
+	}
 
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return(expectedLogs, nil)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return(expectedLogs, nil)
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.NoError(t, err)
@@ -102,16 +104,18 @@ func TestLogsService_GetProjectContainerLogs_RepositoryError(t *testing.T) {
 	service := NewLogsService(mockRepo)
 
 	ctx := context.Background()
-	projectID := "test-project"
-	containerNames := []string{"app-container"}
-	limit := 100
-	duration := "1h"
+	options := domain.LogFilterOptions{
+		ProjectID:      "test-project",
+		ContainerNames: []string{"app-container"},
+		Limit:          100,
+		Duration:       "1h",
+	}
 
 	expectedError := errors.New("loki connection failed")
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return((*domain.ProjectLogs)(nil), expectedError)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return((*domain.ProjectLogs)(nil), expectedError)
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.Error(t, err)
@@ -161,15 +165,17 @@ func TestLogsService_GetProjectContainerLogs_MultipleContainers(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	projectID := "multi-container-project"
-	containerNames := []string{"web-container", "worker-container"}
-	limit := 200
-	duration := "2h"
+	options := domain.LogFilterOptions{
+		ProjectID:      "multi-container-project",
+		ContainerNames: []string{"web-container", "worker-container"},
+		Limit:          200,
+		Duration:       "2h",
+	}
 
-	mockRepo.On("GetProjectContainerLogs", ctx, projectID, containerNames, limit, duration).Return(expectedLogs, nil)
+	mockRepo.On("GetProjectContainerLogs", ctx, options).Return(expectedLogs, nil)
 
 	// Execute
-	result, err := service.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+	result, err := service.GetProjectContainerLogs(ctx, options)
 
 	// Verify
 	assert.NoError(t, err)

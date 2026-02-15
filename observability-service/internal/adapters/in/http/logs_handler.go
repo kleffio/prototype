@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"prometheus-metrics-api/internal/core/domain"
 	"prometheus-metrics-api/internal/core/ports"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,10 @@ type ProjectLogsRequest struct {
 	ContainerNames []string `json:"containerNames" binding:"required"`
 	Limit          int      `json:"limit,omitempty"`
 	Duration       string   `json:"duration,omitempty"`
+	SearchText     string   `json:"text,omitempty"`
+	Severity       string   `json:"severity,omitempty"`
+	StartTime      string   `json:"start,omitempty"`
+	EndTime        string   `json:"end,omitempty"`
 }
 
 func (h *LogsHandler) GetProjectContainerLogs(c *gin.Context) {
@@ -42,11 +47,22 @@ func (h *LogsHandler) GetProjectContainerLogs(c *gin.Context) {
 	if req.Limit <= 0 {
 		req.Limit = 100
 	}
-	if req.Duration == "" {
+	if req.Duration == "" && req.StartTime == "" {
 		req.Duration = "1h"
 	}
 
-	logs, err := h.logsService.GetProjectContainerLogs(c.Request.Context(), req.ProjectID, req.ContainerNames, req.Limit, req.Duration)
+	options := domain.LogFilterOptions{
+		ProjectID:      req.ProjectID,
+		ContainerNames: req.ContainerNames,
+		Limit:          req.Limit,
+		Duration:       req.Duration,
+		SearchText:     req.SearchText,
+		Severity:       req.Severity,
+		StartTime:      req.StartTime,
+		EndTime:        req.EndTime,
+	}
+
+	logs, err := h.logsService.GetProjectContainerLogs(c.Request.Context(), options)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
