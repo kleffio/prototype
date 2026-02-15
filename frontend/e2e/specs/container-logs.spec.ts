@@ -236,4 +236,42 @@ test.describe("Container Logs", () => {
     // Verify sheet animation and position
     await detailPage.expectLogsSheetAnimatesFromRight();
   });
+
+  test("can filter logs", async ({ page }) => {
+    const projectsPage = new ProjectsPage(page);
+    await projectsPage.open();
+    await projectsPage.expectLoaded();
+
+    const projectCell = page.getByRole("cell", { name: projectName, exact: true });
+    await projectCell.click();
+
+    const detailPage = new ProjectDetailPage(page);
+    await detailPage.expectLoaded();
+
+    await detailPage.expectRunningContainersSection();
+    await detailPage.expectContainerExists(containerName);
+
+    await detailPage.clickViewLogs(containerName);
+    await detailPage.expectLogsSheetOpen(containerName);
+
+    // Verify filters exist
+    await detailPage.expectLogsFiltersVisible();
+
+    // Type in search
+    await detailPage.fillLogsSearch("searching text");
+    
+    // Select severity
+    // Note: Since we don't have real logs driving this in E2E environment easily without seeding,
+    // we primarily check that the interaction works and controls state.
+    await detailPage.selectLogsSeverity("Error");
+    
+    // Select time range
+    await detailPage.selectLogsTimeRange("Last 24h");
+    
+    // Clear filters
+    await detailPage.clickClearFilters();
+    
+    // Verify inputs reset (Search is empty)
+    await expect(page.getByPlaceholder("Search logs...")).toBeEmpty();
+  });
 });
