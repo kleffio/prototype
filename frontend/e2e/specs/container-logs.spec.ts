@@ -259,18 +259,18 @@ test.describe("Container Logs", () => {
 
     // Type in search
     await detailPage.fillLogsSearch("searching text");
-    
+
     // Select severity
     // Note: Since we don't have real logs driving this in E2E environment easily without seeding,
     // we primarily check that the interaction works and controls state.
     await detailPage.selectLogsSeverity("Error");
-    
+
     // Select time range
     await detailPage.selectLogsTimeRange("Last 24h");
-    
+
     // Clear filters
     await detailPage.clickClearFilters();
-    
+
     // Verify inputs reset (Search is empty)
     await expect(page.getByPlaceholder("Search logs...")).toBeEmpty();
   });

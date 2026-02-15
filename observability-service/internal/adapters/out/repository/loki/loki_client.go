@@ -211,17 +211,7 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 
 			// Fallback query
 			baseQuery = fmt.Sprintf(`{namespace="%s", deployment="app-%s"}`, options.ProjectID, containerName)
-			query = baseQuery
-			if options.SearchText != "" {
-				query += fmt.Sprintf(` |~ "(?i)%s"`, options.SearchText)
-			}
-			if options.Severity != "" {
-				query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
-			}
-			if options.SearchText == "" && options.Severity == "" {
-				query += ` |= ""`
-			}
-
+			
 			// We need to re-apply the smarter filter to the fallback query
 			query = baseQuery
 			if options.SearchText != "" {

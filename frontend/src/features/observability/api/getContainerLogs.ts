@@ -46,7 +46,7 @@ export async function getContainerLogs(
       projectId: optionsOrProjectId,
       containerName: containerName!,
       limit: 200,
-      duration: "1h",
+      duration: "1h"
     };
   } else {
     options = optionsOrProjectId;

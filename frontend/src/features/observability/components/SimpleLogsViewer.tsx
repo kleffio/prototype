@@ -3,13 +3,7 @@ import { getContainerLogs, type LogEntry } from "../api/getContainerLogs";
 import { SoftPanel } from "@shared/ui/SoftPanel";
 import { Button } from "@shared/ui/Button";
 import { Input } from "@shared/ui/Input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@shared/ui/Select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/Select";
 import { FileText, RefreshCw, X } from "lucide-react";
 import enTranslations from "@app/locales/en/dashboard.json";
 import frTranslations from "@app/locales/fr/dashboard.json";
@@ -49,7 +43,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      
+
       let start: string | undefined;
       let end: string | undefined;
       let duration: string | undefined = timeRange;
@@ -67,7 +61,7 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
         severity: severity === "all" ? undefined : severity,
         duration,
         start,
-        end,
+        end
       });
       setLogs(data);
       setError(null);
@@ -111,11 +105,12 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
 
     const lowerLog = logCheck.toLowerCase();
     if (lowerLog.includes("fatal")) return { level: "FATAL", color: "text-red-600 font-bold" };
-    if (lowerLog.includes("error") || lowerLog.includes("exception")) return { level: "ERROR", color: "text-red-500 font-bold" };
+    if (lowerLog.includes("error") || lowerLog.includes("exception"))
+      return { level: "ERROR", color: "text-red-500 font-bold" };
     if (lowerLog.includes("warn")) return { level: "WARN", color: "text-yellow-500 font-bold" };
     if (lowerLog.includes("info")) return { level: "INFO", color: "text-blue-400" };
     if (lowerLog.includes("debug")) return { level: "DEBUG", color: "text-neutral-400" };
-    
+
     return { level: "LOG", color: "text-neutral-300" };
   };
 
@@ -125,21 +120,27 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
         const parsed = JSON.parse(logText);
         // If it's a structured log, try to format it nicely
         if (parsed.msg || parsed.message) {
-           const msg = parsed.msg || parsed.message;
-           // Add method/url if present (common in HTTP logs)
-           const reqInfo = parsed.req ? ` ${parsed.req.method} ${parsed.req.url}` : '';
-           const statusInfo = parsed.res ? ` ${parsed.res.statusCode}` : '';
-           const duration = parsed.responseTime ? ` (${Math.round(parsed.responseTime)}ms)` : '';
-           
-           return (
-             <span>
-               <span className="text-white">{msg}</span>
-               {reqInfo && <span className="text-neutral-400">{reqInfo}</span>}
-               {statusInfo && <span className={`ml-1 ${parsed.res.statusCode >= 400 ? 'text-red-400' : 'text-green-400'}`}>{statusInfo}</span>}
-               {duration && <span className="text-neutral-500 text-[10px]">{duration}</span>}
-               {/* Hidden details that can be expanded later if we add that feature */}
-             </span>
-           );
+          const msg = parsed.msg || parsed.message;
+          // Add method/url if present (common in HTTP logs)
+          const reqInfo = parsed.req ? ` ${parsed.req.method} ${parsed.req.url}` : "";
+          const statusInfo = parsed.res ? ` ${parsed.res.statusCode}` : "";
+          const duration = parsed.responseTime ? ` (${Math.round(parsed.responseTime)}ms)` : "";
+
+          return (
+            <span>
+              <span className="text-white">{msg}</span>
+              {reqInfo && <span className="text-neutral-400">{reqInfo}</span>}
+              {statusInfo && (
+                <span
+                  className={`ml-1 ${parsed.res.statusCode >= 400 ? "text-red-400" : "text-green-400"}`}
+                >
+                  {statusInfo}
+                </span>
+              )}
+              {duration && <span className="text-[10px] text-neutral-500">{duration}</span>}
+              {/* Hidden details that can be expanded later if we add that feature */}
+            </span>
+          );
         }
       }
     } catch {
@@ -200,18 +201,18 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
             </Button>
           </div>
         </div>
-        
+
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-48">
-             <Input 
-               placeholder="Search logs..." 
-               value={searchText} 
-               onChange={(e) => setSearchText(e.target.value)} 
-               className="h-9"
-             />
+            <Input
+              placeholder="Search logs..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="h-9"
+            />
           </div>
-          
+
           <div className="w-32">
             <Select value={severity} onValueChange={setSeverity}>
               <SelectTrigger className="h-9">
@@ -244,24 +245,29 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
 
           {timeRange === "custom" && (
             <>
-              <Input 
-                type="datetime-local" 
-                value={customStart} 
+              <Input
+                type="datetime-local"
+                value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="h-9 w-40" 
+                className="h-9 w-40"
               />
               <span className="text-neutral-400">-</span>
-              <Input 
-                type="datetime-local" 
-                value={customEnd} 
+              <Input
+                type="datetime-local"
+                value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="h-9 w-40" 
+                className="h-9 w-40"
               />
             </>
           )}
 
           {hasFilters && (
-            <Button size="sm" variant="ghost" onClick={clearFilters} className="h-9 px-2 text-neutral-400 hover:text-white">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={clearFilters}
+              className="h-9 px-2 text-neutral-400 hover:text-white"
+            >
               <X className="mr-1 h-3 w-3" /> Clear filters
             </Button>
           )}
@@ -277,10 +283,19 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
               {logs.map((log, index) => {
                 const logInfo = getLogLevel(log.log);
                 return (
-                  <div key={`${log.timestamp}-${index}`} className="flex gap-2 text-neutral-300 hover:bg-white/5 p-1 rounded transition-colors group border-b border-white/5 last:border-0">
-                    <span className="text-neutral-500 w-[70px] shrink-0 font-mono text-[10px] pt-0.5 select-none">{formatTimestamp(log.timestamp)}</span>
-                    <span className={`w-[50px] shrink-0 font-mono font-bold text-[10px] pt-0.5 uppercase ${logInfo.color} select-none text-center bg-white/5 rounded h-fit px-1`}>{logInfo.level}</span>
-                    <div className="flex-1 min-w-0 break-words font-mono text-xs">
+                  <div
+                    key={`${log.timestamp}-${index}`}
+                    className="group flex gap-2 rounded border-b border-white/5 p-1 text-neutral-300 transition-colors last:border-0 hover:bg-white/5"
+                  >
+                    <span className="w-[70px] shrink-0 pt-0.5 font-mono text-[10px] text-neutral-500 select-none">
+                      {formatTimestamp(log.timestamp)}
+                    </span>
+                    <span
+                      className={`w-[50px] shrink-0 pt-0.5 font-mono text-[10px] font-bold uppercase ${logInfo.color} h-fit rounded bg-white/5 px-1 text-center select-none`}
+                    >
+                      {logInfo.level}
+                    </span>
+                    <div className="min-w-0 flex-1 font-mono text-xs break-words">
                       {formatLogMessage(log.log)}
                     </div>
                   </div>
