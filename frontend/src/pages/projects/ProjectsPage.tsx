@@ -3,7 +3,7 @@ import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { CreateProjectModal } from "@features/projects/components/CreateProjectModal";
-import { PendingInvitations } from "@features/projects/components/PendingInvitations";
+import { NotificationModal } from "@features/projects/components/NotificationModal";
 import { useProjects } from "@features/projects/hooks/useProjects";
 import { DeleteProjectModal } from "@features/projects/components/DeleteProjectModal";
 import { useDeleteProject } from "@features/projects/hooks/useDeleteProject";
@@ -17,7 +17,6 @@ import { useAuth } from "react-oidc-context";
 import type { Project } from "@features/projects/types/Project";
 import {
   Bell,
-  X,
   FolderKanban,
   Sparkles,
   Users,
@@ -67,7 +66,7 @@ export function ProjectsPage() {
 
   const t = translations[locale].projects;
   const tModal = translations[locale].projectModal;
-  const tNotifications = translations[locale].notifications;
+
 
   const currentUserId = auth.user?.profile?.sub;
 
@@ -362,9 +361,7 @@ export function ProjectsPage() {
         : "projects";
   };
 
-  const pendingLabel = (count: number) => {
-    return count === 1 ? tNotifications.pending_invitation : tNotifications.pending_invitations;
-  };
+
 
   return (
     <section className="min-h-screen" data-testid="projects-page">
@@ -459,11 +456,10 @@ export function ProjectsPage() {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
-                showFilters
-                  ? "border-kleff-primary/30 bg-kleff-primary/10 text-kleff-primary"
-                  : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10"
-              }`}
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${showFilters
+                ? "border-kleff-primary/30 bg-kleff-primary/10 text-kleff-primary"
+                : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10"
+                }`}
             >
               <Filter className="h-4 w-4" />
               {t.filters.button}
@@ -489,11 +485,10 @@ export function ProjectsPage() {
                     <button
                       key={option.value}
                       onClick={() => setFilterBy(option.value)}
-                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                        filterBy === option.value
-                          ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
-                          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
-                      }`}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${filterBy === option.value
+                        ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
+                        }`}
                     >
                       <option.icon className="h-3.5 w-3.5" />
                       {option.label}
@@ -516,11 +511,10 @@ export function ProjectsPage() {
                     <button
                       key={option.value}
                       onClick={() => setSortBy(option.value as SortOption)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                        sortBy === option.value
-                          ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
-                          : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
-                      }`}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${sortBy === option.value
+                        ? "bg-kleff-primary/15 text-kleff-primary ring-kleff-primary/30 ring-1"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-neutral-300"
+                        }`}
                     >
                       {option.label}
                     </button>
@@ -531,48 +525,11 @@ export function ProjectsPage() {
           )}
         </header>
 
-        {isNotificationOpen && (
-          <div
-            className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            onClick={() => setIsNotificationOpen(false)}
-          >
-            <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
-              <div className="rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl">
-                <div className="flex items-center justify-between border-b border-white/10 p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-kleff-primary/10 ring-kleff-primary/20 rounded-xl p-2 ring-1">
-                      <Bell className="text-kleff-primary h-5 w-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-neutral-50">
-                        {tNotifications.header_title}
-                      </h2>
-                      <p className="text-xs text-neutral-400">
-                        {invitationCount > 0
-                          ? `${invitationCount} ${pendingLabel(invitationCount)}`
-                          : tNotifications.no_new_notifications}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsNotificationOpen(false)}
-                    className="rounded-lg p-2 transition-colors hover:bg-white/10"
-                  >
-                    <X className="h-5 w-5 text-neutral-400" />
-                  </button>
-                </div>
-
-                <div className="max-h-[70vh] overflow-y-auto p-5">
-                  <PendingInvitations
-                    onUpdate={() => {
-                      refreshNotificationCount();
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <NotificationModal
+          isOpen={isNotificationOpen}
+          onClose={() => setIsNotificationOpen(false)}
+          onUpdate={refreshNotificationCount}
+        />
 
         {isLoading && (
           <SoftPanel>

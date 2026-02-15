@@ -1,0 +1,10 @@
+node_modules
+dist
+test-results
+.env
+.git
+.github
+.vscode
+coverage
+e2e
+playwright.config.ts
