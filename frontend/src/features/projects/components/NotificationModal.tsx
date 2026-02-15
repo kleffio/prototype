@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Spinner } from "@shared/ui/Spinner";
 import { Button } from "@shared/ui/Button";
 import { X, Bell, Mail, DollarSign, Check, ArrowUpDown, FileText, AlertCircle } from "lucide-react";
-import { getMyInvitations, acceptInvitation, rejectInvitation } from "../api/invitations";
+import { getMyInvitations, acceptInvitation, rejectInvitation, type Invitation } from "../api/invitations";
 import fetchProject from "../api/getProject";
 import { fetchAllNotifications } from "@features/billing/api/getAllNotifications";
 import type { Invoice } from "@features/billing/types/Invoice";
@@ -28,7 +28,7 @@ interface NotificationItem {
     title: string;
     description: string;
     status?: string;
-    data: any;
+    data: Invitation | Invoice | null;
 }
 
 export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationModalProps) {
@@ -36,8 +36,10 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | number | null>(null);
     const [locale, setLocaleState] = useState(getLocale());
+
+    type SortableKey = "type" | "title" | "date";
     const [sortConfig, setSortConfig] = useState<{
-        key: keyof NotificationItem;
+        key: SortableKey;
         direction: "asc" | "desc";
     } | null>({ key: "date", direction: "desc" });
 
@@ -70,13 +72,11 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
             const items: NotificationItem[] = [];
 
             // Process Invitations
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const pendingInvitations = (invitationsData || []).filter((inv: any) => inv.status === "PENDING");
+            const pendingInvitations = (invitationsData || []).filter((inv: Invitation) => inv.status === "PENDING");
 
             // We need to fetch project details for invitations to get names
             const enrichedInvitations = await Promise.all(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                pendingInvitations.map(async (inv: any) => {
+                pendingInvitations.map(async (inv: Invitation) => {
                     let projectName = t.project_invitation;
                     let projectDesc: string | null = "";
                     try {
@@ -179,7 +179,7 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
         }
     };
 
-    const handleSort = (key: keyof NotificationItem) => {
+    const handleSort = (key: SortableKey) => {
         let direction: "asc" | "desc" = "asc";
         if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
             direction = "desc";
@@ -190,10 +190,11 @@ export function NotificationModal({ isOpen, onClose, onUpdate }: NotificationMod
     const sortedNotifications = [...notifications].sort((a, b) => {
         if (!sortConfig) return 0;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const aValue: any = a[sortConfig.key];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const bValue: any = b[sortConfig.key];
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
 
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
