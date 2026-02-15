@@ -1,7 +1,12 @@
 import { Skeleton } from "@shared/ui/Skeleton";
 import { Package } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { NamespaceMetric } from "../types/metrics";
+import enTranslations from "@app/locales/en/dashboard.json";
+import frTranslations from "@app/locales/fr/dashboard.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface Props {
   namespaces: NamespaceMetric[];
@@ -9,6 +14,17 @@ interface Props {
 }
 
 export const NamespacesTable: React.FC<Props> = ({ namespaces, loading }) => {
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].dashboard.namespaces;
   if (loading) {
     return (
       <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-6">
@@ -42,9 +58,9 @@ export const NamespacesTable: React.FC<Props> = ({ namespaces, loading }) => {
       <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-6">
         <div className="mb-5 flex items-center gap-3 text-white">
           <Package size={20} />
-          <h3 className="text-lg font-semibold">Namespace Metrics</h3>
+          <h3 className="text-lg font-semibold">{t.title}</h3>
         </div>
-        <div className="py-5 text-center text-neutral-500">No namespace data available</div>
+        <div className="py-5 text-center text-neutral-500">{t.no_data}</div>
       </div>
     );
   }
@@ -53,7 +69,7 @@ export const NamespacesTable: React.FC<Props> = ({ namespaces, loading }) => {
     <div className="rounded-xl border border-neutral-700 bg-neutral-900 p-6">
       <div className="mb-5 flex items-center gap-3 text-white">
         <Package size={20} />
-        <h3 className="text-lg font-semibold">Namespace Metrics</h3>
+        <h3 className="text-lg font-semibold">{t.title}</h3>
       </div>
 
       <div className="max-h-[600px] overflow-x-auto overflow-y-auto">
@@ -61,16 +77,16 @@ export const NamespacesTable: React.FC<Props> = ({ namespaces, loading }) => {
           <thead>
             <tr className="border-b border-neutral-700">
               <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
-                Namespace
+                {t.namespace}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
-                Pods
+                {t.pods}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
-                CPU Usage
+                {t.cpu_usage}
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
-                Memory Usage
+                {t.memory_usage}
               </th>
             </tr>
           </thead>

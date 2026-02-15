@@ -1,0 +1,81 @@
+{
+  "settings": {
+    "page_title": "Paramètres",
+    "back_to_dashboard": "Retour au tableau de bord",
+    "account_settings": "Paramètres du compte",
+    "failed_load_user": "Échec du chargement de l'utilisateur",
+    "tabs": {
+      "public_profile": "Profil public",
+      "account": "Compte",
+      "your_projects": "Vos projets",
+      "appearance": "Apparence",
+      "email": "E-mail",
+      "billing": "Facturation"
+    },
+    "profile": {
+      "title": "Profil public",
+      "description": "Ces informations seront affichées publiquement, soyez prudent avec ce que vous partagez.",
+      "member_since": "Membre depuis",
+      "avatar_url": "URL de l'avatar",
+      "avatar_placeholder": "https://exemple.com/avatar.png",
+      "avatar_hint": "Entrez l'URL de votre photo de profil. Le téléversement de fichiers arrive bientôt.",
+      "username": "Nom d'utilisateur",
+      "username_placeholder": "votre-nom-utilisateur",
+      "username_hint": "Utilisé dans les URLs et les mentions. Uniquement des lettres minuscules, chiffres, tirets et underscores.",
+      "display_name": "Nom d'affichage",
+      "display_name_placeholder": "Comment vous apparaissez dans l'application",
+      "email_label": "E-mail",
+      "email_hint": "L'e-mail est géré par Authentik et ne peut pas être modifié ici.",
+      "bio": "Bio",
+      "bio_placeholder": "Parlez un peu de vous.",
+      "bio_hint": "Vous pouvez @mentionner d'autres utilisateurs et organisations pour les lier.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement..."
+    },
+    "activity": {
+      "title": "Activité du compte",
+      "description": "Événements liés à la sécurité enregistrés par le service utilisateur.",
+      "no_audit_logs": "Aucun journal d'audit trouvé."
+    },
+    "account": {
+      "title": "Gestion du compte",
+      "description": "Gérez les paramètres et préférences de votre compte.",
+      "deactivate_title": "Désactiver le compte",
+      "deactivate_description": "La désactivation de votre compte supprimera définitivement toutes vos données et ne peut pas être annulée. Cette action vous déconnectera immédiatement et supprimera l'accès à tous vos projets et données.",
+      "deactivate_button": "Désactiver le compte"
+    },
+    "deactivation_modal": {
+      "title": "Désactiver le compte",
+      "warning": "Cette action ne peut pas être annulée.",
+      "intro": "La désactivation de votre compte va :",
+      "consequences": [
+        "Supprimer définitivement toutes vos données",
+        "Supprimer l'accès à tous les projets",
+        "Vous déconnecter immédiatement",
+        "Ne peut pas être inversée"
+      ],
+      "confirm_question": "Êtes-vous sûr de vouloir désactiver votre compte ?",
+      "cancel": "Annuler",
+      "confirm": "Oui, désactiver",
+      "deactivating": "Désactivation..."
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "messages": {
+      "username_required": "Le nom d'utilisateur et le nom d'affichage sont requis.",
+      "no_changes": "Aucun changement à enregistrer.",
+      "profile_updated": "Profil mis à jour avec succès.",
+      "update_failed": "Échec de la mise à jour du profil.",
+      "audit_failed": "Échec du chargement des journaux d'audit",
+      "deactivation_failed": "Échec de la désactivation du compte."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kleff. Tous droits réservés.",
+      "privacy": "Confidentialité",
+      "terms": "Conditions",
+      "faq": "FAQ"
+    }
+  }
+}

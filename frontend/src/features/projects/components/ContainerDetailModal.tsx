@@ -25,6 +25,8 @@ import enTranslations from "@app/locales/en/projects.json";
 import frTranslations from "@app/locales/fr/projects.json";
 import { getLocale } from "@app/locales/locale";
 import { SecureComponent } from "@app/components/SecureComponent";
+import { BuildLogsSheet } from "./BuildLogsSheet";
+import { FileText } from "lucide-react";
 
 const translations = {
   en: enTranslations,
@@ -46,12 +48,14 @@ export function ContainerDetailModal({
   container,
   onEditEnv,
   onEditContainer,
-  onDelete
-}: ContainerDetailModalProps) {
+  onDelete,
+  projectId
+}: ContainerDetailModalProps & { projectId?: string }) {
   const [copiedId, setCopiedId] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [locale, setLocale] = React.useState(getLocale());
+  const [showBuildLogs, setShowBuildLogs] = React.useState(false);
   const t = translations[locale].projectDetail.containerDetail;
 
   React.useEffect(() => {
@@ -66,7 +70,7 @@ export function ContainerDetailModal({
 
   if (!isOpen || !container) return null;
 
-  const appUrl = `https://${container.containerId}.kleff.io`;
+  const appUrl = `https://app-${container.containerId}.kleff.io`;
 
   const handleCopyId = async () => {
     try {
@@ -140,6 +144,17 @@ export function ContainerDetailModal({
                 <ExternalLink className="mr-2 h-4 w-4" />
                 {t.visit_app}
               </Button>
+              {projectId && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowBuildLogs(true)}
+                  className="text-blue-400 hover:bg-blue-400/10 hover:text-blue-300"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {t.view_build_logs}
+                </Button>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -204,6 +219,51 @@ export function ContainerDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* Database */}
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="h-5 w-5 flex-shrink-0 text-neutral-400">
+                  {container.enableDatabase ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                      <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                      <path d="M3 12h18"></path>
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                      <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                      <path d="M3 12h18"></path>
+                    </svg>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-neutral-100">Database</div>
+                  <div className="truncate font-mono text-sm text-neutral-200">
+                    {container.enableDatabase ? `${container.storageSizeGB} GB` : "Disabled"}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -235,7 +295,7 @@ export function ContainerDetailModal({
 
           {/* Environment Variables Section - Full Width */}
           {container.envVariables && Object.keys(container.envVariables).length > 0 && (
-            <div className="mt-8 rounded-lg bg-slate-900/60 p-6">
+            <div className="mt-8 rounded-lg border border-white/10 bg-white/5 p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">{t.environment_variables}</h3>
                 {onEditEnv && (
@@ -244,7 +304,7 @@ export function ContainerDetailModal({
                       size="sm"
                       variant="outline"
                       onClick={() => onEditEnv(container)}
-                      className="border-slate-600 bg-slate-700 text-xs text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                      className="border-white/10 bg-white/5 text-xs text-neutral-300 hover:border-white/20 hover:bg-white/10"
                     >
                       <Settings className="mr-1 h-3 w-3" />
                       {t.edit_variables}
@@ -256,12 +316,12 @@ export function ContainerDetailModal({
                 {Object.entries(container.envVariables).map(([key, value]) => (
                   <div
                     key={key}
-                    className="flex items-center gap-3 rounded border border-slate-700 bg-slate-800/60 p-3"
+                    className="flex items-center gap-3 rounded border border-white/10 bg-white/5 p-3"
                   >
-                    <span className="min-w-0 flex-1 font-mono text-sm font-semibold text-slate-300">
+                    <span className="min-w-0 flex-1 font-mono text-sm font-semibold text-neutral-300">
                       {key}
                     </span>
-                    <span className="text-sm text-slate-500">=</span>
+                    <span className="text-sm text-neutral-500">=</span>
                     <span className="min-w-0 flex-1 font-mono text-sm break-all text-white">
                       {value}
                     </span>
@@ -272,13 +332,13 @@ export function ContainerDetailModal({
           )}
 
           {/* Footer - Action Buttons */}
-          <div className="mt-8 border-t border-slate-700 pt-6">
+          <div className="mt-8 border-t border-white/10 pt-6">
             <div className="flex flex-wrap justify-end gap-3">
               <SecureComponent requiredPermission="DEPLOY">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                  className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                 >
                   <Play className="mr-2 h-4 w-4" />
                   {t.restart}
@@ -288,7 +348,7 @@ export function ContainerDetailModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                  className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                 >
                   <Square className="mr-2 h-4 w-4" />
                   {t.stop}
@@ -300,7 +360,7 @@ export function ContainerDetailModal({
                     size="sm"
                     variant="outline"
                     onClick={() => onEditContainer(container)}
-                    className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                    className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     {t.edit_container}
@@ -313,7 +373,7 @@ export function ContainerDetailModal({
                     size="sm"
                     variant="outline"
                     onClick={() => onEditEnv(container)}
-                    className="border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-600"
+                    className="border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10"
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     {t.edit_environment_variables}
@@ -324,7 +384,7 @@ export function ContainerDetailModal({
                 <Button
                   size="sm"
                   variant="destructive"
-                  className="bg-red-600 text-white hover:bg-red-700"
+                  className="border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDeleting}
                 >
@@ -362,6 +422,16 @@ export function ContainerDetailModal({
           </div>
         </div>
       </ConfirmationDialog>
+
+      {/* Build Logs Sheet */}
+      {projectId && (
+        <BuildLogsSheet
+          container={container}
+          projectId={projectId}
+          open={showBuildLogs}
+          onOpenChange={setShowBuildLogs}
+        />
+      )}
     </section>
   );
 }

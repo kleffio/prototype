@@ -1,0 +1,21 @@
+{
+  "name": "Kleff Dashboard",
+  "short_name": "Kleff",
+  "description": "Kleff Project Management and Infrastructure Dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/KleffIcon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/KleffIconFull.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

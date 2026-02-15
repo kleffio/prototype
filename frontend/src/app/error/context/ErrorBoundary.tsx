@@ -1,8 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@shared/ui/Button";
 import { Badge } from "@shared/ui/Badge";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
+import enTranslations from "@app/locales/en/errors.json";
+import frTranslations from "@app/locales/fr/errors.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -54,6 +60,17 @@ interface DefaultErrorFallbackProps {
 
 function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
   const isDevelopment = import.meta.env.DEV;
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].errorBoundary;
 
   return (
     <div className="flex min-h-[400px] items-center justify-center p-6">
@@ -69,20 +86,18 @@ function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
           {/* Title and description */}
           <div className="space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <h2 className="text-xl font-semibold text-neutral-50">Something went wrong</h2>
+              <h2 className="text-xl font-semibold text-neutral-50">{t.title}</h2>
               <Badge variant="destructive" className="text-xs">
-                Component Error
+                {t.badge}
               </Badge>
             </div>
-            <p className="text-sm text-neutral-400">
-              An error occurred while rendering this component.
-            </p>
+            <p className="text-sm text-neutral-400">{t.description}</p>
           </div>
 
           {/* Error message */}
           {error && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-left">
-              <p className="text-xs font-semibold text-red-200">Error Message</p>
+              <p className="text-xs font-semibold text-red-200">{t.error_message}</p>
               <p className="mt-1 font-mono text-xs text-red-300">{error.message}</p>
             </div>
           )}
@@ -91,7 +106,7 @@ function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
           {isDevelopment && error?.stack && (
             <details className="rounded-xl border border-white/10 bg-black/40 text-left">
               <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-neutral-400 hover:text-neutral-200">
-                Stack Trace
+                {t.stack_trace}
               </summary>
               <div className="border-t border-white/10 px-4 py-3">
                 <pre className="overflow-x-auto font-mono text-[10px] leading-relaxed text-neutral-500">
@@ -107,7 +122,7 @@ function DefaultErrorFallback({ error, onReset }: DefaultErrorFallbackProps) {
             className="bg-gradient-kleff w-full font-semibold text-black hover:brightness-110"
           >
             <RefreshCcw className="h-4 w-4" />
-            Try Again
+            {t.try_again}
           </Button>
         </div>
       </div>

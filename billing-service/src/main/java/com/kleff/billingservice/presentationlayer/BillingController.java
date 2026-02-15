@@ -1,14 +1,14 @@
 package com.kleff.billingservice.presentationlayer;
 
 import com.kleff.billingservice.buisnesslayer.BillingService;
-import com.kleff.billingservice.datalayer.Allocation.ReservedAllocation;
 import com.kleff.billingservice.datalayer.Invoice.Invoice;
 import com.kleff.billingservice.datalayer.Pricing.Price;
-import com.kleff.billingservice.datalayer.Record.UsageRecord;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -18,11 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +50,7 @@ public class BillingController {
         throw new RuntimeException("User not authenticated");
     }
     
-    private boolean hasPermission(String userId, String projectId, String permission, String authHeader) {
+    public boolean hasPermission(String userId, String projectId, String permission, String authHeader) {
         try {
             String url = "/api/v1/collaborators/" + projectId + "/user/" + userId + "/permissions";
             logger.info("Checking permission '{}' for user {} on project {}", permission, userId, projectId);
@@ -74,37 +70,7 @@ public class BillingController {
         }
     }
 
-    // Usage Record Endpoints
-    @PostMapping("/usage-records/")
-    public ResponseEntity<String> createUsageRecord(@RequestBody UsageRecord usageRecord) {
-        billingService.createUsageRecord(usageRecord);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Usage record created successfully");
-    }
 
-    @GetMapping("/{projectId}/usage-records/")
-    public ResponseEntity<?> getUsageRecordsForProject(
-            @PathVariable String projectId,
-            Authentication authentication,
-            @RequestHeader("Authorization") String authHeader) {
-        try {
-            String userId = getUserIdFromAuth(authentication);
-            
-            // Check if user has MANAGE_BILLING permission
-            if (!hasPermission(userId, projectId, "MANAGE_BILLING", authHeader)) {
-                logger.warn("User {} attempted to view usage records for project {} without MANAGE_BILLING permission", userId, projectId);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "You don't have permission to view billing information for this project"));
-            }
-            
-            List<UsageRecord> records = billingService.getUsageRecordsForProject(projectId);
-            return ResponseEntity.ok(records);
-        } catch (Exception e) {
-            logger.error("Error getting usage records for project {}: {}", projectId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to retrieve usage records"));
-        }
-    }
 
     @PostMapping("/pay/{invoiceId}")
     public ResponseEntity<?> payInvoice(
@@ -260,13 +226,6 @@ public class BillingController {
         }
     }
 
-    // Reserved Allocation Endpoints
-    @PostMapping("/reserved-allocations/")
-    public ResponseEntity<String> createReservedAllocation(@RequestBody ReservedAllocation reservedAllocation) {
-        billingService.createReservedAllocation(reservedAllocation);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Reserved allocation created successfully");
-    }
 
     @GetMapping("/{projectId}/invoices/")
     public ResponseEntity<?> getInvoicesForProject(

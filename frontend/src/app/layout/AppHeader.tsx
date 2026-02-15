@@ -18,9 +18,9 @@ export function AppHeader() {
     if (auth.isAuthenticated) {
       navigate(ROUTES.DASHBOARD);
     } else {
-      auth.signinRedirect();
+      navigate(ROUTES.AUTH_SIGNIN);
     }
-  }, [auth, navigate]);
+  }, [auth.isAuthenticated, navigate]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl supports-backdrop-filter:bg-[#0f0f10]/30">

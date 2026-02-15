@@ -177,7 +177,7 @@ func TestAllRoutes(t *testing.T) {
 		getNamespacesFunc: func(ctx context.Context) ([]domain.NamespaceMetric, error) {
 			return []domain.NamespaceMetric{{Name: "default"}}, nil
 		},
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return &domain.DatabaseMetrics{Source: "prometheus"}, nil
 		},
 	}

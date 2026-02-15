@@ -1,14 +1,11 @@
 package com.kleff.deployment.business;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kleff.deployment.data.container.*;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,18 +16,17 @@ import java.util.ArrayList;
 public class ContainerServiceImpl {
 
     private static final Logger log = LoggerFactory.getLogger(ContainerServiceImpl.class);
-    private static final String BASE_URL = "http://deployment-backend-service.kleff-deployment.svc.cluster.local";
 
     private final ContainerRepository containerRepository;
     private final ContainerMapper containerMapper;
-    private final RestTemplate restTemplate;
+    private final AsyncDeploymentService asyncDeploymentService;
 
     public ContainerServiceImpl(ContainerRepository containerRepository,
             ContainerMapper containerMapper,
-            RestTemplateBuilder restTemplateBuilder) {
+            AsyncDeploymentService asyncDeploymentService) {
         this.containerRepository = containerRepository;
         this.containerMapper = containerMapper;
-        this.restTemplate = restTemplateBuilder.build();
+        this.asyncDeploymentService = asyncDeploymentService;
     }
 
     public List<ContainerResponseModel> getAllContainers() {
@@ -62,9 +58,9 @@ public class ContainerServiceImpl {
         Container savedContainer = containerRepository.save(container);
 
         // FIX: Pass both the request and the ID from the saved object
-        triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
+        asyncDeploymentService.triggerBuildDeployment(containerRequestModel, savedContainer.getContainerID());
 
-        sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
+        asyncDeploymentService.sendAuditLog("create_container", savedContainer.getProjectID(), savedContainer.getContainerID(), userId,
                 Map.of("name", savedContainer.getName()));
 
         return containerMapper.containerToContainerResponseModel(savedContainer);
@@ -83,6 +79,8 @@ public class ContainerServiceImpl {
         existingContainer.setBranch(request.getBranch());
         existingContainer.setPort(request.getPort());
         existingContainer.setProjectID(request.getProjectID());
+        existingContainer.setEnableDatabase(request.isEnableDatabase());
+        existingContainer.setStorageSizeGB(request.getStorageSizeGB());
 
         if (request.getEnvVariables() != null) {
             existingContainer.setEnvVariables(containerMapper.mapToJson(request.getEnvVariables()));
@@ -91,7 +89,7 @@ public class ContainerServiceImpl {
         Container updatedContainer = containerRepository.save(existingContainer);
 
         // FIX: Pass both the request and the containerID
-        triggerBuildDeployment(request, containerID);
+        asyncDeploymentService.triggerBuildDeployment(request, containerID);
 
         Map<String, Object> changes = new java.util.HashMap<>();
         changes.put("name", updatedContainer.getName());
@@ -101,8 +99,10 @@ public class ContainerServiceImpl {
         changes.put("repoUrl", updatedContainer.getRepoUrl());
         changes.put("branch", updatedContainer.getBranch());
         changes.put("port", updatedContainer.getPort());
+        changes.put("enableDatabase", updatedContainer.isEnableDatabase());
+        changes.put("storageSizeGB", updatedContainer.getStorageSizeGB());
 
-        sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
+        asyncDeploymentService.sendAuditLog("update_container", updatedContainer.getProjectID(), containerID, userId, changes);
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
     }
@@ -130,7 +130,7 @@ public class ContainerServiceImpl {
         container.setEnvVariables(containerMapper.mapToJson(envVariables));
         Container updatedContainer = containerRepository.save(container);
 
-        triggerWebAppUpdate(container, envVariables);
+        asyncDeploymentService.triggerWebAppUpdate(container, envVariables);
 
         // Calculate diffs safely
         try {
@@ -166,54 +166,13 @@ public class ContainerServiceImpl {
             if (!updated.isEmpty())
                 details.put("updated_vars", updated);
 
-            sendAuditLog("update_env_vars", container.getProjectID(), containerID, userId, details);
+            asyncDeploymentService.sendAuditLog("update_env_vars", container.getProjectID(), containerID, userId, details);
 
         } catch (Exception e) {
             log.error("Failed to calculate env var diffs or send audit log for {}: {}", containerID, e.getMessage());
         }
 
         return containerMapper.containerToContainerResponseModel(updatedContainer);
-    }
-
-    private void triggerBuildDeployment(ContainerRequestModel request, String containerID) {
-        String deploymentServiceUrl = BASE_URL + "/api/v1/build/create";
-
-        GoBuildRequest buildRequest = new GoBuildRequest(
-                containerID,
-                request.getProjectID(),
-                request.getRepoUrl(),
-                request.getBranch(),
-                request.getPort(),
-                request.getName(),
-                request.getEnvVariables());
-
-        try {
-            restTemplate.postForObject(deploymentServiceUrl, buildRequest, String.class);
-            log.info("Update/Build triggered successfully for: {}", request.getName());
-        } catch (Exception e) {
-            log.error("Failed to trigger build service for {}: {}", request.getName(), e.getMessage());
-        }
-    }
-
-    private void triggerWebAppUpdate(Container container, Map<String, String> envVariables) {
-        String updateServiceUrl = BASE_URL + "/api/v1/webapp/update";
-
-        Map<String, Object> updateRequest = Map.of(
-                "projectID", container.getProjectID(),
-                "containerID", container.getContainerID(),
-                "name", container.getName(),
-                "envVariables", envVariables);
-
-        try {
-            // Note: RestTemplate.patchForObject requires a specific HttpComponents client
-            // to work correctly
-            // with some APIs. If this fails, consider using restTemplate.postForObject or
-            // exchange.
-            restTemplate.patchForObject(updateServiceUrl, updateRequest, String.class);
-            log.info("WebApp update triggered successfully for: {}", container.getName());
-        } catch (Exception e) {
-            log.error("Failed to trigger WebApp update: {}", e.getMessage());
-        }
     }
 
     public void deleteContainer(String containerID, String userId) {
@@ -228,9 +187,9 @@ public class ContainerServiceImpl {
             log.info("Container deleted from database: {}", containerID);
 
             // Make upstream call to delete the WebApp in Kubernetes
-            triggerWebAppDeletion(container.getProjectID(), containerID);
+            asyncDeploymentService.triggerWebAppDeletion(container.getProjectID(), containerID);
 
-            sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
+            asyncDeploymentService.sendAuditLog("delete_container", container.getProjectID(), containerID, userId, null);
         } catch (Exception e) {
             log.error("Failed to delete container {}: {}", containerID, e.getMessage());
             throw new RuntimeException("Failed to delete container: " + e.getMessage(), e);
@@ -288,7 +247,7 @@ public class ContainerServiceImpl {
                 log.info("Container deleted from database: {}", target.getContainerID());
 
                 // Delete upstream WebApp
-                triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
+                asyncDeploymentService.triggerWebAppDeletion(container.getProjectID(), container.getContainerID());
 
                 // Success
                 deleted.add(target.getContainerID());
@@ -306,116 +265,5 @@ public class ContainerServiceImpl {
                 .deleted(deleted)
                 .failed(failed)
                 .build();
-    }
-
-    private void triggerWebAppDeletion(String projectID, String containerID) {
-
-        String deleteServiceUrl = BASE_URL + "/api/v1/webapp/" + projectID + "/" + containerID;
-
-        try {
-            restTemplate.delete(deleteServiceUrl);
-            log.info("WebApp deletion triggered successfully for project: {}, container: {}", projectID, containerID);
-        } catch (Exception e) {
-            log.error("Failed to trigger WebApp deletion for project: {}, container: {}: {}",
-                    projectID, containerID, e.getMessage());
-            throw new RuntimeException("Failed to delete WebApp in Kubernetes: " + e.getMessage(), e);
-        }
-    }
-
-    // Inject audit URL from application properties
-    @org.springframework.beans.factory.annotation.Value("${audit.service.url:http://project-management-service:8080/api/v1/projects/audit/internal}")
-    private String auditServiceUrl;
-
-    private void sendAuditLog(String action, String projectId, String containerId, String userId,
-            Map<String, Object> changes) {
-        try {
-            ExternalAuditRequest request = new ExternalAuditRequest();
-            request.setAction(action);
-            request.setProjectId(projectId);
-            request.setUserId(userId != null ? userId : "system");
-            request.setResourceType("CONTAINER");
-            request.setResourceId(containerId);
-            request.setChanges(changes);
-
-            restTemplate.postForObject(auditServiceUrl, request, Void.class);
-            log.info("Audit log sent for action: {}", action);
-        } catch (Exception e) {
-            log.error("Failed to send audit log: {}", e.getMessage());
-        }
-    }
-
-    // Inner DTO for Audit Request
-    private static class ExternalAuditRequest {
-        @JsonProperty("action")
-        private String action;
-        @JsonProperty("projectId")
-        private String projectId;
-        @JsonProperty("userId")
-        private String userId;
-        @JsonProperty("resourceType")
-        private String resourceType;
-        @JsonProperty("resourceId")
-        private String resourceId;
-        @JsonProperty("changes")
-        private Map<String, Object> changes;
-        @JsonProperty("ipAddress")
-        private String ipAddress;
-
-        public void setAction(String action) {
-            this.action = action;
-        }
-
-        public void setProjectId(String projectId) {
-            this.projectId = projectId;
-        }
-
-        public void setUserId(String userId) {
-            this.userId = userId;
-        }
-
-        public void setResourceType(String resourceType) {
-            this.resourceType = resourceType;
-        }
-
-        public void setResourceId(String resourceId) {
-            this.resourceId = resourceId;
-        }
-
-        public void setChanges(Map<String, Object> changes) {
-            this.changes = changes;
-        }
-
-        public void setIpAddress(String ipAddress) {
-            this.ipAddress = ipAddress;
-        }
-    }
-
-    // Static Inner DTO
-    private static class GoBuildRequest {
-        @JsonProperty("containerID")
-        private String containerID;
-        @JsonProperty("projectID")
-        private String projectID;
-        @JsonProperty("repoUrl")
-        private String repoUrl;
-        @JsonProperty("branch")
-        private String branch;
-        @JsonProperty("port")
-        private int port;
-        @JsonProperty("name")
-        private String name;
-        @JsonProperty("envVariables")
-        private Map<String, String> envVariables;
-
-        public GoBuildRequest(String containerID, String projectID, String repoUrl, String branch, int port,
-                String name, Map<String, String> envVariables) {
-            this.containerID = containerID;
-            this.projectID = projectID;
-            this.repoUrl = repoUrl;
-            this.branch = (branch == null || branch.isEmpty()) ? "main" : branch;
-            this.port = port;
-            this.name = name;
-            this.envVariables = envVariables;
-        }
     }
 }

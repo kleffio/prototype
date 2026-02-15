@@ -29,5 +29,220 @@
       "description": "Contact our sales team for enterprise pricing and custom arrangements.",
       "button": "Talk to Sales"
     }
+  },
+  "terms": {
+    "badge": "Terms of Service",
+    "title_line1": "Simple rules.",
+    "title_line2": "Fair terms.",
+    "subtitle": "We keep it straightforward. No hidden clauses, no legal jargon.",
+    "last_updated": "Last updated December 6, 2024",
+    "basics": {
+      "label": "The Basics",
+      "title": "Core principles",
+      "description": "What you can expect when using Kleff.",
+      "use_right": {
+        "title": "Use it right",
+        "description": "Deploy awesome apps. No abuse. No illegal content."
+      },
+      "pay_fair": {
+        "title": "Pay fair",
+        "description": "Only pay for what you use. Cancel anytime."
+      },
+      "stay_secure": {
+        "title": "Stay secure",
+        "description": "We handle security. You handle code."
+      },
+      "own_data": { "title": "Own your data", "description": "Your code is yours. Export anytime." }
+    },
+    "acceptable_use": {
+      "label": "Acceptable Use",
+      "title": "What you can't do",
+      "description": "Keep the platform safe and legal for everyone.",
+      "items": [
+        "Host malware, phishing sites, or malicious software",
+        "Send spam or unsolicited commercial emails",
+        "Violate intellectual property or copyright laws",
+        "Mine cryptocurrency without explicit permission",
+        "Attempt to hack, attack, or disrupt our systems",
+        "Resell or redistribute our services without authorization",
+        "Harass, threaten, or abuse other users",
+        "Host illegal content or facilitate illegal activities"
+      ]
+    },
+    "sla": {
+      "label": "Service Level Agreement",
+      "description": "What you can expect from Kleff's infrastructure and support.",
+      "uptime": {
+        "title": "99.9% Uptime",
+        "description": "Production deployments with automated failover and monitoring."
+      },
+      "infrastructure": {
+        "title": "24/7 Infrastructure",
+        "description": "Always-on systems with redundancy across multiple zones."
+      },
+      "backups": {
+        "title": "Automated Backups",
+        "description": "Daily snapshots retained for 30 days on paid plans."
+      },
+      "ddos": {
+        "title": "DDoS Protection",
+        "description": "Built-in protection against distributed denial of service attacks."
+      }
+    },
+    "promise": {
+      "title": "Our",
+      "title_highlight": "promise",
+      "title_end": "to you",
+      "items": [
+        {
+          "title": "Transparent Pricing",
+          "description": "See exactly what you pay. No hidden costs or surprise bills."
+        },
+        {
+          "title": "Real Support",
+          "description": "Talk to humans. Email support for all users, priority for paid plans."
+        },
+        {
+          "title": "No Lock-in",
+          "description": "Export your data and leave whenever you want. We make it easy."
+        },
+        {
+          "title": "Regular Updates",
+          "description": "Continuous improvements based on your feedback and requests."
+        },
+        {
+          "title": "Fair Resource Limits",
+          "description": "Generous quotas that scale with your success."
+        },
+        {
+          "title": "Data Ownership",
+          "description": "Your code, your data, your deployments. You own everything."
+        }
+      ]
+    },
+    "pricing_section": {
+      "title": "About",
+      "title_highlight": "pricing",
+      "tiers": {
+        "free": {
+          "title": "Free Tier",
+          "description": "Perfect for hobby projects. No credit card required."
+        },
+        "payg": {
+          "title": "Pay-as-you-go",
+          "description": "Only pay for compute, bandwidth, and storage you actually use."
+        },
+        "team": {
+          "title": "Team Plans",
+          "description": "Predictable monthly pricing for growing teams and companies."
+        },
+        "cancel": {
+          "title": "Cancel Anytime",
+          "description": "No contracts. No penalties. Stop when you want."
+        }
+      }
+    },
+    "contact": {
+      "title": "Questions about terms?",
+      "description": "Our legal team is happy to clarify anything. We respond within 48 hours.",
+      "button": "Contact Legal Team"
+    }
+  },
+  "privacy": {
+    "badge": "Privacy Policy",
+    "title_line1": "Your privacy",
+    "title_line2": "is sacred.",
+    "subtitle": "We protect your data like it's our own. Here's exactly how.",
+    "last_updated": "Last updated December 6, 2024",
+    "promise": {
+      "label": "Our Promise",
+      "title": "Privacy-first platform",
+      "description": "Built with Canadian data sovereignty and PIPEDA compliance from day one.",
+      "canadian": { "title": "100% Canadian", "description": "Data never leaves Canada. Ever." },
+      "encrypted": { "title": "Encrypted", "description": "End-to-end encryption. Always on." },
+      "transparent": { "title": "Transparent", "description": "You own your data. Period." },
+      "pipeda": { "title": "PIPEDA Compliant", "description": "Full Canadian privacy compliance." }
+    },
+    "collection": {
+      "label": "Data Collection",
+      "title": "What we collect and why",
+      "description": "Only what's necessary to provide and improve our service.",
+      "contact": {
+        "title": "Contact Information",
+        "description": "Email, name, company details needed for account creation and communication."
+      },
+      "billing": {
+        "title": "Billing Data",
+        "description": "Payment information processed securely through Stripe. We never store card numbers."
+      },
+      "usage": {
+        "title": "Usage Statistics",
+        "description": "Anonymous analytics to improve performance and fix bugs. No personal tracking."
+      }
+    },
+    "how_we_use": {
+      "label": "How we use your data",
+      "description": "Your information is used solely to provide and improve our hosting service.",
+      "delivery": {
+        "title": "Service delivery",
+        "description": "Deploy apps, process payments, and provide support."
+      },
+      "communication": {
+        "title": "Communication",
+        "description": "Service updates, security alerts, and billing notifications."
+      },
+      "improvements": {
+        "title": "Improvements",
+        "description": "Analyze usage patterns to enhance performance and features."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Detect threats, prevent fraud, and protect your applications."
+      }
+    },
+    "rights": {
+      "title": "Your",
+      "title_highlight": "data rights",
+      "items": [
+        { "title": "Access your data", "description": "Request a copy anytime, for any reason" },
+        { "title": "Delete your data", "description": "Permanent deletion within 30 days" },
+        { "title": "Export your data", "description": "Portable JSON format, ready to go" },
+        { "title": "Correct your data", "description": "Update inaccurate information instantly" },
+        { "title": "Opt-out of analytics", "description": "Disable non-essential tracking" },
+        { "title": "File a complaint", "description": "Contact Privacy Commissioner of Canada" }
+      ]
+    },
+    "security_measures": {
+      "title": "Data",
+      "title_highlight": "security",
+      "title_end": "measures",
+      "encryption": { "title": "Encryption", "description": "AES-256 at rest, TLS 1.3 in transit" },
+      "access_control": {
+        "title": "Access Control",
+        "description": "Multi-factor auth, role-based permissions"
+      },
+      "monitoring": { "title": "Monitoring", "description": "24/7 security monitoring and alerts" },
+      "audits": { "title": "Audits", "description": "Regular penetration testing and reviews" }
+    },
+    "contact": {
+      "title": "Questions about privacy?",
+      "description": "Our privacy team is here to help. We respond within 24 hours.",
+      "button": "Contact Privacy Team"
+    }
+  },
+  "faq": {
+    "badge": "Frequently Asked Questions",
+    "title_line1": "Ship faster.",
+    "title_line2": "Ask anything.",
+    "subtitle": "Everything you need to know about deploying, scaling, and managing your applications on Kleff.",
+    "search_placeholder": "Search FAQs...",
+    "results_found": "Found",
+    "results_for": "result(s) for",
+    "no_results_title": "No results found",
+    "no_results_description": "Try different keywords or browse by category",
+    "clear_search": "Clear search",
+    "still_have_questions": "Still have questions?",
+    "team_help": "Our team is here to help you get the most out of Kleff.",
+    "contact_support": "Contact Support"
   }
 }

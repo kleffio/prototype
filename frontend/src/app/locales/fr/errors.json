@@ -1,0 +1,52 @@
+{
+  "errorPage": {
+    "error_label": "Erreur",
+    "titles": {
+      "404": "Page introuvable",
+      "403": "Accès interdit",
+      "401": "Non autorisé",
+      "500": "Erreur interne du serveur",
+      "503": "Service indisponible",
+      "default": "Une erreur est survenue"
+    },
+    "descriptions": {
+      "404": "La page que vous recherchez n'existe pas ou a été déplacée.",
+      "403": "Vous n'avez pas la permission d'accéder à cette ressource.",
+      "401": "Vous devez être authentifié pour accéder à cette ressource.",
+      "500": "Notre serveur a rencontré une erreur lors du traitement de votre requête.",
+      "503": "Le service est temporairement indisponible. Veuillez réessayer plus tard.",
+      "default": "Nous avons rencontré une erreur inattendue. Veuillez réessayer."
+    },
+    "error_details": "Détails de l'erreur",
+    "stack_trace": "Trace d'exécution (développement uniquement)",
+    "go_back": "Retour",
+    "refresh_page": "Actualiser la page",
+    "go_home": "Accueil",
+    "persist_message": "Si ce problème persiste, veuillez",
+    "contact_support": "contacter le support"
+  },
+  "deactivated": {
+    "badge": "Compte désactivé",
+    "status": "Statut 403",
+    "title": "Compte désactivé",
+    "description": "Votre compte a été définitivement désactivé et ne peut pas être restauré.",
+    "what_this_means": "Ce que cela signifie :",
+    "consequences": [
+      "Votre compte et toutes les données associées ont été supprimés définitivement",
+      "Tous les projets, conteneurs et configurations ont été supprimés",
+      "Cette action ne peut pas être annulée ou inversée",
+      "Vous devrez créer un nouveau compte pour utiliser Kleff à nouveau"
+    ],
+    "sign_out": "Se déconnecter",
+    "error_message": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter le support.",
+    "contact_support": "Contacter le support"
+  },
+  "errorBoundary": {
+    "title": "Une erreur est survenue",
+    "badge": "Erreur de composant",
+    "description": "Une erreur s'est produite lors du rendu de ce composant.",
+    "error_message": "Message d'erreur",
+    "stack_trace": "Trace d'exécution",
+    "try_again": "Réessayer"
+  }
+}

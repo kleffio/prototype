@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -52,13 +53,16 @@ type BatchDeleteResponse struct {
 }
 
 type BuildRequest struct {
-	ContainerID  string            `json:"containerID"`
-	ProjectID    string            `json:"projectID"`
-	Name         string            `json:"name"`                   // App name
-	RepoURL      string            `json:"repoUrl"`                // Source Git URL
-	Branch       string            `json:"branch"`                 // Git Branch
-	Port         int               `json:"port"`                   // Optional: App Port
-	EnvVariables map[string]string `json:"envVariables,omitempty"` // Environment variables
+	ContainerID    string            `json:"containerID"`
+	ProjectID      string            `json:"projectID"`
+	Name           string            `json:"name"`
+	RepoURL        string            `json:"repoUrl"`
+	Branch         string            `json:"branch"`
+	Port           int               `json:"port"`
+	EnvVariables   map[string]string `json:"envVariables,omitempty"`
+	// New Database Fields
+	EnableDatabase bool              `json:"enableDatabase"`
+	StorageSizeGB  int               `json:"storageSizeGB"`
 }
 
 type UpdateWebAppRequest struct {
@@ -149,11 +153,12 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Auth middleware removed, handlers wrapped only with enableCors
-	mux.HandleFunc("POST /api/v1/build/create", enableCors(server.handleCreateBuild))
-	mux.HandleFunc("GET /api/v1/build/hello", enableCors(server.handleHelloWorld))
-	mux.HandleFunc("DELETE /api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
+	mux.HandleFunc("/api/v1/build/create", enableCors(server.handleCreateBuild))
+	mux.HandleFunc("/api/v1/build/hello", enableCors(server.handleHelloWorld))
+	mux.HandleFunc("/api/v1/webapp/{projectID}/{containerID}", enableCors(server.handleDeleteWebApp))
+	mux.HandleFunc("/api/v1/build/logs/{projectID}/{containerID}", enableCors(server.handleBuildLogs))
 	mux.HandleFunc("/api/v1/webapp/update", enableCors(server.handleUpdateWebApp))
-	mux.HandleFunc("POST /api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
+	mux.HandleFunc("/api/v1/webapp/batch-delete", enableCors(server.handleBatchDeleteWebApps))
 
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -170,11 +175,19 @@ func main() {
 }
 
 func (s *Server) handleHelloWorld(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello World, this is a CD test for christine"))
 }
 
 func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	// Limit request body size (1MB)
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
@@ -229,16 +242,19 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	// 5. Submit Kaniko Build Job
 	// Use the resourceName in the job name to keep it linked
 	jobName := fmt.Sprintf("build-%s-%s", resourceName, tag)
-	if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage); err != nil {
+	if err := s.createKanikoJob(r.Context(), "default", jobName, req.RepoURL, req.Branch, generatedImage, rawUUID); err != nil {
 		s.Logger.Error("Failed to create build job", "job", jobName, "error", err)
 		http.Error(w, "Failed to start build process", http.StatusInternalServerError)
 		return
 	}
 
+
+	// Inside handleCreateBuild, before calling createWebApp
+	s.Logger.Info("Processing build request", "db_enabled", req.EnableDatabase, "storage", req.StorageSizeGB)
 	// 6. Create or Update the WebApp Custom Resource
 	// We pass resourceName ("app-UUID") as the K8s name,
 	// but the original req (containing raw UUID) is stored in the Spec.
-	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, req); err != nil {
+	if err := s.createWebApp(r.Context(), namespaceName, resourceName, generatedImage, jobName, req, rawUUID); err != nil {
 		s.Logger.Error("Failed to create WebApp CR", "id", resourceName, "error", err)
 		http.Error(w, "Build started, but failed to sync deployment metadata", http.StatusInternalServerError)
 		return
@@ -263,7 +279,95 @@ func (s *Server) handleCreateBuild(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleBuildLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	projectID := r.PathValue("projectID")
+	containerID := r.PathValue("containerID")
+
+	if projectID == "" || containerID == "" {
+		http.Error(w, "projectID and containerID are required", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Sanitize inputs
+	_, err := validateAndSanitize(projectID)
+	if err != nil {
+		http.Error(w, "Invalid projectID", http.StatusBadRequest)
+		return
+	}
+	rawUUID, err := validateAndSanitize(containerID)
+	if err != nil {
+		http.Error(w, "Invalid containerID", http.StatusBadRequest)
+		return
+	}
+
+	// In your current code, jobs are created in the "default" namespace
+	searchNamespace := "default" 
+
+	// 2. Find the Pod using the container-id label
+	// This finds the build pod regardless of the timestamp in the job name
+	podList, err := s.KubeClient.CoreV1().Pods(searchNamespace).List(r.Context(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("container-id=%s", rawUUID),
+	})
+
+	if err != nil || len(podList.Items) == 0 {
+		s.Logger.Warn("Could not find build pod for container", "containerID", rawUUID)
+		http.Error(w, "Build pod not found. It may have not started yet or was already cleaned up.", http.StatusNotFound)
+		return
+	}
+
+	// Get the most recent pod (if multiple exist for some reason)
+	targetPod := podList.Items[len(podList.Items)-1]
+
+	// 3. Set up the Log Request
+	logOptions := &corev1.PodLogOptions{
+		Container:  "kaniko",
+		Follow:     true,
+		Timestamps: false,
+	}
+
+	req := s.KubeClient.CoreV1().Pods(searchNamespace).GetLogs(targetPod.Name, logOptions)
+	stream, err := req.Stream(r.Context())
+	if err != nil {
+		s.Logger.Error("Error opening log stream", "pod", targetPod.Name, "error", err)
+		http.Error(w, "Failed to open log stream", http.StatusInternalServerError)
+		return
+	}
+	defer stream.Close()
+
+	// 4. Set streaming headers
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+
+	// 5. Stream data with manual flushing
+	buf := make([]byte, 1024)
+	for {
+		n, err := stream.Read(buf)
+		if n > 0 {
+			w.Write(buf[:n])
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		}
+		if err != nil {
+			if err != io.EOF {
+				s.Logger.Error("Stream read error", "error", err)
+			}
+			break
+		}
+	}
+}
+
 func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	var req BatchDeleteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
@@ -339,11 +443,23 @@ func (s *Server) handleBatchDeleteWebApps(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
-// createWebApp uses the Dynamic Client to create or update the Custom Resource
-func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, req BuildRequest) error {
+func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, image string, jobName string, req BuildRequest, rawUUID string) error {
 	port := req.Port
 	if port == 0 {
 		port = 8080
+	}
+
+	// Handle Database Defaults
+	storageSize := req.StorageSizeGB
+	if storageSize == 0 {
+		storageSize = 10 // Default as per acceptance criteria
+	}
+
+	// Construct the database spec map
+	databaseSpec := map[string]interface{}{
+		"enabled":     req.EnableDatabase,
+		"storageSize": storageSize,
+		"version":     "16.2", // Default as per acceptance criteria
 	}
 
 	// Construct the Unstructured object
@@ -352,20 +468,22 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 			"apiVersion": "kleff.kleff.io/v1",
 			"kind":       "WebApp",
 			"metadata": map[string]interface{}{
-				"name":      resourceName, // UUID
+				"name":      resourceName,
 				"namespace": namespace,
 				"labels": map[string]interface{}{
-					"container-id": req.ContainerID,
+					"container-id": rawUUID,
 				},
 			},
 			"spec": map[string]interface{}{
-				"containerID":  req.ContainerID,
-				"displayName":  req.Name, // User-friendly name
-				"image":        image,
-				"port":         int64(port),
-				"repoURL":      req.RepoURL,
-				"branch":       req.Branch,
-				"envVariables": req.EnvVariables,
+				"containerID":    req.ContainerID,
+				"displayName":    req.Name,
+				"image":          image,
+				"buildJobName":   jobName,
+				"port":           int64(port),
+				"repoURL":        req.RepoURL,
+				"branch":         req.Branch,
+				"envVariables":   req.EnvVariables,
+				"database":       databaseSpec, // Added Database Spec
 			},
 		},
 	}
@@ -385,12 +503,14 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 				spec = make(map[string]interface{})
 			}
 
-			// Update ALL fields to ensure they reflect the latest UI changes
+			// Update fields
 			spec["displayName"] = req.Name
 			spec["image"] = image
+			spec["buildJobName"] = jobName
 			spec["port"] = int64(port)
 			spec["branch"] = req.Branch
 			spec["repoURL"] = req.RepoURL
+			spec["database"] = databaseSpec // Ensure database updates are reflected
 			if req.EnvVariables != nil {
 				spec["envVariables"] = req.EnvVariables
 			}
@@ -406,6 +526,10 @@ func (s *Server) createWebApp(ctx context.Context, namespace, resourceName, imag
 }
 
 func (s *Server) handleDeleteWebApp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	projectID := r.PathValue("projectID")
 	containerID := r.PathValue("containerID")
 
@@ -517,12 +641,11 @@ func (s *Server) createNamespace(ctx context.Context, name string) (bool, error)
 	}
 	return false, nil
 }
-
-func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRepo, branch, destinationImage string) error {
-	// Fix Git Context for Kaniko (Needs git:// for private/public without auth, or https:// with tokens)
+func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRepo, branch, destinationImage, containerID string) error {
+	// 1. Fix Git Context for Kaniko
+	// Needs git:// for public repos to avoid interactive auth prompts
 	gitContext := gitRepo
 	if strings.HasPrefix(gitContext, "https://") {
-		// Convert https to git protocol to avoid interactive auth prompts for public repos
 		gitContext = "git://" + strings.TrimPrefix(gitContext, "https://")
 	} else if !strings.HasPrefix(gitContext, "git://") {
 		gitContext = "git://" + gitContext
@@ -530,7 +653,9 @@ func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRep
 	if branch != "" {
 		gitContext = fmt.Sprintf("%s#refs/heads/%s", gitContext, branch)
 	}
-	ttl := int32(3600)
+
+	ttl := int32(3600) // Cleanup job 1 hour after finishing
+
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,
@@ -540,6 +665,14 @@ func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRep
 			TTLSecondsAfterFinished: &ttl,
 			BackoffLimit:            func(i int32) *int32 { return &i }(2),
 			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					// IMPORTANT: These labels allow handleBuildLogs to find the pod
+					// using only the containerID UUID.
+					Labels: map[string]string{
+						"container-id": containerID,
+						"managed-by":   "paas-build-manager",
+					},
+				},
 				Spec: corev1.PodSpec{
 					RestartPolicy: corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
@@ -585,6 +718,7 @@ func (s *Server) createKanikoJob(ctx context.Context, namespace, jobName, gitRep
 	return err
 }
 
+
 func validateAndSanitize(name string) (string, error) {
 	name = strings.ToLower(name)
 	name = strings.ReplaceAll(name, "_", "-")
@@ -614,7 +748,7 @@ func enableCors(next http.HandlerFunc) http.HandlerFunc {
 
 		// Expanded allowed methods to include DELETE, PATCH, GET
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, DELETE, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization, Cache-Control")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {

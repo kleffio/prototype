@@ -29,7 +29,7 @@ type mockMetricsService struct {
 	getNamespacesFunc                       func(ctx context.Context) ([]domain.NamespaceMetric, error)
 	getUptimeMetricsFunc                    func(ctx context.Context, duration string) (*domain.UptimeMetrics, error)
 	getSystemUptimeFunc                     func(ctx context.Context) (float64, error)
-	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error)
+	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
 	getProjectUsageMetricsFunc              func(ctx context.Context, projectID string) (*domain.ProjectUsageMetrics, error)
 	getProjectUsageMetricsWithDaysFunc      func(ctx context.Context, projectID string, days int) (*domain.ProjectUsageMetrics, error)
 	getProjectTotalUsageMetricsFunc         func(ctx context.Context, projectID string) (*domain.ProjectTotalUsageMetrics, error)
@@ -106,9 +106,9 @@ func (m *mockMetricsService) GetNamespaces(ctx context.Context) ([]domain.Namesp
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockMetricsService) GetDatabaseIOMetrics(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+func (m *mockMetricsService) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 	if m.getDatabaseIOMetricsFunc != nil {
-		return m.getDatabaseIOMetricsFunc(ctx, duration)
+		return m.getDatabaseIOMetricsFunc(ctx, duration, namespaces)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -425,7 +425,7 @@ func TestGetDatabaseIOMetrics_Success(t *testing.T) {
 	}
 
 	mockService := &mockMetricsService{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return expectedMetrics, nil
 		},
 	}
@@ -744,7 +744,7 @@ func TestGetNamespaces_Error(t *testing.T) {
 
 func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	mockService := &mockMetricsService{
-		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return nil, errors.New("database error")
 		},
 	}
@@ -1040,13 +1040,11 @@ func TestGetAllMetrics_Success(t *testing.T) {
 			},
 		},
 		DatabaseIOMetrics: &domain.DatabaseMetrics{
-			DiskReadBytesPerSec:        1024000,
-			DiskWriteBytesPerSec:       512000,
-			DiskReadOpsPerSec:          150,
-			DiskWriteOpsPerSec:         75,
-			NetworkReceiveBytesPerSec:  2048000,
-			NetworkTransmitBytesPerSec: 1536000,
-			Source:                     "Prometheus",
+			DiskReadBytesPerSec:  1024000,
+			DiskWriteBytesPerSec: 512000,
+			DiskReadOpsPerSec:    150,
+			DiskWriteOpsPerSec:   75,
+			Source:               "Prometheus",
 		},
 		SystemUptime:          1234567,
 		SystemUptimeFormatted: "14d 6h 56m",

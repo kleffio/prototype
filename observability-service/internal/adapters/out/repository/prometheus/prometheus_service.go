@@ -3,6 +3,7 @@ package prometheus
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -412,72 +413,66 @@ func (c *prometheusClient) GetNamespaces(ctx context.Context) ([]domain.Namespac
 	return namespaces, nil
 }
 
-func (c *prometheusClient) GetDatabaseIOMetrics(ctx context.Context, duration string) (*domain.DatabaseMetrics, error) {
+func (c *prometheusClient) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 	metrics := &domain.DatabaseMetrics{
 		Source: "Prometheus",
 	}
 
-	query := `sum(rate(node_disk_read_bytes_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
+	namespaceFilter := `namespace!~"kube-system|monitoring|ingress-nginx|local-path-storage"`
+	if len(namespaces) > 0 {
+		namespaceFilter = fmt.Sprintf(`namespace=~"%s"`, strings.Join(namespaces, "|"))
+	}
+
+	formatQuery := func(metric string) string {
+		return fmt.Sprintf(`sum(rate(%s{container!="", container!="POD", %s}[5m]))`, metric, namespaceFilter)
+	}
+
+	if resp, err := c.queryPrometheus(ctx, formatQuery("container_fs_reads_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskReadBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	query = `sum(rate(node_disk_written_bytes_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
+	if resp, err := c.queryPrometheus(ctx, formatQuery("container_fs_writes_bytes_total")); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskWriteBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
 	}
 
-	query = `sum(rate(node_disk_reads_completed_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.DiskReadOpsPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	query = `sum(rate(node_disk_writes_completed_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.DiskWriteOpsPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	query = `sum(rate(node_network_receive_bytes_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkReceiveBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	query = `sum(rate(node_network_transmit_bytes_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkTransmitBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	query = `sum(rate(node_network_receive_packets_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkReceiveOpsPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	query = `sum(rate(node_network_transmit_packets_total[5m]))`
-	if resp, err := c.queryPrometheus(ctx, query); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkTransmitOpsPerSec, _ = extractValue(resp.Data.Result[0].Value)
-	}
-
-	if resp, err := c.queryPrometheusRange(ctx, `sum(rate(node_disk_read_bytes_total[5m]))`, duration); err == nil && len(resp.Data.Result) > 0 {
+	if resp, err := c.queryPrometheusRange(ctx, formatQuery("container_fs_reads_bytes_total"), duration); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskReadHistory = extractTimeSeries(resp.Data.Result[0].Values)
 	}
 
-	if resp, err := c.queryPrometheusRange(ctx, `sum(rate(node_disk_written_bytes_total[5m]))`, duration); err == nil && len(resp.Data.Result) > 0 {
+	if resp, err := c.queryPrometheusRange(ctx, formatQuery("container_fs_writes_bytes_total"), duration); err == nil && len(resp.Data.Result) > 0 {
 		metrics.DiskWriteHistory = extractTimeSeries(resp.Data.Result[0].Values)
-	}
-
-	if resp, err := c.queryPrometheusRange(ctx, `sum(rate(node_network_receive_bytes_total[5m]))`, duration); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkReceiveHistory = extractTimeSeries(resp.Data.Result[0].Values)
-	}
-
-	if resp, err := c.queryPrometheusRange(ctx, `sum(rate(node_network_transmit_bytes_total[5m]))`, duration); err == nil && len(resp.Data.Result) > 0 {
-		metrics.NetworkTransmitHistory = extractTimeSeries(resp.Data.Result[0].Values)
 	}
 
 	return metrics, nil
 }
 
 func (c *prometheusClient) GetProjectUsageMetrics(ctx context.Context, projectID string) (*domain.ProjectUsageMetrics, error) {
-	return c.GetProjectUsageMetricsWithDays(ctx, projectID, 30)
+	metrics := &domain.ProjectUsageMetrics{
+		ProjectID: projectID,
+		Window:    "current",
+	}
+
+	memoryQuery := fmt.Sprintf(`sum(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}) / (1024^3)`, projectID)
+	if resp, err := c.queryPrometheus(ctx, memoryQuery); err == nil && len(resp.Data.Result) > 0 {
+		metrics.MemoryUsageGB, _ = extractValue(resp.Data.Result[0].Value)
+	}
+
+	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
+	if resp, err := c.queryPrometheus(ctx, cpuQuery); err == nil && len(resp.Data.Result) > 0 {
+		metrics.CPURequestCores, _ = extractValue(resp.Data.Result[0].Value)
+	}
+
+	diskReadQuery := fmt.Sprintf(`sum(rate(container_fs_reads_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
+	if resp, err := c.queryPrometheus(ctx, diskReadQuery); err == nil && len(resp.Data.Result) > 0 {
+		metrics.DiskReadBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
+	}
+
+	diskWriteQuery := fmt.Sprintf(`sum(rate(container_fs_writes_bytes_total{namespace="%s", container!="", container!="POD"}[5m]))`, projectID)
+	if resp, err := c.queryPrometheus(ctx, diskWriteQuery); err == nil && len(resp.Data.Result) > 0 {
+		metrics.DiskWriteBytesPerSec, _ = extractValue(resp.Data.Result[0].Value)
+	}
+
+	return metrics, nil
 }
 
 func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, projectID string, days int) (*domain.ProjectUsageMetrics, error) {
@@ -486,7 +481,6 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 		Window:    fmt.Sprintf("%dd", days),
 	}
 
-	// Memory query: sum(avg_over_time(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}[%dd])) / (1024^3)
 	memoryQuery := fmt.Sprintf(`sum(avg_over_time(container_memory_working_set_bytes{namespace="%s", container!="", container!="POD"}[%dd])) / (1024^3)`, projectID, days)
 	memoryResp, err := c.queryPrometheus(ctx, memoryQuery)
 	if err == nil && len(memoryResp.Data.Result) > 0 {
@@ -494,9 +488,7 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 			metrics.MemoryUsageGB = val
 		}
 	}
-	// If no data, MemoryUsageGB remains 0.0
 
-	// CPU query: sum(avg_over_time(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m])[%dd:1m]))
 	cpuQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_cpu_usage_seconds_total{namespace="%s", container!="", container!="POD"}[5m])[%dd:1m]))`, projectID, days)
 	cpuResp, err := c.queryPrometheus(ctx, cpuQuery)
 	if err == nil && len(cpuResp.Data.Result) > 0 {
@@ -504,7 +496,22 @@ func (c *prometheusClient) GetProjectUsageMetricsWithDays(ctx context.Context, p
 			metrics.CPURequestCores = val
 		}
 	}
-	// If no data, CPURequestCores remains 0.0
+
+	diskReadQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_fs_reads_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
+	diskReadResp, err := c.queryPrometheus(ctx, diskReadQuery)
+	if err == nil && len(diskReadResp.Data.Result) > 0 {
+		if val, err := extractValue(diskReadResp.Data.Result[0].Value); err == nil {
+			metrics.DiskReadBytesPerSec = val
+		}
+	}
+
+	diskWriteQuery := fmt.Sprintf(`sum(avg_over_time(rate(container_fs_writes_bytes_total{namespace="%s"}[5m])[%dd:1m]))`, projectID, days)
+	diskWriteResp, err := c.queryPrometheus(ctx, diskWriteQuery)
+	if err == nil && len(diskWriteResp.Data.Result) > 0 {
+		if val, err := extractValue(diskWriteResp.Data.Result[0].Value); err == nil {
+			metrics.DiskWriteBytesPerSec = val
+		}
+	}
 
 	return metrics, nil
 }
@@ -764,7 +771,7 @@ func (c *prometheusClient) GetAllMetrics(ctx context.Context, duration string) (
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dbMetrics, err := c.GetDatabaseIOMetrics(ctx, duration)
+		dbMetrics, err := c.GetDatabaseIOMetrics(ctx, duration, nil)
 		if err != nil {
 			addError(fmt.Errorf("GetDatabaseIOMetrics: %w", err))
 		} else {

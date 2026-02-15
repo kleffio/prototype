@@ -1,18 +1,34 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useLocation, useNavigate } from "react-router-dom";
 import { KleffDot } from "@shared/ui/KleffDot";
 import { Button } from "@shared/ui/Button";
 import { Spinner } from "@shared/ui/Spinner";
 import { ROUTES } from "@app/routes/routes";
+import enTranslations from "@app/locales/en/auth.json";
+import frTranslations from "@app/locales/fr/auth.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function AuthPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: string } };
 
-  const from = location.state?.from ?? ROUTES.DASHBOARD;
+  const from = useMemo(() => location.state?.from ?? ROUTES.DASHBOARD, [location.state?.from]);
   const attemptedRef = useRef(false);
+
+  const [locale, setLocaleState] = useState(getLocale());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].auth;
 
   const isCallback = useMemo(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -42,7 +58,7 @@ export function AuthPage() {
       console.error("[AuthPage] signinRedirect failed:", err);
       attemptedRef.current = false;
     });
-  }, [auth.isLoading, auth.isAuthenticated, auth, isCallback, from, navigate]);
+  }, [auth, auth.isLoading, auth.isAuthenticated, isCallback, from, navigate]);
 
   const handleContinue = () => {
     auth.signinRedirect({ state: { from } }).catch((err) => {
@@ -51,10 +67,8 @@ export function AuthPage() {
     });
   };
 
-  const title = isCallback ? "Finishing sign-in…" : "Redirecting to Kleff Auth…";
-  const subtitle = isCallback
-    ? "We’re completing your login and securing your session. This usually only takes a moment."
-    : "We’re securely sending you to the Kleff sign-in page. This usually only takes a moment.";
+  const title = isCallback ? t.finishing_sign_in : t.redirecting;
+  const subtitle = isCallback ? t.finishing_subtitle : t.redirecting_subtitle;
 
   return (
     <div
@@ -75,16 +89,14 @@ export function AuthPage() {
         </div>
 
         <div className="mt-5 flex flex-col gap-2 text-center">
-          <p className="text-[11px] text-neutral-500">
-            If nothing happens after a few seconds, you can restart the sign-in manually.
-          </p>
+          <p className="text-[11px] text-neutral-500">{t.fallback_message}</p>
           <Button
             variant="outline"
             className="hover:border-kleff-gold/60 border-white/15 bg-transparent text-xs text-neutral-200 hover:text-white"
             onClick={handleContinue}
             disabled={auth.isLoading}
           >
-            Try again
+            {t.try_again}
           </Button>
         </div>
       </div>

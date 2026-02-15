@@ -18,6 +18,7 @@ func main() {
 	log.Printf("Environment: %s", cfg.Environment)
 	log.Printf("Prometheus URL: %s", cfg.PrometheusURL)
 	log.Printf("Loki URL: %s", cfg.LokiURL)
+	log.Printf("User Service URL: %s", cfg.UserServiceURL)
 	log.Printf("Server Port: %s", cfg.ServerPort)
 
 	prometheusClient := prometheus.NewPrometheusClient(cfg.PrometheusURL)
@@ -32,7 +33,11 @@ func main() {
 
 	logsHandler := http.NewLogsHandler(logsService)
 
-	router := http.SetupRouter(metricsHandler, logsHandler)
+	exportService := services.NewExportService(lokiClient, prometheusClient)
+
+	exportHandler := http.NewExportHandler(exportService)
+
+	router := http.SetupRouter(metricsHandler, logsHandler, exportHandler, cfg.UserServiceURL)
 
 	log.Printf("Server listening on port %s", cfg.ServerPort)
 	if err := router.Run(":" + cfg.ServerPort); err != nil {

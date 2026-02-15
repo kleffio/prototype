@@ -9,6 +9,11 @@ import { getProjectCollaborators } from "../api/collaborators";
 import type { ActionLog } from "../types/ActionLog";
 import { getUsernameById } from "@features/users/api/getUsernameById";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/Select";
+import enTranslations from "@app/locales/en/projects.json";
+import frTranslations from "@app/locales/fr/projects.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 interface ActionLogModalProps {
   isOpen: boolean;
@@ -27,6 +32,18 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
     direction: "asc" | "desc";
   } | null>(null);
   const [selectedCollaborator, setSelectedCollaborator] = useState<string>("all");
+
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].actionLog;
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -65,7 +82,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
         setUsernames(nameMap);
       } catch (err) {
         console.error("Error loading logs or collaborators:", err);
-        setError("Failed to load activity logs.");
+        setError(t.failed_load);
       } finally {
         setLoading(false);
       }
@@ -117,7 +134,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             if (key === "added_vars" && Array.isArray(value)) {
               return (
                 <div key={key} className="flex flex-col gap-0.5">
-                  <span className="font-medium text-green-400">Added Env Vars:</span>
+                  <span className="font-medium text-green-400">{t.added_env_vars}</span>
                   {value.map((v: string) => (
                     <span key={v} className="pl-2 text-neutral-400">
                       • {v}
@@ -129,7 +146,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             if (key === "deleted_vars" && Array.isArray(value)) {
               return (
                 <div key={key} className="flex flex-col gap-0.5">
-                  <span className="font-medium text-red-400">Deleted Env Vars:</span>
+                  <span className="font-medium text-red-400">{t.deleted_env_vars}</span>
                   {value.map((v: string) => (
                     <span key={v} className="pl-2 text-neutral-400">
                       • {v}
@@ -141,7 +158,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             if (key === "updated_vars" && Array.isArray(value)) {
               return (
                 <div key={key} className="flex flex-col gap-0.5">
-                  <span className="font-medium text-amber-400">Updated Env Vars:</span>
+                  <span className="font-medium text-amber-400">{t.updated_env_vars}</span>
                   {value.map((v: string) => (
                     <span key={v} className="pl-2 text-neutral-400">
                       • {v}
@@ -153,7 +170,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             if (key === "old_role" && parsedDetails["new_role"]) {
               return (
                 <div key="role_change" className="flex gap-1">
-                  <span className="font-medium text-neutral-500">Role:</span>
+                  <span className="font-medium text-neutral-500">{t.role}</span>
                   <span className="text-neutral-300">
                     {value} <span className="text-neutral-600">→</span> {parsedDetails["new_role"]}
                   </span>
@@ -180,7 +197,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
           })}
           {parsedDetails["target_user_id"] && (
             <div className="mt-1 flex gap-1 border-t border-white/5 pt-0.5">
-              <span className="font-medium text-neutral-500">Target User:</span>
+              <span className="font-medium text-neutral-500">{t.target_user}</span>
               <span className="font-mono text-neutral-300">
                 {usernames[parsedDetails["target_user_id"]] || parsedDetails["target_user_id"]}
               </span>
@@ -305,10 +322,8 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
                 <Activity className="h-5 w-5 text-amber-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-white">Project Activity</h2>
-                <p className="mt-0.5 text-sm text-neutral-400">
-                  History of changes and deployments
-                </p>
+                <h2 className="text-xl font-bold tracking-tight text-white">{t.title}</h2>
+                <p className="mt-0.5 text-sm text-neutral-400">{t.subtitle}</p>
               </div>
             </div>
 
@@ -316,10 +331,10 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             <div className="w-56">
               <Select value={selectedCollaborator} onValueChange={setSelectedCollaborator}>
                 <SelectTrigger className="h-9 border-white/10 bg-white/5 text-xs text-white">
-                  <SelectValue placeholder="All Collaborators" />
+                  <SelectValue placeholder={t.all_collaborators} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Collaborators</SelectItem>
+                  <SelectItem value="all">{t.all_collaborators}</SelectItem>
                   {allKnownCollaborators.map((id) => (
                     <SelectItem key={id} value={id}>
                       {usernames[id] || id.substring(0, 8)}
@@ -343,7 +358,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
             {loading ? (
               <div className="flex h-64 flex-col items-center justify-center gap-3">
                 <Spinner className="h-8 w-8 text-amber-500" />
-                <p className="text-sm text-neutral-500">Loading activity logs...</p>
+                <p className="text-sm text-neutral-500">{t.loading}</p>
               </div>
             ) : error ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2">
@@ -361,7 +376,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
                       onClick={() => handleSort("action")}
                     >
                       <div className="flex items-center gap-2">
-                        Action
+                        {t.action}
                         <ArrowUpDown className="h-3 w-3 opacity-50" />
                       </div>
                     </TableHead>
@@ -370,7 +385,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
                       onClick={() => handleSort("collaboratorName")}
                     >
                       <div className="flex items-center gap-2">
-                        Collaborator
+                        {t.collaborator}
                         <ArrowUpDown className="h-3 w-3 opacity-50" />
                       </div>
                     </TableHead>
@@ -379,12 +394,12 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
                       onClick={() => handleSort("timestamp")}
                     >
                       <div className="flex items-center gap-2">
-                        Date
+                        {t.date}
                         <ArrowUpDown className="h-3 w-3 opacity-50" />
                       </div>
                     </TableHead>
                     <TableHead className="py-4 text-xs font-semibold tracking-wider text-neutral-500 uppercase">
-                      Details
+                      {t.details}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -392,7 +407,7 @@ export function ActionLogModal({ isOpen, onClose, projectId, ownerId }: ActionLo
                   {sortedLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="h-32 text-center text-neutral-500">
-                        No activity recorded yet
+                        {t.no_activity}
                       </TableCell>
                     </TableRow>
                   ) : (

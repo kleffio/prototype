@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useRouteError, isRouteErrorResponse, Link } from "react-router-dom";
 import { Button } from "@shared/ui/Button";
 import { Badge } from "@shared/ui/Badge";
@@ -6,6 +7,15 @@ import { AlertTriangle, Home, RefreshCcw, ArrowLeft } from "lucide-react";
 import { AppHeader } from "@app/layout/AppHeader";
 import { AppFooter } from "@app/layout/components/AppFooter";
 import { DeactivatedAccountError } from "./DeactivatedAccountError";
+
+import enTranslations from "@app/locales/en/errors.json";
+import frTranslations from "@app/locales/fr/errors.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = {
+  en: enTranslations,
+  fr: frTranslations
+};
 
 interface ErrorDetails {
   status: number;
@@ -52,44 +62,22 @@ function getErrorIcon(status: number) {
   return "\u{274C}"; // ❌
 }
 
-function getErrorTitle(status: number) {
-  switch (status) {
-    case 404:
-      return "Page Not Found";
-    case 403:
-      return "Access Forbidden";
-    case 401:
-      return "Unauthorized";
-    case 500:
-      return "Internal Server Error";
-    case 503:
-      return "Service Unavailable";
-    default:
-      return "Something Went Wrong";
-  }
-}
-
-function getErrorDescription(status: number) {
-  switch (status) {
-    case 404:
-      return "The page you're looking for doesn't exist or has been moved.";
-    case 403:
-      return "You don't have permission to access this resource.";
-    case 401:
-      return "You need to be authenticated to access this resource.";
-    case 500:
-      return "Our server encountered an error processing your request.";
-    case 503:
-      return "The service is temporarily unavailable. Please try again later.";
-    default:
-      return "We encountered an unexpected error. Please try again.";
-  }
-}
-
 export function ErrorPage() {
   const error = useRouteError();
   const errorDetails = getErrorDetails(error);
   const isDevelopment = import.meta.env.DEV;
+
+  const [locale, setLocaleState] = useState(getLocale());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].errorPage;
 
   const isDeactivatedAccount =
     errorDetails.status === 403 &&
@@ -131,7 +119,7 @@ export function ErrorPage() {
                   </span>
                   <div className="flex flex-col items-start gap-2">
                     <Badge variant="destructive" className="text-xs">
-                      Error {errorDetails.status}
+                      {t.error_label} {errorDetails.status}
                     </Badge>
                     <span className="text-left font-mono text-xs text-neutral-500">
                       {errorDetails.statusText}
@@ -141,10 +129,12 @@ export function ErrorPage() {
 
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold text-neutral-50">
-                    {getErrorTitle(errorDetails.status)}
+                    {t.titles[String(errorDetails.status) as keyof typeof t.titles] ||
+                      t.titles.default}
                   </h1>
                   <p className="text-sm text-neutral-400">
-                    {getErrorDescription(errorDetails.status)}
+                    {t.descriptions[String(errorDetails.status) as keyof typeof t.descriptions] ||
+                      t.descriptions.default}
                   </p>
                 </div>
 
@@ -153,7 +143,7 @@ export function ErrorPage() {
                     <div className="flex items-start gap-3 text-left">
                       <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
                       <div className="flex-1 space-y-1">
-                        <p className="text-xs font-semibold text-red-200">Error Details</p>
+                        <p className="text-xs font-semibold text-red-200">{t.error_details}</p>
                         <p className="font-mono text-xs text-red-300">{errorDetails.message}</p>
                       </div>
                     </div>
@@ -163,7 +153,7 @@ export function ErrorPage() {
                 {isDevelopment && errorDetails.stack && (
                   <details className="group rounded-xl border border-white/10 bg-black/40 text-left">
                     <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-neutral-400 hover:text-neutral-200">
-                      Stack Trace (Development Only)
+                      {t.stack_trace}
                     </summary>
                     <div className="border-t border-white/10 px-4 py-3">
                       <pre className="overflow-x-auto font-mono text-[10px] leading-relaxed text-neutral-500">
@@ -181,7 +171,7 @@ export function ErrorPage() {
                     className="border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Go Back
+                    {t.go_back}
                   </Button>
                   <Button
                     onClick={handleRefresh}
@@ -189,20 +179,20 @@ export function ErrorPage() {
                     className="border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10"
                   >
                     <RefreshCcw className="h-4 w-4" />
-                    Refresh Page
+                    {t.refresh_page}
                   </Button>
                   <Link to="/">
                     <Button className="bg-gradient-kleff w-full font-semibold text-black hover:brightness-110">
                       <Home className="h-4 w-4" />
-                      Go Home
+                      {t.go_home}
                     </Button>
                   </Link>
                 </div>
 
                 <p className="text-xs text-neutral-500">
-                  If this problem persists, please{" "}
+                  {t.persist_message}{" "}
                   <Link to="/support" className="text-primary hover:underline">
-                    contact support
+                    {t.contact_support}
                   </Link>
                   .
                 </p>

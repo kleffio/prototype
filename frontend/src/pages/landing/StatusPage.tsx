@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUptime } from "@features/observability/hooks/useUptime";
 import { UptimeStatusCard } from "@features/observability/components/UptimeStatusCard";
 import { Section } from "@shared/ui/Section";
@@ -15,16 +15,33 @@ import {
   getUptimeStatusText
 } from "@features/observability/lib/uptime.utils";
 
+import enTranslations from "@app/locales/en/status.json";
+import frTranslations from "@app/locales/fr/status.json";
+import { getLocale } from "@app/locales/locale";
+
+const translations = { en: enTranslations, fr: frTranslations };
+
 type TimeRange = "24h" | "7d" | "30d" | "90d";
 
-const timeRangeLabels: Record<TimeRange, string> = {
-  "24h": "Last 24 Hours",
-  "7d": "Last 7 Days",
-  "30d": "Last 30 Days",
-  "90d": "Last 90 Days"
-};
-
 export function StatusPage() {
+  const [locale, setLocaleState] = useState(getLocale());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentLocale = getLocale();
+      if (currentLocale !== locale) setLocaleState(currentLocale);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const t = translations[locale].status;
+
+  const timeRangeLabels: Record<TimeRange, string> = {
+    "24h": t.time_ranges["24h"],
+    "7d": t.time_ranges["7d"],
+    "30d": t.time_ranges["30d"],
+    "90d": t.time_ranges["90d"]
+  };
+
   const [selectedRange, setSelectedRange] = useState<TimeRange>("24h");
   const { data, isLoading, error, refetch } = useUptime({
     duration: selectedRange,
@@ -44,12 +61,8 @@ export function StatusPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-full border border-red-500/30 bg-linear-to-br from-red-500/20 to-orange-500/20 backdrop-blur-sm">
                 <AlertTriangle className="h-8 w-8 text-red-400" />
               </div>
-              <h1 className="mb-2 text-3xl font-semibold text-neutral-50">
-                Unable to Load System Status
-              </h1>
-              <p className="text-sm text-neutral-400">
-                We're having trouble connecting to the monitoring system
-              </p>
+              <h1 className="mb-2 text-3xl font-semibold text-neutral-50">{t.error.title}</h1>
+              <p className="text-sm text-neutral-400">{t.error.subtitle}</p>
             </div>
 
             <SoftPanel className="mb-6">
@@ -60,7 +73,9 @@ export function StatusPage() {
                     <AlertTriangle className="h-4 w-4 text-red-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="mb-1 text-sm font-semibold text-neutral-200">Error Details</h3>
+                    <h3 className="mb-1 text-sm font-semibold text-neutral-200">
+                      {t.error.error_details}
+                    </h3>
                     <p className="rounded-lg border border-red-500/20 bg-neutral-900/50 px-3 py-2 font-mono text-sm text-neutral-400">
                       {error.message}
                     </p>
@@ -69,59 +84,49 @@ export function StatusPage() {
 
                 {/* Possible Causes */}
                 <div className="border-t border-white/5 pt-4">
-                  <h3 className="mb-3 text-sm font-semibold text-neutral-200">Possible Causes</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-neutral-200">
+                    {t.error.possible_causes}
+                  </h3>
                   <ul className="space-y-2 text-sm text-neutral-400">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500" />
-                      <span>Prometheus server is not running or not accessible</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500" />
-                      <span>Network connectivity issues</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500" />
-                      <span>CORS policy blocking the request</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500" />
-                      <span>Incorrect API endpoint configuration</span>
-                    </li>
+                    {t.error.causes.map((cause, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="mt-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-500" />
+                        <span>{cause}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
                 <div className="border-t border-white/5 pt-4">
                   <h3 className="mb-3 text-sm font-semibold text-neutral-200">
-                    Troubleshooting Steps
+                    {t.error.troubleshooting}
                   </h3>
                   <div className="space-y-2 text-sm text-neutral-400">
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold text-[rgb(245,181,23)]">1.</span>
-                      <span>
-                        Verify Prometheus is running:{" "}
-                        <code className="rounded bg-neutral-900/50 px-2 py-0.5 font-mono text-xs">
-                          curl http://localhost:9090/api/v1/query?query=up
-                        </code>
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold text-[rgb(245,181,23)]">2.</span>
-                      <span>
-                        Check your API configuration in{" "}
-                        <code className="rounded bg-neutral-900/50 px-2 py-0.5 font-mono text-xs">
-                          .env
-                        </code>{" "}
-                        file
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold text-[rgb(245,181,23)]">3.</span>
-                      <span>Ensure CORS is properly configured on your backend</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold text-[rgb(245,181,23)]">4.</span>
-                      <span>Check browser console for additional error details</span>
-                    </div>
+                    {t.error.steps.map((step, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="font-semibold text-[rgb(245,181,23)]">{index + 1}.</span>
+                        <span>
+                          {index === 0 ? (
+                            <>
+                              {step}{" "}
+                              <code className="rounded bg-neutral-900/50 px-2 py-0.5 font-mono text-xs">
+                                curl http://localhost:9090/api/v1/query?query=up
+                              </code>
+                            </>
+                          ) : index === 1 ? (
+                            <>
+                              {step}{" "}
+                              <code className="rounded bg-neutral-900/50 px-2 py-0.5 font-mono text-xs">
+                                .env
+                              </code>{" "}
+                              file
+                            </>
+                          ) : (
+                            step
+                          )}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -135,19 +140,19 @@ export function StatusPage() {
                 className="bg-gradient-kleff w-full rounded-full px-8 text-sm font-semibold text-black shadow-md shadow-black/40 hover:brightness-110 sm:w-auto"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-                Try Again
+                {t.error.try_again}
               </Button>
             </div>
 
             <div className="mt-8 text-center">
               <p className="text-xs text-neutral-500">
-                Need help? Check the{" "}
+                {t.error.help_text}{" "}
                 <a href="/docs" className="text-[rgb(245,181,23)] hover:underline">
-                  documentation
+                  {t.error.documentation}
                 </a>{" "}
-                or{" "}
+                {t.error.or}{" "}
                 <a href="/support" className="text-[rgb(245,181,23)] hover:underline">
-                  contact support
+                  {t.error.contact_support}
                 </a>
               </p>
             </div>
@@ -168,8 +173,8 @@ export function StatusPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[rgb(245,181,23)]/30 bg-linear-to-br from-[rgb(250,215,130)]/20 to-[rgb(245,181,23)]/20 backdrop-blur-sm">
             <Activity className="h-8 w-8 text-[rgb(245,181,23)]" />
           </div>
-          <h1 className="mb-2 text-3xl font-semibold text-neutral-50">Kleff System Status</h1>
-          <p className="text-sm text-neutral-400">Real-time status and uptime monitoring</p>
+          <h1 className="mb-2 text-3xl font-semibold text-neutral-50">{t.page_title}</h1>
+          <p className="text-sm text-neutral-400">{t.page_subtitle}</p>
         </div>
 
         <div className="mb-8">
@@ -197,11 +202,11 @@ export function StatusPage() {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                  Refresh
+                  {t.refresh}
                 </Button>
                 {data && (
                   <div className="text-xs text-neutral-500">
-                    Updated {new Date().toLocaleTimeString()}
+                    {t.updated} {new Date().toLocaleTimeString()}
                   </div>
                 )}
               </div>
@@ -212,7 +217,7 @@ export function StatusPage() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-neutral-400" />
-            <span className="text-sm font-medium text-neutral-300">Time Range</span>
+            <span className="text-sm font-medium text-neutral-300">{t.time_range}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(timeRangeLabels) as TimeRange[]).map((range) => (
@@ -248,7 +253,7 @@ export function StatusPage() {
           <>
             <div className="mb-4">
               <h2 className="text-xs font-semibold tracking-[0.2em] text-neutral-400 uppercase">
-                Infrastructure Components
+                {t.infrastructure_components}
               </h2>
             </div>
 
@@ -264,13 +269,13 @@ export function StatusPage() {
                   />
                   <div className="mt-3 grid grid-cols-1 gap-4 border-t border-white/5 pt-3 text-xs sm:grid-cols-2">
                     <div>
-                      <span className="text-neutral-500">Boot Time</span>
+                      <span className="text-neutral-500">{t.boot_time}</span>
                       <div className="mt-1 font-medium text-neutral-300">
                         {node.bootTimeReadable}
                       </div>
                     </div>
                     <div>
-                      <span className="text-neutral-500">Uptime</span>
+                      <span className="text-neutral-500">{t.uptime}</span>
                       <div className="mt-1 font-medium text-neutral-300">
                         {node.uptimeFormatted} ({node.uptimeSeconds.toFixed(0)} seconds)
                       </div>
@@ -285,23 +290,23 @@ export function StatusPage() {
               <SoftPanel>
                 <div className="mb-4 flex items-center gap-2">
                   <KleffDot size={16} variant="dot" />
-                  <h3 className="text-sm font-semibold text-neutral-200">System Summary</h3>
+                  <h3 className="text-sm font-semibold text-neutral-200">{t.system_summary}</h3>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="rounded-lg border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-[rgb(245,181,23)]/20">
-                    <div className="text-xs text-neutral-400">Total Nodes</div>
+                    <div className="text-xs text-neutral-400">{t.total_nodes}</div>
                     <div className="mt-1 text-2xl font-semibold text-neutral-100">
                       {data.nodeUptimes.length}
                     </div>
                   </div>
                   <div className="rounded-lg border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-[rgb(245,181,23)]/20">
-                    <div className="text-xs text-neutral-400">Average Uptime</div>
+                    <div className="text-xs text-neutral-400">{t.average_uptime}</div>
                     <div className="mt-1 text-2xl font-semibold text-neutral-100">
                       {data.averageUptimeFormatted}
                     </div>
                   </div>
                   <div className="rounded-lg border border-white/5 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-[rgb(245,181,23)]/20">
-                    <div className="text-xs text-neutral-400">System Uptime</div>
+                    <div className="text-xs text-neutral-400">{t.system_uptime}</div>
                     <div className="mt-1 text-2xl font-semibold text-neutral-100">
                       {data.systemUptimeFormatted}
                     </div>

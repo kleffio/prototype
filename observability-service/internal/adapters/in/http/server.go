@@ -11,18 +11,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine {
+func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, exportHandler *ExportHandler, userServiceURL string) *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://kleff.io", "https://api.kleff.io", "http://localhost:5173", "http://localhost:8080", "http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-		AllowHeaders:     []string{"Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires"},
+		AllowOrigins:     []string{"https://kleff.io", "http://localhost:5173", "http://localhost:8080", "http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS", "DELETE", "PATCH"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Cache-Control", "Pragma", "Expires", "Accept"},
 		AllowCredentials: true,
 	}))
 
+	// Public endpoints (no authentication required)
+	public := router.Group("/api/v1/systems")
+	{
+		public.GET("/uptime", handler.GetUptimeMetrics)
+		public.GET("/system-uptime", handler.GetSystemUptime)
+	}
+
+	// Authenticated endpoints (JWT required)
 	api := router.Group("/api/v1/systems")
-	api.Use(jwtAuthMiddleware()) // Apply JWT middleware to all API routes
+	api.Use(jwtAuthMiddleware(userServiceURL)) // Apply JWT middleware to all API routes
 	{
 		api.GET("/metrics", handler.GetAllMetrics)
 		api.GET("/overview", handler.GetOverview)
@@ -47,8 +55,8 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine 
 		api.GET("/projects/:projectID/usage", handler.GetProjectUsageMetrics)
 		api.GET("/projects/:projectID/totalusage", handler.GetProjectTotalUsageMetrics)
 
-		api.GET("/uptime", handler.GetUptimeMetrics)
-		api.GET("/system-uptime", handler.GetSystemUptime)
+		api.GET("/export/logs", exportHandler.ExportLogs)
+		api.GET("/export/metrics", exportHandler.ExportMetrics)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
@@ -61,7 +69,7 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Engine 
 }
 
 // jwtAuthMiddleware validates JWT tokens and checks user deactivation status
-func jwtAuthMiddleware() gin.HandlerFunc {
+func jwtAuthMiddleware(userServiceURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := extractBearerToken(c.Request)
 		if token == "" {
@@ -71,14 +79,14 @@ func jwtAuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Check user status via user-service
-		userID, err := extractUserIDFromToken(token)
+		userID, err := extractUserIDFromToken(token, userServiceURL)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			c.Abort()
 			return
 		}
 
-		isActive, err := checkUserStatus(userID)
+		isActive, err := checkUserStatus(userID, userServiceURL)
 		if err != nil || !isActive {
 			c.JSON(http.StatusForbidden, gin.H{"error": "account has been deactivated"})
 			c.Abort()
@@ -100,13 +108,13 @@ func extractBearerToken(r *http.Request) string {
 }
 
 // extractUserIDFromToken extracts user ID from JWT token (simplified, assumes JWT format)
-func extractUserIDFromToken(token string) (string, error) {
+func extractUserIDFromToken(token string, userServiceURL string) (string, error) {
 	// Make a call to user-service to validate and get user ID
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	req, err := http.NewRequest("GET", "http://user-service:8080/api/v1/users/me", nil)
+	req, err := http.NewRequest("GET", userServiceURL+"/api/v1/users/me", nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -116,7 +124,9 @@ func extractUserIDFromToken(token string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to validate token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("token validation failed")
@@ -133,8 +143,8 @@ func extractUserIDFromToken(token string) (string, error) {
 }
 
 // checkUserStatus checks if user is active via user-service
-func checkUserStatus(userID string) (bool, error) {
-	url := fmt.Sprintf("http://user-service:8080/api/v1/users/status/%s", userID)
+func checkUserStatus(userID string, userServiceURL string) (bool, error) {
+	url := fmt.Sprintf("%s/api/v1/users/status/%s", userServiceURL, userID)
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -143,7 +153,9 @@ func checkUserStatus(userID string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to check user status: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("user status check failed")
