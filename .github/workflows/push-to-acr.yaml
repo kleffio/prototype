@@ -26,6 +26,7 @@ jobs:
             user: ['user-service/**']
             server-api: ['server-apis/**']
             billing-service: ['billing-service/**']
+            ai-chatbot: ['chat-support-service/**']
 
       - name: Generate Matrix
         id: gen-matrix
@@ -87,6 +88,13 @@ jobs:
               "tag": "billing-service",
               "container_name": "billing-service",
               "manifest_path": "charts/kleff/microservices/billing/billing-service.yaml"
+            },
+            {
+              "service_name": "ai-chatbot",
+              "context": "./chat-support-service",
+              "tag": "ai-chatbot-service",
+              "container_name": "ai-chatbot-service",
+              "manifest_path": "charts/kleff/microservices/ai-chatbot/ai-chatbot-service.yaml"
             }
           ]
 
@@ -184,6 +192,9 @@ jobs:
                 ;;
               "observability")
                 yq -i 'select(.kind == "Deployment").spec.template.spec.containers[] |= select(.name == "observability-service").image = env(REGISTRY) + "/observability-service:" + env(SHA)' charts/kleff/microservices/observability/observability-service.yaml
+                ;;
+              "ai-chatbot")
+                yq -i 'select(.kind == "Deployment").spec.template.spec.containers[] |= select(.name == "ai-chatbot-service").image = env(REGISTRY) + "/ai-chatbot-service:" + env(SHA)' charts/kleff/microservices/ai-chatbot/ai-chatbot-service.yaml
                 ;;
             esac
           done
