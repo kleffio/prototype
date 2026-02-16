@@ -90,13 +90,26 @@ export default function SimpleLogsViewer({ projectId, containerName }: SimpleLog
       // Try to parse as JSON first
       if (logCheck.trim().startsWith("{") && logCheck.trim().endsWith("}")) {
         const parsed = JSON.parse(logCheck);
-        if (parsed.level) {
+        
+        // Handle numeric levels (Pino/Bunyan)
+        if (typeof parsed.level === 'number') {
           if (parsed.level >= 60) return { level: "FATAL", color: "text-red-600 font-bold" };
           if (parsed.level >= 50) return { level: "ERROR", color: "text-red-500 font-bold" };
           if (parsed.level >= 40) return { level: "WARN", color: "text-yellow-500 font-bold" };
           if (parsed.level >= 30) return { level: "INFO", color: "text-blue-400" };
           if (parsed.level >= 20) return { level: "DEBUG", color: "text-neutral-400" };
           return { level: "TRACE", color: "text-neutral-500" };
+        }
+        
+        // Handle string levels
+        if (typeof parsed.level === 'string') {
+          const lvl = parsed.level.toLowerCase();
+          if (lvl === 'fatal') return { level: "FATAL", color: "text-red-600 font-bold" };
+          if (lvl === 'error') return { level: "ERROR", color: "text-red-500 font-bold" };
+          if (lvl === 'warn' || lvl === 'warning') return { level: "WARN", color: "text-yellow-500 font-bold" };
+          if (lvl === 'info') return { level: "INFO", color: "text-blue-400" };
+          if (lvl === 'debug') return { level: "DEBUG", color: "text-neutral-400" };
+          if (lvl === 'trace') return { level: "TRACE", color: "text-neutral-500" };
         }
       }
     } catch {
