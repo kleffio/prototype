@@ -226,6 +226,32 @@ export class ProjectDetailPage extends BasePage {
     await expect(sheet.getByText(`${count} warning`, { exact: false })).toBeVisible();
   }
 
+  // Log Filter Methods
+  async fillLogsSearch(text: string) {
+    await this.page.getByPlaceholder("Search logs...").fill(text);
+  }
+
+  async selectLogsSeverity(severity: string) {
+    await this.page.getByRole("combobox").filter({ hasText: "Severity" }).click();
+    await this.page.getByRole("option", { name: severity }).click();
+  }
+
+  async selectLogsTimeRange(range: string) {
+    await this.page.getByRole("combobox").filter({ hasText: "Time Range" }).click();
+    // Assuming the options text matches the range string passed or is mapped
+    await this.page.getByRole("option", { name: range }).click();
+  }
+
+  async clickClearFilters() {
+    await this.page.getByText("Clear filters").click();
+  }
+
+  async expectLogsFiltersVisible() {
+    await expect(this.page.getByPlaceholder("Search logs...")).toBeVisible();
+    await expect(this.page.getByRole("combobox").filter({ hasText: "Severity" })).toBeVisible();
+    await expect(this.page.getByRole("combobox").filter({ hasText: "Time Range" })).toBeVisible();
+  }
+
   // Container Status methods
   async expectContainerStatus(
     containerName: string,

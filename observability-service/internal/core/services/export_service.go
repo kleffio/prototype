@@ -32,7 +32,14 @@ func (s *exportService) ExportLogs(ctx context.Context, params domain.ExportPara
 	durationStr := formatDuration(duration)
 
 	containerNames := []string{}
-	logs, err := s.logsRepo.GetProjectContainerLogs(ctx, params.ProjectID, containerNames, 5000, durationStr)
+	// In a real implementation we should get the container list for the project
+	// For now this might return empty results if containers are not specified
+	logs, err := s.logsRepo.GetProjectContainerLogs(ctx, domain.LogFilterOptions{
+		ProjectID:      params.ProjectID,
+		ContainerNames: containerNames,
+		Limit:          5000,
+		Duration:       durationStr,
+	})
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to fetch logs: %w", err)
 	}

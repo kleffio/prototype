@@ -17,6 +17,6 @@ func NewLogsService(logsRepo ports.LogsRepository) ports.LogsService {
 	}
 }
 
-func (s *logsService) GetProjectContainerLogs(ctx context.Context, projectID string, containerNames []string, limit int, duration string) (*domain.ProjectLogs, error) {
-	return s.logsRepo.GetProjectContainerLogs(ctx, projectID, containerNames, limit, duration)
+func (s *logsService) GetProjectContainerLogs(ctx context.Context, options domain.LogFilterOptions) (*domain.ProjectLogs, error) {
+	return s.logsRepo.GetProjectContainerLogs(ctx, options)
 }
