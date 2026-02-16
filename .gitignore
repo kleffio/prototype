@@ -19,3 +19,4 @@ package-lock.json
 yarn.lock
 package.json
 !chat-support-service/package.json
+./e2e/

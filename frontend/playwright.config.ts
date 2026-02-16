@@ -14,15 +14,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
 
-  webServer: {
-    command: "yarn dev",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000
-  },
-
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: "https://kleff.io",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure"

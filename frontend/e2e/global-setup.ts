@@ -25,7 +25,7 @@ export default async function globalSetup() {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto("http://localhost:5173/dashboard", { waitUntil: "domcontentloaded" });
+  await page.goto("https://kleff.io/dashboard", { waitUntil: "domcontentloaded" });
 
   await page.waitForURL(/auth\.kleff\.io\/if\/flow\//, { timeout: 120_000 });
 
@@ -43,7 +43,7 @@ export default async function globalSetup() {
   await page.getByRole("button", { name: /continue|log in|sign in|next/i }).click();
 
   await Promise.race([
-    page.waitForURL(/http:\/\/localhost:5173\/auth\/callback/i, { timeout: 180_000 }),
+    page.waitForURL(/https:\/\/kleff\.io\/auth\/callback/i, { timeout: 180_000 }),
     page.waitForURL(/explicit-consent|authorization/i, { timeout: 180_000 })
   ]);
 
@@ -52,10 +52,10 @@ export default async function globalSetup() {
     if (await allow.count()) await allow.click();
   }
 
-  await page.waitForURL(/http:\/\/localhost:5173\/(auth\/callback|dashboard)/i, {
+  await page.waitForURL(/https:\/\/kleff\.io\/(auth\/callback|dashboard)/i, {
     timeout: 180_000
   });
-  await page.waitForURL(/http:\/\/localhost:5173\/dashboard/i, { timeout: 180_000 });
+  await page.waitForURL(/https:\/\/kleff\.io\/dashboard/i, { timeout: 180_000 });
 
   const state = await context.storageState();
 
