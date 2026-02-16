@@ -183,17 +183,17 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 			// Pino/Bunyan levels: trace=10, debug=20, info=30, warn=40, error=50, fatal=60
 			switch strings.ToLower(options.Severity) {
 			case "info":
-				// Match Info (30) and above
-				query += " | json | level >= 30"
+				// Match numeric >= 30 OR string level
+				query += ` |~ "(?i)(\"level\":(30|40|50|60)|level=(info|warn|error|fatal))"`
 			case "warn", "warning":
-				// Match Warn (40) and above
-				query += " | json | level >= 40"
+				// Match numeric >= 40 OR string level
+				query += ` |~ "(?i)(\"level\":(40|50|60)|level=(warn|error|fatal))"`
 			case "error":
 				// Match Error (50) and above
-				query += " | json | level >= 50"
+				query += ` |~ "(?i)(\"level\":(50|60)|level=(error|fatal))"`
 			case "fatal":
 				// Match Fatal (60) and above
-				query += " | json | level >= 60"
+				query += ` |~ "(?i)(\"level\":60|level=fatal)"`
 			default:
 				// Fallback to text search for custom levels
 				query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
@@ -220,13 +220,17 @@ func (c *lokiClient) GetProjectContainerLogs(ctx context.Context, options domain
 			if options.Severity != "" {
 				switch strings.ToLower(options.Severity) {
 				case "info":
-					query += " | json | level >= 30"
+					// Match numeric >= 30 OR string level
+					query += ` |~ "(?i)(\"level\":(30|40|50|60)|level=(info|warn|error|fatal))"`
 				case "warn", "warning":
-					query += " | json | level >= 40"
+					// Match numeric >= 40 OR string level
+					query += ` |~ "(?i)(\"level\":(40|50|60)|level=(warn|error|fatal))"`
 				case "error":
-					query += " | json | level >= 50"
+					// Match numeric >= 50 OR string level
+					query += ` |~ "(?i)(\"level\":(50|60)|level=(error|fatal))"`
 				case "fatal":
-					query += " | json | level >= 60"
+					// Match numeric >= 60 OR string level
+					query += ` |~ "(?i)(\"level\":60|level=fatal)"`
 				default:
 					query += fmt.Sprintf(` |~ "(?i)%s"`, options.Severity)
 				}
