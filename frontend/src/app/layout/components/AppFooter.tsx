@@ -38,14 +38,7 @@ export function AppFooter() {
             <div className="min-w-[120px]">
               <h3 className="mb-3 text-[15px] font-semibold text-neutral-200">{t.product}</h3>
               <ul className="space-y-2">
-                <li>
-                  <UnderlineLink
-                    href={ROUTES.DOCS}
-                    className="text-[14px] text-neutral-500 hover:text-neutral-200"
-                  >
-                    {t.docs}
-                  </UnderlineLink>
-                </li>
+                {/* Docs link removed as per user request (no docs endpoint) */}
                 <li>
                   <UnderlineLink
                     href={ROUTES.PRICING}
