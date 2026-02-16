@@ -33,6 +33,17 @@ type LogQueryParams struct {
 	Container string `json:"container,omitempty"`
 }
 
+type LogFilterOptions struct {
+	ProjectID      string   `json:"projectId"`
+	ContainerNames []string `json:"containerNames"`
+	Limit          int      `json:"limit"`
+	StartTime      string   `json:"start,omitempty"`
+	EndTime        string   `json:"end,omitempty"`
+	Duration       string   `json:"duration,omitempty"`
+	SearchText     string   `json:"text,omitempty"`
+	Severity       string   `json:"severity,omitempty"`
+}
+
 type ContainerLogs struct {
 	ContainerName string     `json:"containerName"`
 	Logs          []LogEntry `json:"logs"`

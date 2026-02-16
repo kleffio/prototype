@@ -21,8 +21,8 @@ type mockLogsService struct {
 	mock.Mock
 }
 
-func (m *mockLogsService) GetProjectContainerLogs(ctx context.Context, projectID string, containerNames []string, limit int, duration string) (*domain.ProjectLogs, error) {
-	args := m.Called(ctx, projectID, containerNames, limit, duration)
+func (m *mockLogsService) GetProjectContainerLogs(ctx context.Context, options domain.LogFilterOptions) (*domain.ProjectLogs, error) {
+	args := m.Called(ctx, options)
 	return args.Get(0).(*domain.ProjectLogs), args.Error(1)
 }
 
@@ -70,10 +70,12 @@ func TestGetProjectContainerLogs_Success(t *testing.T) {
 
 	mockService.On("GetProjectContainerLogs",
 		mock.Anything,
-		"test-project",
-		[]string{"app-container"},
-		100,
-		"1h").Return(expectedLogs, nil)
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"app-container"},
+			Limit:          100,
+			Duration:       "1h",
+		}).Return(expectedLogs, nil)
 
 	handler := NewLogsHandler(mockService)
 
@@ -125,10 +127,12 @@ func TestGetProjectContainerLogs_DefaultValues(t *testing.T) {
 	// Expect the service to be called with default values
 	mockService.On("GetProjectContainerLogs",
 		mock.Anything,
-		"test-project",
-		[]string{"app-container"},
-		100,                            // default limit
-		"1h").Return(expectedLogs, nil) // default duration
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"app-container"},
+			Limit:          100,  // default limit
+			Duration:       "1h", // default duration
+		}).Return(expectedLogs, nil)
 
 	handler := NewLogsHandler(mockService)
 
@@ -169,10 +173,12 @@ func TestGetProjectContainerLogs_ZeroLimitDefaultsTo100(t *testing.T) {
 	// Expect the service to be called with default limit of 100
 	mockService.On("GetProjectContainerLogs",
 		mock.Anything,
-		"test-project",
-		[]string{"app-container"},
-		100, // should be converted from 0 to 100
-		"2h").Return(expectedLogs, nil)
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"app-container"},
+			Limit:          100, // should be converted from 0 to 100
+			Duration:       "2h",
+		}).Return(expectedLogs, nil)
 
 	handler := NewLogsHandler(mockService)
 
@@ -257,10 +263,12 @@ func TestGetProjectContainerLogs_ServiceError(t *testing.T) {
 	// Mock service to return error
 	mockService.On("GetProjectContainerLogs",
 		mock.Anything,
-		"test-project",
-		[]string{"app-container"},
-		100,
-		"1h").Return((*domain.ProjectLogs)(nil), errors.New("loki connection failed"))
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"app-container"},
+			Limit:          100,
+			Duration:       "1h",
+		}).Return((*domain.ProjectLogs)(nil), errors.New("loki connection failed"))
 
 	handler := NewLogsHandler(mockService)
 
@@ -328,10 +336,12 @@ func TestGetProjectContainerLogs_MultipleContainers(t *testing.T) {
 
 	mockService.On("GetProjectContainerLogs",
 		mock.Anything,
-		"test-project",
-		[]string{"app-container", "worker-container"},
-		200,
-		"2h").Return(expectedLogs, nil)
+		domain.LogFilterOptions{
+			ProjectID:      "test-project",
+			ContainerNames: []string{"app-container", "worker-container"},
+			Limit:          200,
+			Duration:       "2h",
+		}).Return(expectedLogs, nil)
 
 	handler := NewLogsHandler(mockService)
 
