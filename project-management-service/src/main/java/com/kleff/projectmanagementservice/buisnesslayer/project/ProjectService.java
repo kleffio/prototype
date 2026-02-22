@@ -1,6 +1,8 @@
 package com.kleff.projectmanagementservice.buisnesslayer.project;
 
 import com.kleff.projectmanagementservice.datalayer.project.Project;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,6 +12,11 @@ public interface ProjectService {
     List<Project> getAllOwnedProjects(String ownerId);
 
     Project getProjectById(String projectId);
+
+    /**
+     * Admin-only: Get all projects with pagination and optional search.
+     */
+    Page<Project> getAllProjectsAdmin(Pageable pageable, String search);
 
     Project createProject(Project project);
 

@@ -108,6 +108,53 @@ func buildPlatformRoleRepository(cfg *config.Config) (
 	return repo, repo, nil
 }
 
+func buildAdminUserRepository(cfg *config.Config) (
+	repository.AdminUserRepository,
+	interface{ Close() error },
+	error,
+) {
+	if cfg.PostgresUserDSN == "" {
+		return nil, noopCloser{}, fmt.Errorf("PostgresUserDSN is required for admin user repository")
+	}
+
+	log.Printf("admin user repository backend: postgresql")
+	repo, err := postgres.NewPostgresAdminUserRepository(cfg.PostgresUserDSN)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create postgres admin user repo: %w", err)
+	}
+
+	return repo, repo, nil
+}
+
+func buildAdminAuditRepository(cfg *config.Config) (
+	repository.AdminAuditRepository,
+	interface{ Close() error },
+	error,
+) {
+	if cfg.PostgresAuditDSN == "" {
+		log.Printf("PostgresAuditDSN not configured, admin audit logs will be disabled")
+		return nil, noopCloser{}, nil
+	}
+
+	log.Printf("admin audit repository backend: postgresql")
+	repo, err := postgres.NewPostgresAdminAuditRepository(cfg.PostgresAuditDSN)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create postgres admin audit repo: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := repo.CreateTable(ctx); err != nil {
+		_ = repo.Close()
+		return nil, nil, fmt.Errorf("failed to create admin_audit_logs table: %w", err)
+	}
+
+	log.Printf("admin_audit_logs table initialized")
+
+	return repo, repo, nil
+}
+
 type noopCloser struct{}
 
 func (noopCloser) Close() error { return nil }

@@ -13,6 +13,7 @@ import { ProjectsPage } from "@pages/projects/ProjectsPage";
 import { createBrowserRouter } from "react-router-dom";
 import { ROUTES } from "./routes";
 import { SettingsPage } from "@pages/settings/SettingsPage";
+import { AdminPage } from "@pages/admin/AdminPage";
 import { AboutUsPage } from "@pages/aboutus/AboutUsPage";
 import { FAQPage } from "@pages/legal/FAQPage";
 import { PrivacyPolicyPage } from "@pages/legal/PrivacyPolicyPage";
@@ -107,6 +108,14 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <MetricsDashboard />
+          </AdminRoute>
+        )
+      },
+      {
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <AdminPage />
           </AdminRoute>
         )
       }

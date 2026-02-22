@@ -22,6 +22,8 @@ import com.kleff.projectmanagementservice.authorization.domain.AuthorizationResu
 import com.kleff.projectmanagementservice.authorization.repository.AuthorizationAuditRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -76,6 +78,11 @@ public class ProjectServiceImpl implements ProjectService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public Page<Project> getAllProjectsAdmin(Pageable pageable, String search) {
+        return projectRepository.findAllWithSearch(search, pageable);
     }
 
     @Override

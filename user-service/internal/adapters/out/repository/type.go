@@ -10,6 +10,8 @@ import (
 type UserRepository = port.UserRepository
 type AuditRepository = port.AuditRepository
 type PlatformRoleRepository = port.PlatformRoleRepository
+type AdminUserRepository = port.AdminUserRepository
+type AdminAuditRepository = port.AdminAuditRepository
 type TokenValidator = port.TokenValidator
 type TokenClaims = port.TokenClaims
 

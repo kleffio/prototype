@@ -17,11 +17,13 @@ import (
 )
 
 type App struct {
-	Config           *config.Config
-	Router           http.Handler
-	UserRepo         interface{ Close() error }
-	AuditRepo        interface{ Close() error }
-	PlatformRoleRepo interface{ Close() error }
+	Config            *config.Config
+	Router            http.Handler
+	UserRepo          interface{ Close() error }
+	AuditRepo         interface{ Close() error }
+	PlatformRoleRepo  interface{ Close() error }
+	AdminUserRepo     interface{ Close() error }
+	AdminAuditRepo    interface{ Close() error }
 }
 
 func NewApp() (*App, error) {
@@ -45,14 +47,38 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("failed to build platform role repository: %w", err)
 	}
 
+	// Build admin repositories
+	adminUserRepo, adminUserCloser, err := buildAdminUserRepository(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build admin user repository: %w", err)
+	}
+
+	adminAuditRepo, adminAuditCloser, err := buildAdminAuditRepository(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build admin audit repository: %w", err)
+	}
+
 	tokenValidator := authentik.NewTokenValidator(cfg.AuthentikBaseURL)
 	authentikManager := authentik.NewAuthentikManager(cfg.AuthentikBaseURL)
 
 	svc := usersvc.NewService(userRepo, auditRepo, platformRoleRepo, tokenValidator, authentikManager, cfg.DefaultAdminEmail)
 
+	// Create admin service
+	adminSvc := usersvc.NewAdminService(adminUserRepo, adminAuditRepo, platformRoleRepo)
+
 	handler := httphandler.NewHandler(svc)
 	root := chi.NewRouter()
-	root.Mount("/", httphandler.NewRouter(handler))
+
+	// Create admin middleware and handler
+	adminMiddleware := httphandler.NewAdminMiddleware(tokenValidator, platformRoleRepo)
+	adminHandler := httphandler.NewAdminHandler(adminSvc)
+
+	// Mount router with admin support
+	root.Mount("/", httphandler.NewRouterWithAdmin(&httphandler.RouterConfig{
+		Handler:         handler,
+		AdminHandler:    adminHandler,
+		AdminMiddleware: adminMiddleware,
+	}))
 
 	return &App{
 		Config:           cfg,
@@ -60,6 +86,8 @@ func NewApp() (*App, error) {
 		UserRepo:         userRepoCloser,
 		AuditRepo:        auditCloser,
 		PlatformRoleRepo: platformRoleCloser,
+		AdminUserRepo:    adminUserCloser,
+		AdminAuditRepo:   adminAuditCloser,
 	}, nil
 }
 
@@ -80,6 +108,18 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	if a.PlatformRoleRepo != nil {
 		if err := a.PlatformRoleRepo.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	if a.AdminUserRepo != nil {
+		if err := a.AdminUserRepo.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	if a.AdminAuditRepo != nil {
+		if err := a.AdminAuditRepo.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

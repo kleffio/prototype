@@ -9,7 +9,19 @@ import (
 	"github.com/go-chi/cors"
 )
 
+// RouterConfig holds dependencies for creating the router
+type RouterConfig struct {
+	Handler           *Handler
+	AdminHandler      *AdminHandler
+	AdminMiddleware   *AdminMiddleware
+}
+
 func NewRouter(h *Handler) http.Handler {
+	return NewRouterWithAdmin(&RouterConfig{Handler: h})
+}
+
+// NewRouterWithAdmin creates a router with admin support
+func NewRouterWithAdmin(cfg *RouterConfig) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -27,6 +39,7 @@ func NewRouter(h *Handler) http.Handler {
 		MaxAge:           300,
 	}))
 
+	h := cfg.Handler
 	r.Get("/healthz", h.Health)
 	r.Get("/health", h.Health)
 
@@ -43,6 +56,23 @@ func NewRouter(h *Handler) http.Handler {
 		r.Get("/{id}", h.GetUser)
 		r.Post("/resolve", h.ResolveMany)
 	})
+
+	// Admin routes with authentication and authorization middleware
+	if cfg.AdminHandler != nil && cfg.AdminMiddleware != nil {
+		r.Route("/api/v1/admin", func(r chi.Router) {
+			r.Use(cfg.AdminMiddleware.RequireAdmin)
+
+			// User management
+			r.Get("/users", cfg.AdminHandler.ListUsers)
+			r.Get("/users/{id}", cfg.AdminHandler.GetUserDetails)
+			r.Patch("/users/{id}/roles", cfg.AdminHandler.UpdateUserRoles)
+			r.Patch("/users/{id}/suspend", cfg.AdminHandler.SuspendUser)
+			r.Get("/users/{id}/activity", cfg.AdminHandler.GetUserActivity)
+
+			// Audit logs
+			r.Get("/audit-logs", cfg.AdminHandler.GetAuditLogs)
+		})
+	}
 
 	return r
 }
