@@ -24,7 +24,7 @@ public class ApiService {
 
     public List<String> getListOfProjectIds() {
         return restClient.get()
-                .uri("/api/v1/projects/ListID")
+                .uri("/api/v1/projects/listID")
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<String>>() {});
     }
@@ -32,7 +32,7 @@ public class ApiService {
     // GET request that returns a single JSON object
     public UsageMonth usageRecordForLastMonth(String id, int days) {
         return restClient.get()
-                .uri("/api/v1/systems/projects/{id}/{days}", id, days)
+                .uri("/api/v1/systems/projects/{id}/usage/{days}", id, days)
                 .retrieve()
                 .body(UsageMonth.class);
     }
