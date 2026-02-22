@@ -721,12 +721,16 @@ func TestGetTopProjects_Success(t *testing.T) {
 		},
 		getTopProjectsFunc: func(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error) {
 			assert.Equal(t, "cpu", req.SortBy)
-			assert.Equal(t, 10, req.Limit)
+			assert.Equal(t, 50, req.Limit)
 			assert.Equal(t, "1h", req.Duration)
 
 			return &domain.TopProjectsResponse{
 				Projects: []domain.ProjectRanking{
-					{ProjectID: "project-1", ProjectName: "project-1"},
+					{
+						ProjectID:   "11111111-1111-1111-1111-111111111111",
+						ProjectName: "project-1",
+						Namespace:   "11111111-1111-1111-1111-111111111111",
+					},
 				},
 			}, nil
 		},

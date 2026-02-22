@@ -122,6 +122,7 @@ type TopProjectsResponse struct {
 	CurrentCPUPercent    float64          `json:"currentCpuPercent"`
 	CurrentMemoryPercent float64          `json:"currentMemoryPercent"`
 	Alert                *ResourceAlert   `json:"alert,omitempty"`
+	Cache                *CacheMetrics    `json:"cache,omitempty"`
 }
 
 type ResourceAlert struct {
@@ -143,4 +144,11 @@ type ProjectRanking struct {
 	DiskWriteBytesPerSec      float64 `json:"diskWriteBytesPerSec"`
 	PercentageOfClusterCPU    float64 `json:"percentageOfClusterCpu"`
 	PercentageOfClusterMemory float64 `json:"percentageOfClusterMemory"`
+}
+
+type CacheMetrics struct {
+	ProjectCacheHits   uint64 `json:"projectCacheHits"`
+	ProjectCacheMisses uint64 `json:"projectCacheMisses"`
+	UserCacheHits      uint64 `json:"userCacheHits"`
+	UserCacheMisses    uint64 `json:"userCacheMisses"`
 }

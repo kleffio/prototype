@@ -22,6 +22,8 @@ func main() {
 	log.Printf("Project Service URL: %s", cfg.ProjectServiceURL)
 	log.Printf("CPU Alert Threshold: %.1f", cfg.CPUAlertThreshold)
 	log.Printf("Memory Alert Threshold: %.1f", cfg.MemoryAlertThreshold)
+	log.Printf("Project Namespace Filtering Enabled: %t", cfg.ProjectNamespaceFilteringEnabled)
+	log.Printf("Project Enrichment Max Concurrency: %d", cfg.ProjectEnrichmentMaxConcurrency)
 	log.Printf("Server Port: %s", cfg.ServerPort)
 
 	prometheusClient := prometheus.NewPrometheusClient(cfg.PrometheusURL)
@@ -32,6 +34,9 @@ func main() {
 		cfg.UserServiceURL,
 		cfg.CPUAlertThreshold,
 		cfg.MemoryAlertThreshold,
+		cfg.ProjectNamespaceFilteringEnabled,
+		cfg.SystemNamespaceBlocklist,
+		cfg.ProjectEnrichmentMaxConcurrency,
 	)
 
 	metricsHandler := http.NewMetricsHandler(metricsService)
