@@ -63,3 +63,35 @@ export interface DatabaseMetrics {
   networkTransmitHistory: TimeSeriesDataPoint[];
   source: string;
 }
+
+export type ProjectSortBy = "cpu" | "memory" | "disk";
+
+export interface ResourceAlert {
+  type: "cpu" | "memory";
+  currentValue: number;
+  threshold: number;
+  message: string;
+}
+
+export interface ProjectRanking {
+  projectId: string;
+  projectName: string;
+  ownerId: string;
+  ownerName: string;
+  namespace: string;
+  cpuRequestCores: number;
+  memoryUsageGB: number;
+  diskReadBytesPerSec: number;
+  diskWriteBytesPerSec: number;
+  percentageOfClusterCpu: number;
+  percentageOfClusterMemory: number;
+}
+
+export interface TopProjectsResponse {
+  projects: ProjectRanking[];
+  totalClusterCpuCores: number;
+  totalClusterMemoryGB: number;
+  currentCpuPercent: number;
+  currentMemoryPercent: number;
+  alert?: ResourceAlert;
+}

@@ -27,6 +27,7 @@ type mockMetricsService struct {
 	getMemoryUtilizationFunc                func(ctx context.Context, duration string) (*domain.ResourceUtilization, error)
 	getNodesFunc                            func(ctx context.Context) ([]domain.NodeMetric, error)
 	getNamespacesFunc                       func(ctx context.Context) ([]domain.NamespaceMetric, error)
+	getTopProjectsFunc                      func(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error)
 	getUptimeMetricsFunc                    func(ctx context.Context, duration string) (*domain.UptimeMetrics, error)
 	getSystemUptimeFunc                     func(ctx context.Context) (float64, error)
 	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
@@ -102,6 +103,13 @@ func (m *mockMetricsService) GetNodes(ctx context.Context) ([]domain.NodeMetric,
 func (m *mockMetricsService) GetNamespaces(ctx context.Context) ([]domain.NamespaceMetric, error) {
 	if m.getNamespacesFunc != nil {
 		return m.getNamespacesFunc(ctx)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockMetricsService) GetTopProjects(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error) {
+	if m.getTopProjectsFunc != nil {
+		return m.getTopProjectsFunc(ctx, sortBy, limit, duration)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -740,6 +748,43 @@ func TestGetNamespaces_Error(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("Expected status code %d, got %d", http.StatusInternalServerError, w.Code)
 	}
+}
+
+func TestGetTopProjects_Success(t *testing.T) {
+	mockService := &mockMetricsService{
+		getTopProjectsFunc: func(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error) {
+			assert.Equal(t, "memory", sortBy)
+			assert.Equal(t, 5, limit)
+			assert.Equal(t, "6h", duration)
+			return &domain.TopProjectsResponse{
+				Projects: []domain.ProjectRanking{
+					{ProjectID: "project-1", ProjectName: "Project One"},
+				},
+			}, nil
+		},
+	}
+
+	handler := NewMetricsHandler(mockService)
+	router := setupTestRouter()
+	router.GET("/projects", handler.GetTopProjects)
+
+	req := httptest.NewRequest(http.MethodGet, "/projects?sort=memory&limit=5&duration=6h", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetTopProjects_InvalidLimit(t *testing.T) {
+	handler := NewMetricsHandler(&mockMetricsService{})
+	router := setupTestRouter()
+	router.GET("/projects", handler.GetTopProjects)
+
+	req := httptest.NewRequest(http.MethodGet, "/projects?limit=200", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestGetDatabaseIOMetrics_Error(t *testing.T) {

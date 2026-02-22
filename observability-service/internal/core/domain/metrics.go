@@ -108,3 +108,39 @@ type AggregatedMetrics struct {
 	SystemUptime          float64              `json:"systemUptime"`
 	SystemUptimeFormatted string               `json:"systemUptimeFormatted"`
 }
+
+type TopProjectsRequest struct {
+	SortBy   string `form:"sortBy" binding:"omitempty,oneof=cpu memory disk"`
+	Limit    int    `form:"limit" binding:"omitempty,min=1,max=50"`
+	Duration string `form:"duration" binding:"omitempty"`
+}
+
+type TopProjectsResponse struct {
+	Projects             []ProjectRanking `json:"projects"`
+	TotalClusterCPU      float64          `json:"totalClusterCpuCores"`
+	TotalClusterMemory   float64          `json:"totalClusterMemoryGB"`
+	CurrentCPUPercent    float64          `json:"currentCpuPercent"`
+	CurrentMemoryPercent float64          `json:"currentMemoryPercent"`
+	Alert                *ResourceAlert   `json:"alert,omitempty"`
+}
+
+type ResourceAlert struct {
+	Type         string  `json:"type"`
+	CurrentValue float64 `json:"currentValue"`
+	Threshold    float64 `json:"threshold"`
+	Message      string  `json:"message"`
+}
+
+type ProjectRanking struct {
+	ProjectID                 string  `json:"projectId"`
+	ProjectName               string  `json:"projectName"`
+	OwnerID                   string  `json:"ownerId"`
+	OwnerName                 string  `json:"ownerName"`
+	Namespace                 string  `json:"namespace"`
+	CPURequestCores           float64 `json:"cpuRequestCores"`
+	MemoryUsageGB             float64 `json:"memoryUsageGB"`
+	DiskReadBytesPerSec       float64 `json:"diskReadBytesPerSec"`
+	DiskWriteBytesPerSec      float64 `json:"diskWriteBytesPerSec"`
+	PercentageOfClusterCPU    float64 `json:"percentageOfClusterCpu"`
+	PercentageOfClusterMemory float64 `json:"percentageOfClusterMemory"`
+}

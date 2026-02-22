@@ -45,6 +45,7 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, exportHandle
 
 		api.GET("/nodes", handler.GetNodes)
 		api.GET("/namespaces", handler.GetNamespaces)
+		api.GET("/projects", handler.GetTopProjects)
 
 		api.GET("/database-io", handler.GetDatabaseIOMetrics)
 

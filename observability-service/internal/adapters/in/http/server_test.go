@@ -41,6 +41,7 @@ func SetupTestRouter(handler *MetricsHandler, logsHandler *LogsHandler) *gin.Eng
 
 		api.GET("/nodes", handler.GetNodes)
 		api.GET("/namespaces", handler.GetNamespaces)
+		api.GET("/projects", handler.GetTopProjects)
 
 		api.GET("/database-io", handler.GetDatabaseIOMetrics)
 
@@ -177,6 +178,9 @@ func TestAllRoutes(t *testing.T) {
 		getNamespacesFunc: func(ctx context.Context) ([]domain.NamespaceMetric, error) {
 			return []domain.NamespaceMetric{{Name: "default"}}, nil
 		},
+		getTopProjectsFunc: func(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error) {
+			return &domain.TopProjectsResponse{Projects: []domain.ProjectRanking{}}, nil
+		},
 		getDatabaseIOMetricsFunc: func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 			return &domain.DatabaseMetrics{Source: "prometheus"}, nil
 		},
@@ -195,6 +199,7 @@ func TestAllRoutes(t *testing.T) {
 		"/api/v1/systems/memory",
 		"/api/v1/systems/nodes",
 		"/api/v1/systems/namespaces",
+		"/api/v1/systems/projects",
 		"/api/v1/systems/database-io",
 	}
 

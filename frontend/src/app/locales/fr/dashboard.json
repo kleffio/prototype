@@ -93,6 +93,25 @@
       "cpu_usage": "Utilisation CPU",
       "memory_usage": "Utilisation mémoire"
     },
+    "resource_attribution": {
+      "title": "Principaux consommateurs de ressources",
+      "high_load_prefix": "Charge élevée - Principaux contributeurs :",
+      "loading": "Chargement de l'attribution des ressources...",
+      "error": "Impossible de récupérer les données d'attribution des projets.",
+      "empty": "Aucune donnée d'utilisation de projet disponible pour cette période.",
+      "sort": {
+        "cpu": "CPU",
+        "memory": "Mémoire",
+        "disk": "E/S disque"
+      },
+      "headers": {
+        "project": "Projet",
+        "owner": "Propriétaire",
+        "namespace": "Namespace",
+        "metric": "Métrique",
+        "cluster_share": "% du cluster"
+      }
+    },
     "billing": {
       "loading": "Chargement des métriques d'utilisation...",
       "error": "Impossible de récupérer les métriques d'utilisation du projet.",

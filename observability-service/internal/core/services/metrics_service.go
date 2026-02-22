@@ -1,19 +1,55 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sort"
+	"strings"
+	"time"
 
 	"prometheus-metrics-api/internal/core/domain"
 	"prometheus-metrics-api/internal/core/ports"
 )
 
+const authTokenContextKey = "authorization_token"
+
 type metricsService struct {
-	metricsRepo ports.MetricsRepository
+	metricsRepo          ports.MetricsRepository
+	httpClient           *http.Client
+	projectServiceURL    string
+	userServiceURL       string
+	cpuAlertThreshold    float64
+	memoryAlertThreshold float64
 }
 
 func NewMetricsService(metricsRepo ports.MetricsRepository) ports.MetricsService {
+	return NewMetricsServiceWithDependencies(metricsRepo, "", "", 80, 80)
+}
+
+func NewMetricsServiceWithDependencies(
+	metricsRepo ports.MetricsRepository,
+	projectServiceURL string,
+	userServiceURL string,
+	cpuAlertThreshold float64,
+	memoryAlertThreshold float64,
+) ports.MetricsService {
+	if cpuAlertThreshold <= 0 {
+		cpuAlertThreshold = 80
+	}
+	if memoryAlertThreshold <= 0 {
+		memoryAlertThreshold = 80
+	}
+
 	return &metricsService{
-		metricsRepo: metricsRepo,
+		metricsRepo:          metricsRepo,
+		httpClient:           &http.Client{Timeout: 10 * time.Second},
+		projectServiceURL:    strings.TrimRight(projectServiceURL, "/"),
+		userServiceURL:       strings.TrimRight(userServiceURL, "/"),
+		cpuAlertThreshold:    cpuAlertThreshold,
+		memoryAlertThreshold: memoryAlertThreshold,
 	}
 }
 
@@ -57,6 +93,48 @@ func (s *metricsService) GetNamespaces(ctx context.Context) ([]domain.NamespaceM
 	return s.metricsRepo.GetNamespaces(ctx)
 }
 
+func (s *metricsService) GetTopProjects(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error) {
+	request := domain.TopProjectsRequest{
+		SortBy:   normalizeSort(sortBy),
+		Limit:    normalizeLimit(limit),
+		Duration: normalizeDuration(duration),
+	}
+
+	cpuUtilization, _ := s.metricsRepo.GetCPUUtilization(ctx, request.Duration)
+	memoryUtilization, _ := s.metricsRepo.GetMemoryUtilization(ctx, request.Duration)
+
+	cpuValue := 0.0
+	memValue := 0.0
+	if cpuUtilization != nil {
+		cpuValue = cpuUtilization.CurrentValue
+	}
+	if memoryUtilization != nil {
+		memValue = memoryUtilization.CurrentValue
+	}
+
+	pressureSort := s.preferredSortForPressure(cpuValue, memValue)
+	if pressureSort != "" {
+		request.SortBy = pressureSort
+	}
+
+	response, err := s.metricsRepo.GetTopProjects(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	response.CurrentCPUPercent = cpuValue
+	response.CurrentMemoryPercent = memValue
+	response.Alert = s.buildAlert(cpuValue, memValue)
+
+	authToken, _ := ctx.Value(authTokenContextKey).(string)
+	if authToken == "" {
+		return response, nil
+	}
+
+	s.enrichProjects(ctx, authToken, response.Projects)
+	return response, nil
+}
+
 func (s *metricsService) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {
 	return s.metricsRepo.GetDatabaseIOMetrics(ctx, duration, namespaces)
 }
@@ -83,4 +161,188 @@ func (s *metricsService) GetUptimeMetrics(ctx context.Context, duration string) 
 
 func (s *metricsService) GetSystemUptime(ctx context.Context) (float64, error) {
 	return s.metricsRepo.GetSystemUptime(ctx)
+}
+
+func normalizeSort(sortBy string) string {
+	switch strings.ToLower(strings.TrimSpace(sortBy)) {
+	case "memory":
+		return "memory"
+	case "disk":
+		return "disk"
+	default:
+		return "cpu"
+	}
+}
+
+func normalizeDuration(duration string) string {
+	if strings.TrimSpace(duration) == "" {
+		return "1h"
+	}
+	return duration
+}
+
+func normalizeLimit(limit int) int {
+	if limit <= 0 {
+		return 10
+	}
+	if limit > 50 {
+		return 50
+	}
+	return limit
+}
+
+func (s *metricsService) preferredSortForPressure(cpuValue, memValue float64) string {
+	cpuExceeded := cpuValue >= s.cpuAlertThreshold
+	memExceeded := memValue >= s.memoryAlertThreshold
+
+	if !cpuExceeded && !memExceeded {
+		return ""
+	}
+	if cpuExceeded && (!memExceeded || cpuValue >= memValue) {
+		return "cpu"
+	}
+	return "memory"
+}
+
+func (s *metricsService) buildAlert(cpuValue, memValue float64) *domain.ResourceAlert {
+	cpuExceeded := cpuValue >= s.cpuAlertThreshold
+	memExceeded := memValue >= s.memoryAlertThreshold
+
+	if !cpuExceeded && !memExceeded {
+		return nil
+	}
+
+	if cpuExceeded && (!memExceeded || cpuValue >= memValue) {
+		return &domain.ResourceAlert{
+			Type:         "cpu",
+			CurrentValue: cpuValue,
+			Threshold:    s.cpuAlertThreshold,
+			Message:      fmt.Sprintf("High CPU load detected (%.1f%%)", cpuValue),
+		}
+	}
+
+	return &domain.ResourceAlert{
+		Type:         "memory",
+		CurrentValue: memValue,
+		Threshold:    s.memoryAlertThreshold,
+		Message:      fmt.Sprintf("High memory load detected (%.1f%%)", memValue),
+	}
+}
+
+func (s *metricsService) enrichProjects(ctx context.Context, authToken string, projects []domain.ProjectRanking) {
+	if len(projects) == 0 {
+		return
+	}
+
+	ownerIDs := map[string]struct{}{}
+	for i := range projects {
+		project := s.fetchProject(ctx, authToken, projects[i].ProjectID)
+		if project == nil {
+			projects[i].ProjectName = firstNonEmpty(projects[i].ProjectName, projects[i].ProjectID, projects[i].Namespace)
+			projects[i].OwnerName = firstNonEmpty(projects[i].OwnerName, "Unknown")
+			continue
+		}
+
+		projects[i].ProjectName = firstNonEmpty(project.Name, projects[i].ProjectName, projects[i].ProjectID, projects[i].Namespace)
+		projects[i].OwnerID = firstNonEmpty(project.OwnerID, projects[i].OwnerID)
+		if projects[i].OwnerID != "" {
+			ownerIDs[projects[i].OwnerID] = struct{}{}
+		}
+	}
+
+	usernames := s.resolveOwnerNames(ctx, authToken, ownerIDs)
+	for i := range projects {
+		projects[i].OwnerName = firstNonEmpty(usernames[projects[i].OwnerID], projects[i].OwnerName, "Unknown")
+	}
+}
+
+type projectSummary struct {
+	ID      string `json:"projectId"`
+	Name    string `json:"name"`
+	OwnerID string `json:"ownerId"`
+}
+
+func (s *metricsService) fetchProject(ctx context.Context, authToken, projectID string) *projectSummary {
+	if s.projectServiceURL == "" || projectID == "" {
+		return nil
+	}
+
+	url := fmt.Sprintf("%s/api/v1/projects/%s", s.projectServiceURL, projectID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Authorization", "Bearer "+authToken)
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	var project projectSummary
+	if err := json.NewDecoder(resp.Body).Decode(&project); err != nil {
+		return nil
+	}
+	return &project
+}
+
+func (s *metricsService) resolveOwnerNames(ctx context.Context, authToken string, ownerIDs map[string]struct{}) map[string]string {
+	result := map[string]string{}
+	if s.userServiceURL == "" || len(ownerIDs) == 0 {
+		return result
+	}
+
+	ids := make([]string, 0, len(ownerIDs))
+	for id := range ownerIDs {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	payload, _ := json.Marshal(map[string][]string{"ids": ids})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.userServiceURL+"/api/v1/users/resolve", bytes.NewReader(payload))
+	if err != nil {
+		return result
+	}
+	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return result
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return result
+	}
+
+	type userProfile struct {
+		Name     string `json:"name"`
+		Username string `json:"username"`
+	}
+
+	decoded := map[string]userProfile{}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return result
+	}
+
+	for id, profile := range decoded {
+		result[id] = firstNonEmpty(profile.Name, profile.Username, id)
+	}
+
+	return result
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
