@@ -651,7 +651,7 @@ class BillingServiceImplTest {
         when(invoiceRepository.save(any(Invoice.class))).thenReturn(savedInvoice);
 
         // Call method
-        Invoice finalInvoice = spyService.generateFinalInvoice(projectId, username);
+        Invoice finalInvoice = spyService.generateFinalInvoice(projectId, username, AUTH_HEADER);
 
         // Assertions against the test invoice
         assertNotNull(finalInvoice);
@@ -687,7 +687,7 @@ class BillingServiceImplTest {
         doReturn(new Price()).when(spyService).getPrice("STORAGE_GB");
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                () -> spyService.generateFinalInvoice(projectId, username));
+                () -> spyService.generateFinalInvoice(projectId, username, AUTH_HEADER));
 
         assertEquals("One or more price records not found", exception.getMessage());
         verify(invoiceRepository, never()).save(any());

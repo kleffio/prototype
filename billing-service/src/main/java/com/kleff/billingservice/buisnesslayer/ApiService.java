@@ -31,8 +31,18 @@ public class ApiService {
 
     // GET request that returns a single JSON object
     public UsageMonth usageRecordForLastMonth(String id, int days) {
-        return restClient.get()
-                .uri("/api/v1/systems/projects/{id}/usage/{days}", id, days)
+        return usageRecordForLastMonth(id, days, null);
+    }
+
+    public UsageMonth usageRecordForLastMonth(String id, int days, String authHeader) {
+        RestClient.RequestHeadersSpec<?> request = restClient.get()
+                .uri("/api/v1/systems/projects/{id}/usage/{days}", id, days);
+
+        if (authHeader != null && !authHeader.isBlank()) {
+            request = request.header("Authorization", authHeader);
+        }
+
+        return request
                 .retrieve()
                 .body(UsageMonth.class);
     }

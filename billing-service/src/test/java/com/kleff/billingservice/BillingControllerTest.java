@@ -206,7 +206,7 @@ class BillingControllerTest {
         BillingController spyController = spy(billingController);
         doReturn(true).when(spyController).hasPermission(any(), any(), any(), any());
 
-        when(billingService.generateFinalInvoice(any(), any())).thenThrow(new EntityNotFoundException("Missing"));
+        when(billingService.generateFinalInvoice(any(), any(), any())).thenThrow(new EntityNotFoundException("Missing"));
         ResponseEntity<?> response = spyController.generateFinalInvoice(PROJECT_ID, auth, AUTH_HEADER);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
