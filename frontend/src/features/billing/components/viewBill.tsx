@@ -40,16 +40,15 @@ export function ViewBillModal({ isOpen, onClose, invoiceId, status }: ViewBillMo
   return (
     // Backdrop — scrollable wrapper so modal never clips on small screens
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       {/* Modal */}
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-br from-neutral-900 to-neutral-800 shadow-2xl flex flex-col my-auto">
-
+      <div className="relative my-auto flex w-full max-w-md flex-col rounded-2xl border border-white/10 bg-gradient-to-br from-neutral-900 to-neutral-800 shadow-2xl">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between border-b border-white/10 bg-white/5 px-5 py-4 rounded-t-2xl">
+        <div className="flex flex-shrink-0 items-center justify-between rounded-t-2xl border-b border-white/10 bg-white/5 px-5 py-4">
           <h2 className="text-base font-semibold text-neutral-50">Bill Details</h2>
           <button
             onClick={onClose}
@@ -60,18 +59,16 @@ export function ViewBillModal({ isOpen, onClose, invoiceId, status }: ViewBillMo
         </div>
 
         {/* Content — scrollable */}
-        <div className="flex-1 overflow-y-auto min-h-0 p-5 space-y-3">
-          <div className="rounded-xl bg-white/5 ring-1 ring-white/10 px-4 py-3">
-            <p className="text-xs text-neutral-500 mb-0.5">Invoice ID</p>
-            <p className="font-mono text-sm text-neutral-200 break-all">{invoiceId}</p>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
+          <div className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+            <p className="mb-0.5 text-xs text-neutral-500">Invoice ID</p>
+            <p className="font-mono text-sm break-all text-neutral-200">{invoiceId}</p>
           </div>
 
-          <div className="rounded-xl bg-white/5 ring-1 ring-white/10 px-4 py-3">
-            <p className="text-xs text-neutral-500 mb-0.5">Status</p>
+          <div className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+            <p className="mb-0.5 text-xs text-neutral-500">Status</p>
             <p
-              className={`text-sm font-semibold ${
-                isPaid ? "text-emerald-400" : "text-amber-400"
-              }`}
+              className={`text-sm font-semibold ${isPaid ? "text-emerald-400" : "text-amber-400"}`}
             >
               {status.toUpperCase()}
             </p>
@@ -85,13 +82,9 @@ export function ViewBillModal({ isOpen, onClose, invoiceId, status }: ViewBillMo
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-white/10 bg-white/5 px-5 py-4 rounded-b-2xl">
-          <div className="flex items-center gap-3 justify-end">
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="rounded-full px-4 py-2 text-sm"
-            >
+        <div className="flex-shrink-0 rounded-b-2xl border-t border-white/10 bg-white/5 px-5 py-4">
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="ghost" onClick={onClose} className="rounded-full px-4 py-2 text-sm">
               Close
             </Button>
 
@@ -99,7 +92,7 @@ export function ViewBillModal({ isOpen, onClose, invoiceId, status }: ViewBillMo
               <Button
                 onClick={handlePay}
                 disabled={payLoading}
-                className="bg-gradient-kleff rounded-full px-5 py-2 text-sm font-semibold text-black flex items-center gap-2 min-w-[96px] justify-center"
+                className="bg-gradient-kleff flex min-w-[96px] items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-black"
               >
                 {payLoading ? <Spinner className="h-4 w-4" /> : "Pay Now"}
               </Button>
