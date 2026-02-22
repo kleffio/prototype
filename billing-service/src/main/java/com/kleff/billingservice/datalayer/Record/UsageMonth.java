@@ -13,5 +13,5 @@ public class UsageMonth {
     String projectID;
     double memoryUsageGB;
     double cpuRequestCores;
-    int window;
+    String window;
 }
