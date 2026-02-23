@@ -17,7 +17,7 @@ jobs:
           # In EST (UTC-5), Midnight entering Saturday, Feb 14 is 05:00:00 UTC.
 
           # Target: Feb 24, 2026 at 05:00:00 UTC
-          DEADLINE=$(date -d "2026-02-19 05:00:00 UTC" +%s)
+          DEADLINE=$(date -d "2026-02-24 05:00:00 UTC" +%s)
           CURRENT=$(date +%s)
 
           if [ $CURRENT -gt $DEADLINE ]; then
