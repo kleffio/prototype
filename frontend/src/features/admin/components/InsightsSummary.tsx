@@ -1,4 +1,13 @@
-import { CheckCircle, XCircle, Zap, Database, Cpu, HardDrive, Clock, RefreshCw } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Zap,
+  Database,
+  Cpu,
+  HardDrive,
+  Clock,
+  RefreshCw
+} from "lucide-react";
 import type { InsightsResponse } from "../types/insights";
 
 interface InsightsSummaryProps {
@@ -69,7 +78,9 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
             <Database className="h-4 w-4 text-neutral-400" />
             <p className="text-xs text-neutral-400 uppercase">Namespaces</p>
           </div>
-          <p className="mt-2 text-2xl font-semibold text-neutral-100">{data.summary.totalNamespaces}</p>
+          <p className="mt-2 text-2xl font-semibold text-neutral-100">
+            {data.summary.totalNamespaces}
+          </p>
           <p className="mt-2 text-xs text-neutral-500">
             {data.summary.dataPointsProcessed.toLocaleString()} data points
           </p>
@@ -106,7 +117,9 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
               <p className="text-lg font-semibold text-neutral-100">
                 {data.sloStatus.errorRatePercent.toFixed(2)}%
               </p>
-              <p className="text-xs text-neutral-500">of {data.sloStatus.sloTargetPercent}% target</p>
+              <p className="text-xs text-neutral-500">
+                of {data.sloStatus.sloTargetPercent}% target
+              </p>
             </div>
             <div>
               <p className="text-xs text-neutral-500">Error Budget</p>
@@ -167,7 +180,9 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">Cache Status</span>
-              <span className={`flex items-center gap-1 ${data.metadata.cacheHit ? "text-emerald-300" : "text-neutral-200"}`}>
+              <span
+                className={`flex items-center gap-1 ${data.metadata.cacheHit ? "text-emerald-300" : "text-neutral-200"}`}
+              >
                 <RefreshCw className="h-3 w-3" />
                 {data.metadata.cacheHit ? "Cache Hit" : "Fresh Data"}
               </span>

@@ -77,7 +77,7 @@ export function InsightsPanel() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold text-neutral-100">
-              <Sparkles className="h-4 w-4 text-kleff-gold" />
+              <Sparkles className="text-kleff-gold h-4 w-4" />
               Recommendations
             </h3>
             <p className="text-sm text-neutral-400">
@@ -142,9 +142,7 @@ export function InsightsPanel() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-neutral-100">
-                      {anomaly.resource}
-                    </p>
+                    <p className="text-sm font-medium text-neutral-100">{anomaly.resource}</p>
                     <p className="mt-1 text-xs text-neutral-400">
                       {anomaly.type.replaceAll("_", " ")} · {anomaly.value}
                     </p>

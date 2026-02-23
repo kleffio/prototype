@@ -43,16 +43,29 @@ export function AuditLogTable({
       <div className="overflow-hidden rounded-xl border border-neutral-800/80 bg-neutral-900/60">
         <table className="w-full" aria-label="Admin audit logs table">
           <caption className="sr-only">
-            Audit log entries showing administrative actions including who performed the action, the target, details, IP address, and timestamp.
+            Audit log entries showing administrative actions including who performed the action, the
+            target, details, IP address, and timestamp.
           </caption>
           <thead>
-            <tr className="border-b border-neutral-800/50 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
-              <th scope="col" className="px-4 py-3">Action</th>
-              <th scope="col" className="px-4 py-3">Admin</th>
-              <th scope="col" className="px-4 py-3">Target</th>
-              <th scope="col" className="px-4 py-3">Details</th>
-              <th scope="col" className="px-4 py-3">IP Address</th>
-              <th scope="col" className="px-4 py-3">Time</th>
+            <tr className="border-b border-neutral-800/50 text-left text-xs font-medium tracking-wider text-neutral-400 uppercase">
+              <th scope="col" className="px-4 py-3">
+                Action
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Admin
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Target
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Details
+              </th>
+              <th scope="col" className="px-4 py-3">
+                IP Address
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Time
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800/50">
@@ -96,7 +109,7 @@ export function AuditLogTable({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-neutral-400 font-mono">
+                    <span className="font-mono text-sm text-neutral-400">
                       {log.adminUserId.substring(0, 8)}...
                     </span>
                   </td>
@@ -104,7 +117,7 @@ export function AuditLogTable({
                     {log.targetType && log.targetId ? (
                       <div>
                         <span className="text-xs text-neutral-500">{log.targetType}</span>
-                        <div className="text-sm text-neutral-300 font-mono">
+                        <div className="font-mono text-sm text-neutral-300">
                           {log.targetId.substring(0, 12)}...
                         </div>
                       </div>
@@ -116,7 +129,9 @@ export function AuditLogTable({
                     {log.details && Object.keys(log.details).length > 0 ? (
                       <div className="max-w-xs">
                         {"email" in log.details && Boolean(log.details.email) && (
-                          <span className="text-sm text-neutral-400">{String(log.details.email)}</span>
+                          <span className="text-sm text-neutral-400">
+                            {String(log.details.email)}
+                          </span>
                         )}
                         {"role" in log.details && Boolean(log.details.role) && (
                           <span className="ml-2 inline-flex items-center rounded bg-neutral-800 px-1.5 py-0.5 text-xs text-neutral-300">
@@ -124,7 +139,7 @@ export function AuditLogTable({
                           </span>
                         )}
                         {"reason" in log.details && Boolean(log.details.reason) && (
-                          <div className="text-xs text-neutral-500 truncate">
+                          <div className="truncate text-xs text-neutral-500">
                             {String(log.details.reason)}
                           </div>
                         )}
@@ -134,7 +149,7 @@ export function AuditLogTable({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-neutral-500 font-mono">
+                    <span className="font-mono text-sm text-neutral-500">
                       {log.ipAddress || "-"}
                     </span>
                   </td>
@@ -157,7 +172,8 @@ export function AuditLogTable({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-neutral-500">
-            Showing {((state.page - 1) * state.pageSize) + 1} to {Math.min(state.page * state.pageSize, total)} of {total} logs
+            Showing {(state.page - 1) * state.pageSize + 1} to{" "}
+            {Math.min(state.page * state.pageSize, total)} of {total} logs
           </div>
           <div className="flex items-center gap-2">
             <button

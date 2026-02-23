@@ -1,7 +1,21 @@
 import { useState } from "react";
-import { X, Shield, UserX, CheckCircle2, AlertCircle, Clock, Mail, User as UserIcon } from "lucide-react";
+import {
+  X,
+  Shield,
+  UserX,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Mail,
+  User as UserIcon
+} from "lucide-react";
 import { useAuth } from "react-oidc-context";
-import type { AdminUserDetail, PlatformRole, RoleUpdateRequest, RoleUpdateResult } from "../types/admin";
+import type {
+  AdminUserDetail,
+  PlatformRole,
+  RoleUpdateRequest,
+  RoleUpdateResult
+} from "../types/admin";
 import { PLATFORM_ROLE_LABELS } from "../types/admin";
 import { RoleBadge } from "./RoleBadge";
 import { updateUserRoles } from "../api/updateUserRoles";
@@ -44,12 +58,16 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
         ? { revokeRoles: [role] }
         : { grantRoles: [role] };
 
-      const result: RoleUpdateResult = await updateUserRoles(auth.user.access_token, user.id, request);
-      
+      const result: RoleUpdateResult = await updateUserRoles(
+        auth.user.access_token,
+        user.id,
+        request
+      );
+
       if (result.hasPartialFailure) {
         // Handle partial success - some operations failed
         const failedItems = [...result.failedGrants, ...result.failedRevokes];
-        const errorMessages = failedItems.map(f => `${f.role}: ${f.error}`).join(", ");
+        const errorMessages = failedItems.map((f) => `${f.role}: ${f.error}`).join(", ");
         setError(`Partial failure: ${errorMessages}`);
       } else if (!result.success) {
         // Complete failure
@@ -92,13 +110,10 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 mx-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto">
         <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/95 shadow-2xl backdrop-blur-sm">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-neutral-800/50 p-6">
@@ -112,12 +127,12 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="space-y-6 p-6">
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-16 w-16 rounded-full bg-neutral-800 mx-auto" />
-                <Skeleton className="h-6 w-48 bg-neutral-800 mx-auto" />
-                <Skeleton className="h-4 w-64 bg-neutral-800 mx-auto" />
+                <Skeleton className="mx-auto h-16 w-16 rounded-full bg-neutral-800" />
+                <Skeleton className="mx-auto h-6 w-48 bg-neutral-800" />
+                <Skeleton className="mx-auto h-4 w-64 bg-neutral-800" />
               </div>
             ) : (
               <>
@@ -138,13 +153,14 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                 {/* User Info */}
                 <div className="flex items-start gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-800 text-xl font-medium text-neutral-300">
-                    {user?.displayName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <UserIcon className="h-8 w-8" />}
+                    {user?.displayName?.[0]?.toUpperCase() ||
+                      user?.username?.[0]?.toUpperCase() || <UserIcon className="h-8 w-8" />}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <h3 className="text-xl font-semibold text-neutral-50">{user?.displayName}</h3>
                       {user?.isDeactivated && (
-                        <span className="inline-flex items-center rounded-md bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-300 border border-red-500/30">
+                        <span className="inline-flex items-center rounded-md border border-red-500/30 bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-300">
                           Suspended
                         </span>
                       )}
@@ -158,7 +174,7 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                 {/* Details Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg border border-neutral-800/50 bg-neutral-800/30 p-4">
-                    <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
+                    <div className="mb-1 flex items-center gap-2 text-sm text-neutral-400">
                       <Mail className="h-4 w-4" />
                       Email
                     </div>
@@ -168,23 +184,25 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                     )}
                   </div>
                   <div className="rounded-lg border border-neutral-800/50 bg-neutral-800/30 p-4">
-                    <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
+                    <div className="mb-1 flex items-center gap-2 text-sm text-neutral-400">
                       <Clock className="h-4 w-4" />
                       Created
                     </div>
                     <div className="text-neutral-50">
-                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric"
-                      }) : "N/A"}
+                      {user?.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          })
+                        : "N/A"}
                     </div>
                   </div>
                 </div>
 
                 {/* Role Management */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                  <h4 className="flex items-center gap-2 text-sm font-medium text-neutral-300">
                     <Shield className="h-4 w-4" />
                     Platform Roles
                   </h4>
@@ -198,7 +216,7 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                           disabled={isUpdating}
                           className={`rounded-lg border px-3 py-2 text-sm transition ${
                             isActive
-                              ? "bg-gradient-kleff text-neutral-950 border-kleff-gold"
+                              ? "bg-gradient-kleff border-kleff-gold text-neutral-950"
                               : "border-neutral-700 text-neutral-400 hover:border-neutral-600 hover:text-neutral-300"
                           } disabled:opacity-50`}
                         >
@@ -213,16 +231,17 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                 </div>
 
                 {/* Suspension Management */}
-                <div className="space-y-3 pt-4 border-t border-neutral-800/50">
-                  <h4 className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                <div className="space-y-3 border-t border-neutral-800/50 pt-4">
+                  <h4 className="flex items-center gap-2 text-sm font-medium text-neutral-300">
                     <UserX className="h-4 w-4" />
                     Account Status
                   </h4>
-                  
+
                   {showSuspendConfirm ? (
-                    <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 space-y-3">
+                    <div className="space-y-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
                       <p className="text-sm text-yellow-300">
-                        Are you sure you want to {user?.isDeactivated ? "unsuspend" : "suspend"} this user?
+                        Are you sure you want to {user?.isDeactivated ? "unsuspend" : "suspend"}{" "}
+                        this user?
                       </p>
                       {!user?.isDeactivated && (
                         <input
@@ -255,9 +274,10 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
                       onClick={() => setShowSuspendConfirm(true)}
                       disabled={isUpdating}
                       variant="outline"
-                      className={user?.isDeactivated 
-                        ? "border-green-500/50 text-green-400 hover:border-green-400 hover:bg-green-500/10"
-                        : "border-red-500/50 text-red-400 hover:border-red-400 hover:bg-red-500/10"
+                      className={
+                        user?.isDeactivated
+                          ? "border-green-500/50 text-green-400 hover:border-green-400 hover:bg-green-500/10"
+                          : "border-red-500/50 text-red-400 hover:border-red-400 hover:bg-red-500/10"
                       }
                     >
                       <UserX className="mr-2 h-4 w-4" />
@@ -268,7 +288,7 @@ export function UserDetailModal({ user, isLoading, onClose, onUserUpdated }: Use
 
                 {/* Role History */}
                 {user?.platformRoles && user.platformRoles.length > 0 && (
-                  <div className="space-y-3 pt-4 border-t border-neutral-800/50">
+                  <div className="space-y-3 border-t border-neutral-800/50 pt-4">
                     <h4 className="text-sm font-medium text-neutral-300">Role History</h4>
                     <div className="space-y-2">
                       {user.platformRoles.map((role) => (

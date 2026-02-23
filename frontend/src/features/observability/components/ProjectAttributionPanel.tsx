@@ -1,5 +1,9 @@
 import { getTopProjects } from "@features/observability/api/getTopProjects";
-import type { ProjectRanking, ProjectSortBy, TopProjectsResponse } from "@features/observability/types/metrics";
+import type {
+  ProjectRanking,
+  ProjectSortBy,
+  TopProjectsResponse
+} from "@features/observability/types/metrics";
 import enTranslations from "@app/locales/en/dashboard.json";
 import frTranslations from "@app/locales/fr/dashboard.json";
 import { getLocale } from "@app/locales/locale";
@@ -93,7 +97,8 @@ export function ProjectAttributionPanel({ duration }: Props) {
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
           <AlertTriangle className="h-4 w-4" />
           <span>
-            {t.high_load_prefix} {data.alert.type.toUpperCase()} ({data.alert.currentValue.toFixed(1)}%)
+            {t.high_load_prefix} {data.alert.type.toUpperCase()} (
+            {data.alert.currentValue.toFixed(1)}%)
           </span>
         </div>
       )}
@@ -125,7 +130,9 @@ export function ProjectAttributionPanel({ duration }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-neutral-700">
-                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-400 uppercase">#</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-400 uppercase">
+                  #
+                </th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-neutral-400 uppercase">
                   {t.headers.project}
                 </th>
@@ -154,13 +161,22 @@ export function ProjectAttributionPanel({ duration }: Props) {
                   >
                     <td className="px-3 py-3 text-sm text-neutral-300">{index + 1}</td>
                     <td className="px-3 py-3 text-sm font-medium text-amber-300">
-                      <Link to={`/dashboard/projects/${project.projectId}`} className="hover:underline">
+                      <Link
+                        to={`/dashboard/projects/${project.projectId}`}
+                        className="hover:underline"
+                      >
                         {project.projectName || project.projectId}
                       </Link>
                     </td>
-                    <td className="px-3 py-3 text-sm text-neutral-200">{project.ownerName || "Unknown"}</td>
-                    <td className="px-3 py-3 text-sm font-mono text-neutral-400">{project.namespace}</td>
-                    <td className="px-3 py-3 text-sm text-neutral-200">{metricValue(project, sortBy)}</td>
+                    <td className="px-3 py-3 text-sm text-neutral-200">
+                      {project.ownerName || "Unknown"}
+                    </td>
+                    <td className="px-3 py-3 font-mono text-sm text-neutral-400">
+                      {project.namespace}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-neutral-200">
+                      {metricValue(project, sortBy)}
+                    </td>
                     <td className="px-3 py-3">
                       <div className="mb-1 h-2 w-full rounded-full bg-neutral-800">
                         <div

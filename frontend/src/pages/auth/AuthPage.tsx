@@ -78,8 +78,11 @@ export function AuthPage() {
     >
       {/* WCAG 2.0 AA: Main content area */}
       <h1 className="sr-only">Authentication</h1>
-      
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-6 shadow-2xl shadow-black/70" aria-live="polite">
+
+      <div
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-6 shadow-2xl shadow-black/70"
+        aria-live="polite"
+      >
         <div className="mb-5 flex flex-col items-center gap-3">
           <div className="bg-kleff-gold/10 flex h-12 w-12 items-center justify-center rounded-2xl">
             <KleffDot size={28} variant="full" aria-hidden="true" />

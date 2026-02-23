@@ -8,7 +8,8 @@ interface RoleBadgeProps {
 
 export function RoleBadge({ role, size = "sm" }: RoleBadgeProps) {
   const label = PLATFORM_ROLE_LABELS[role] || role;
-  const colorClass = PLATFORM_ROLE_COLORS[role] || "bg-neutral-500/20 text-neutral-300 border-neutral-500/30";
+  const colorClass =
+    PLATFORM_ROLE_COLORS[role] || "bg-neutral-500/20 text-neutral-300 border-neutral-500/30";
 
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm";
 

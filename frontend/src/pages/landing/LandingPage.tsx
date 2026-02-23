@@ -54,7 +54,7 @@ export function LandingPage() {
       <main id="main-content" tabIndex={-1}>
         <h1 className="sr-only">Kleff Hosting - Open-Source Cloud Deployments</h1>
       </main>
-      
+
       <Section className="flex flex-col items-center gap-12 pt-20 pb-16 text-center lg:flex-row lg:items-start lg:py-24 lg:text-left">
         <div className="mx-auto max-w-xl flex-1 space-y-7 text-center lg:mx-0 lg:text-left">
           <div className="mx-auto inline-flex rounded-full bg-white/5 px-3 py-1 text-[10px] text-neutral-300 sm:hidden">

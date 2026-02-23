@@ -384,7 +384,10 @@ export function ProjectsPage() {
               >
                 <Bell className="h-4 w-4 text-neutral-300" aria-hidden="true" />
                 {invitationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white" aria-hidden="true">
+                  <span
+                    className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
+                    aria-hidden="true"
+                  >
                     {invitationCount > 9 ? "9+" : invitationCount}
                   </span>
                 )}
@@ -444,7 +447,10 @@ export function ProjectsPage() {
           {/* WCAG 2.0 AA: Search and filter with proper labels */}
           <div className="flex flex-wrap gap-3">
             <div className="relative min-w-[250px] flex-1">
-              <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-500" aria-hidden="true" />
+              <Search
+                className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-500"
+                aria-hidden="true"
+              />
               <label htmlFor="projects-search" className="sr-only">
                 {t.search_placeholder}
               </label>

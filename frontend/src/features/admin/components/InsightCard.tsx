@@ -11,7 +11,7 @@ export function InsightCard({ insight }: InsightCardProps) {
     <article className="rounded-xl border border-neutral-800/80 bg-neutral-900/70 p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-kleff-gold" />
+          <Lightbulb className="text-kleff-gold h-4 w-4" />
           <p className="text-xs font-semibold tracking-wide text-neutral-300 uppercase">
             {insight.type.replaceAll("_", " ")}
           </p>
@@ -25,7 +25,9 @@ export function InsightCard({ insight }: InsightCardProps) {
         <span className="text-kleff-gold">→</span> {insight.recommendation}
       </p>
 
-      {insight.savings && <p className="mt-2 text-sm text-emerald-300">Savings: {insight.savings}</p>}
+      {insight.savings && (
+        <p className="mt-2 text-sm text-emerald-300">Savings: {insight.savings}</p>
+      )}
       {insight.impact && <p className="mt-1 text-sm text-neutral-300">Impact: {insight.impact}</p>}
 
       <div className="mt-3 flex items-center justify-between text-xs text-neutral-500">

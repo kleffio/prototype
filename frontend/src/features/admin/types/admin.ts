@@ -137,18 +137,18 @@ export const ADMIN_ACTION_LABELS: Record<AdminAction, string> = {
   role_revoked: "Role Revoked",
   user_suspended: "User Suspended",
   user_unsuspended: "User Unsuspended",
-  audit_log_viewed: "Audit Log Viewed",
+  audit_log_viewed: "Audit Log Viewed"
 };
 
 // Platform role labels
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   platform_admin: "Platform Admin",
   platform_support: "Platform Support",
-  platform_user: "Platform User",
+  platform_user: "Platform User"
 };
 
 export const PLATFORM_ROLE_COLORS: Record<PlatformRole, string> = {
   platform_admin: "bg-red-500/20 text-red-300 border-red-500/30",
   platform_support: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  platform_user: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  platform_user: "bg-blue-500/20 text-blue-300 border-blue-500/30"
 };

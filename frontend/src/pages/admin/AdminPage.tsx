@@ -154,7 +154,7 @@ export function AdminPage() {
 
   if (!auth.isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-kleff-bg">
+      <div className="bg-kleff-bg flex min-h-screen items-center justify-center">
         <Skeleton className="h-32 w-64 bg-neutral-800" />
       </div>
     );
@@ -235,7 +235,7 @@ export function AdminPage() {
 
           {/* WCAG 2.0 AA: Tab Content with proper ARIA roles */}
           {activeTab === "users" && (
-            <div 
+            <div
               className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
               role="tabpanel"
               id="users-panel"
@@ -259,7 +259,7 @@ export function AdminPage() {
           )}
 
           {activeTab === "audit" && (
-            <div 
+            <div
               className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
               role="tabpanel"
               id="audit-panel"
@@ -282,7 +282,7 @@ export function AdminPage() {
           )}
 
           {activeTab === "insights" && (
-            <div 
+            <div
               className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
               role="tabpanel"
               id="insights-panel"
@@ -291,7 +291,8 @@ export function AdminPage() {
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-neutral-50">Cluster Insights</h2>
                 <p className="text-sm text-neutral-400">
-                  AI-enhanced recommendations and anomaly alerts generated from 7-day Prometheus analysis.
+                  AI-enhanced recommendations and anomaly alerts generated from 7-day Prometheus
+                  analysis.
                 </p>
               </div>
               <InsightsPanel />

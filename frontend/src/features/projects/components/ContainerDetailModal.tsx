@@ -133,7 +133,11 @@ export function ContainerDetailModal({
                       <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     </span>
                   )}
-                  {websiteStatus === "up" ? "Up" : websiteStatus === "down" ? "Down" : "Checking..."}
+                  {websiteStatus === "up"
+                    ? "Up"
+                    : websiteStatus === "down"
+                      ? "Down"
+                      : "Checking..."}
                 </Badge>
               </div>
             </div>

@@ -21,7 +21,7 @@ const ChatWidget = () => {
     <div className="fixed right-6 bottom-6 z-50 flex flex-col items-end">
       {/* WCAG 2.0 AA: Chat Window with proper ARIA attributes */}
       {isOpen && (
-        <div 
+        <div
           className="bg-background text-foreground border-border chat-widget-enter mb-4 flex h-[600px] w-[380px] flex-col overflow-hidden rounded-xl border shadow-2xl"
           role="dialog"
           aria-label="Kleff Assistant chat window"
@@ -32,7 +32,9 @@ const ChatWidget = () => {
             <div className="flex items-center gap-2">
               {/* WCAG 2.0 AA: Status indicator has accessible label */}
               <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" aria-hidden="true" />
-              <h3 id="chat-title" className="font-semibold">Kleff Assistant</h3>
+              <h3 id="chat-title" className="font-semibold">
+                Kleff Assistant
+              </h3>
             </div>
             <div className="flex gap-2">
               {/* WCAG 2.0 AA: Button has accessible name */}
@@ -48,8 +50,16 @@ const ChatWidget = () => {
           </div>
 
           {/* Content Area - WCAG 2.0 AA: Live region for dynamic content */}
-          <div className="bg-muted/10 relative flex-1 overflow-hidden" aria-live="polite" aria-atomic="false">
-            <div className="scrollbar-hide h-full overflow-y-auto p-4" ref={scrollRef} aria-label="Chat messages">
+          <div
+            className="bg-muted/10 relative flex-1 overflow-hidden"
+            aria-live="polite"
+            aria-atomic="false"
+          >
+            <div
+              className="scrollbar-hide h-full overflow-y-auto p-4"
+              ref={scrollRef}
+              aria-label="Chat messages"
+            >
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
               ))}
@@ -57,7 +67,10 @@ const ChatWidget = () => {
               {isLoading && (
                 <div className="mb-4 flex gap-2" role="status" aria-live="polite">
                   <div className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+                    <div
+                      className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                      aria-hidden="true"
+                    />
                   </div>
                   <div className="bg-muted/50 text-foreground/50 animate-pulse rounded-lg p-3 text-sm">
                     Thinking...
