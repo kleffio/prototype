@@ -11,12 +11,12 @@ import java.util.List;
 @Service
 public class ApiService {
 
-    @Value("${vite.backend.url}")
-    private String backendUrl;
-
     private final RestClient restClient;
 
-    public ApiService(RestClient.Builder restClientBuilder) {
+    public ApiService(
+            RestClient.Builder restClientBuilder,
+            @Value("${vite.backend.url}") String backendUrl
+    ) {
         this.restClient = restClientBuilder
                 .baseUrl(backendUrl)
                 .build();
@@ -24,15 +24,25 @@ public class ApiService {
 
     public List<String> getListOfProjectIds() {
         return restClient.get()
-                .uri("api/v1/projects/ListID")
+                .uri("/api/v1/projects/listID")
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<String>>() {});
     }
 
     // GET request that returns a single JSON object
     public UsageMonth usageRecordForLastMonth(String id, int days) {
-        return restClient.get()
-                .uri("api/v1/systems/projects/{id}/{days}", id, days)
+        return usageRecordForLastMonth(id, days, null);
+    }
+
+    public UsageMonth usageRecordForLastMonth(String id, int days, String authHeader) {
+        RestClient.RequestHeadersSpec<?> request = restClient.get()
+                .uri("/api/v1/systems/projects/{id}/usage/{days}", id, days);
+
+        if (authHeader != null && !authHeader.isBlank()) {
+            request = request.header("Authorization", authHeader);
+        }
+
+        return request
                 .retrieve()
                 .body(UsageMonth.class);
     }

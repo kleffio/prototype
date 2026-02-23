@@ -373,7 +373,7 @@ public class BillingServiceImpl implements BillingService {
      */
     @Override
     @Transactional
-    public Invoice generateFinalInvoice(String projectId, String username) {
+    public Invoice generateFinalInvoice(String projectId, String username, String authHeader) {
         log.info("Generating final invoice for project: {} for user: {}", projectId, username);
 
         // 1. Verify project exists and user is owner (this will be validated by the caller)
@@ -385,7 +385,7 @@ public class BillingServiceImpl implements BillingService {
         int daysInCurrentMonth = (int) java.time.temporal.ChronoUnit.DAYS.between(firstOfMonth, today) + 1;
 
         // 3. Get usage data for the current month (from first of month to today)
-        UsageMonth usage = apiService.usageRecordForLastMonth(projectId, daysInCurrentMonth);
+        UsageMonth usage = apiService.usageRecordForLastMonth(projectId, daysInCurrentMonth, authHeader);
 
         // 4. Calculate totals from usage data
         BigDecimal CPU = BigDecimal.valueOf(usage.getCpuRequestCores());
@@ -439,7 +439,6 @@ public class BillingServiceImpl implements BillingService {
         return savedInvoice;
     }
 }
-
 
 
 

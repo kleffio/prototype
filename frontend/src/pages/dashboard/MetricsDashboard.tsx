@@ -3,6 +3,7 @@ import { MetricCard } from "@features/observability/components/MetricCard";
 import { NamespacesTable } from "@features/observability/components/NamespacesTable";
 import { NodesList } from "@features/observability/components/NodesList";
 import { ResourceChart } from "@features/observability/components/ResourceChart";
+import { ProjectAttributionPanel } from "@features/observability/components/ProjectAttributionPanel";
 import type {
   ClusterOverview,
   MetricCard as MetricCardType,
@@ -240,6 +241,10 @@ export function MetricsDashboard() {
                 loading={loading || !memoryData}
               />
             </div>
+          </div>
+
+          <div className="mb-6">
+            <ProjectAttributionPanel duration={timeRange} />
           </div>
 
           <div>

@@ -285,7 +285,7 @@ public class BillingController {
                     .body(Map.of("error", "Only project owners can generate final invoices"));
             }
             
-            Invoice finalInvoice = billingService.generateFinalInvoice(projectId, userId);
+            Invoice finalInvoice = billingService.generateFinalInvoice(projectId, userId, authHeader);
             
             logger.info("Final invoice generated successfully for project {} by user {}", projectId, userId);
             return ResponseEntity.ok(finalInvoice);

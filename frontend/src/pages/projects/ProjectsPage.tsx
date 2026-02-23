@@ -376,13 +376,18 @@ export function ProjectsPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* WCAG 2.0 AA: Button has accessible name */}
               <button
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                aria-label={`Notifications${invitationCount > 0 ? `, ${invitationCount} unread` : ""}`}
                 className="relative rounded-xl border border-white/10 bg-white/5 p-2.5 transition-all hover:border-white/20 hover:bg-white/10"
               >
-                <Bell className="h-4 w-4 text-neutral-300" />
+                <Bell className="h-4 w-4 text-neutral-300" aria-hidden="true" />
                 {invitationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  <span
+                    className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
+                    aria-hidden="true"
+                  >
                     {invitationCount > 9 ? "9+" : invitationCount}
                   </span>
                 )}
@@ -439,27 +444,38 @@ export function ProjectsPage() {
             </SoftPanel>
           </div>
 
+          {/* WCAG 2.0 AA: Search and filter with proper labels */}
           <div className="flex flex-wrap gap-3">
             <div className="relative min-w-[250px] flex-1">
-              <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <Search
+                className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-500"
+                aria-hidden="true"
+              />
+              <label htmlFor="projects-search" className="sr-only">
+                {t.search_placeholder}
+              </label>
               <input
-                type="text"
+                id="projects-search"
+                type="search"
                 placeholder={t.search_placeholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="focus:border-kleff-primary/50 focus:ring-kleff-primary/20 w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-neutral-200 placeholder-neutral-500 transition-all focus:ring-2 focus:outline-none"
+                aria-label={t.search_placeholder}
               />
             </div>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
+              aria-expanded={showFilters}
+              aria-controls="filters-panel"
               className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
                 showFilters
                   ? "border-kleff-primary/30 bg-kleff-primary/10 text-kleff-primary"
                   : "border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10"
               }`}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className="h-4 w-4" aria-hidden="true" />
               {t.filters.button}
             </button>
           </div>

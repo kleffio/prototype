@@ -93,6 +93,25 @@
       "cpu_usage": "CPU Usage",
       "memory_usage": "Memory Usage"
     },
+    "resource_attribution": {
+      "title": "Top Resource Consumers",
+      "high_load_prefix": "High Load - Top Contributors:",
+      "loading": "Loading resource attribution...",
+      "error": "Unable to retrieve project attribution data.",
+      "empty": "No project usage data available for this range.",
+      "sort": {
+        "cpu": "CPU",
+        "memory": "Memory",
+        "disk": "Disk I/O"
+      },
+      "headers": {
+        "project": "Project",
+        "owner": "Owner",
+        "namespace": "Namespace",
+        "metric": "Metric",
+        "cluster_share": "% of Cluster"
+      }
+    },
     "billing": {
       "loading": "Loading usage metrics...",
       "error": "Unable to retrieve project usage metrics.",

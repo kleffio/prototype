@@ -3,6 +3,7 @@ package prometheus
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -411,6 +412,132 @@ func (c *prometheusClient) GetNamespaces(ctx context.Context) ([]domain.Namespac
 	}
 
 	return namespaces, nil
+}
+
+func (c *prometheusClient) GetTopProjects(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error) {
+	sortBy := strings.ToLower(strings.TrimSpace(req.SortBy))
+	if sortBy != "memory" && sortBy != "disk" {
+		sortBy = "cpu"
+	}
+
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	result := &domain.TopProjectsResponse{
+		Projects: make([]domain.ProjectRanking, 0),
+	}
+
+	totalCPUResp, err := c.queryPrometheus(ctx, `sum(machine_cpu_cores)`)
+	if err == nil && len(totalCPUResp.Data.Result) > 0 {
+		result.TotalClusterCPU, _ = extractValue(totalCPUResp.Data.Result[0].Value)
+	}
+
+	totalMemResp, err := c.queryPrometheus(ctx, `sum(machine_memory_bytes) / (1024^3)`)
+	if err == nil && len(totalMemResp.Data.Result) > 0 {
+		result.TotalClusterMemory, _ = extractValue(totalMemResp.Data.Result[0].Value)
+	}
+
+	cpuResp, err := c.queryPrometheus(ctx, `sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace!="", container!="", container!="POD"}[5m]))`)
+	if err != nil {
+		return nil, err
+	}
+
+	memResp, _ := c.queryPrometheus(ctx, `sum by (namespace) (container_memory_working_set_bytes{namespace!="", container!="", container!="POD"}) / (1024^3)`)
+	diskReadResp, _ := c.queryPrometheus(ctx, `sum by (namespace) (rate(container_fs_reads_bytes_total{namespace!="", container!="", container!="POD"}[5m]))`)
+	diskWriteResp, _ := c.queryPrometheus(ctx, `sum by (namespace) (rate(container_fs_writes_bytes_total{namespace!="", container!="", container!="POD"}[5m]))`)
+
+	byNamespace := map[string]*domain.ProjectRanking{}
+
+	ensureProject := func(namespace string) *domain.ProjectRanking {
+		project, exists := byNamespace[namespace]
+		if exists {
+			return project
+		}
+		project = &domain.ProjectRanking{
+			ProjectID:   namespace,
+			ProjectName: namespace,
+			OwnerName:   "Unknown",
+			Namespace:   namespace,
+		}
+		byNamespace[namespace] = project
+		return project
+	}
+
+	for _, item := range cpuResp.Data.Result {
+		namespace := item.Metric["namespace"]
+		if strings.TrimSpace(namespace) == "" {
+			continue
+		}
+		project := ensureProject(namespace)
+		project.CPURequestCores, _ = extractValue(item.Value)
+	}
+
+	if memResp != nil {
+		for _, item := range memResp.Data.Result {
+			namespace := item.Metric["namespace"]
+			if strings.TrimSpace(namespace) == "" {
+				continue
+			}
+			project := ensureProject(namespace)
+			project.MemoryUsageGB, _ = extractValue(item.Value)
+		}
+	}
+
+	if diskReadResp != nil {
+		for _, item := range diskReadResp.Data.Result {
+			namespace := item.Metric["namespace"]
+			if strings.TrimSpace(namespace) == "" {
+				continue
+			}
+			project := ensureProject(namespace)
+			project.DiskReadBytesPerSec, _ = extractValue(item.Value)
+		}
+	}
+
+	if diskWriteResp != nil {
+		for _, item := range diskWriteResp.Data.Result {
+			namespace := item.Metric["namespace"]
+			if strings.TrimSpace(namespace) == "" {
+				continue
+			}
+			project := ensureProject(namespace)
+			project.DiskWriteBytesPerSec, _ = extractValue(item.Value)
+		}
+	}
+
+	for _, project := range byNamespace {
+		if result.TotalClusterCPU > 0 {
+			project.PercentageOfClusterCPU = (project.CPURequestCores / result.TotalClusterCPU) * 100
+		}
+		if result.TotalClusterMemory > 0 {
+			project.PercentageOfClusterMemory = (project.MemoryUsageGB / result.TotalClusterMemory) * 100
+		}
+		result.Projects = append(result.Projects, *project)
+	}
+
+	sort.Slice(result.Projects, func(i, j int) bool {
+		switch sortBy {
+		case "memory":
+			return result.Projects[i].MemoryUsageGB > result.Projects[j].MemoryUsageGB
+		case "disk":
+			iTotal := result.Projects[i].DiskReadBytesPerSec + result.Projects[i].DiskWriteBytesPerSec
+			jTotal := result.Projects[j].DiskReadBytesPerSec + result.Projects[j].DiskWriteBytesPerSec
+			return iTotal > jTotal
+		default:
+			return result.Projects[i].CPURequestCores > result.Projects[j].CPURequestCores
+		}
+	})
+
+	if len(result.Projects) > limit {
+		result.Projects = result.Projects[:limit]
+	}
+
+	return result, nil
 }
 
 func (c *prometheusClient) GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error) {

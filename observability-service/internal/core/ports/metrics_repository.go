@@ -26,6 +26,8 @@ type MetricsRepository interface {
 
 	GetNamespaces(ctx context.Context) ([]domain.NamespaceMetric, error)
 
+	GetTopProjects(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error)
+
 	GetUptimeMetrics(ctx context.Context, duration string) (*domain.UptimeMetrics, error)
 
 	GetSystemUptime(ctx context.Context) (float64, error)

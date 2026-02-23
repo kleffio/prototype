@@ -12,7 +12,8 @@ import {
   GitBranch,
   Users,
   RocketIcon,
-  ShieldIcon
+  ShieldIcon,
+  Shield
 } from "lucide-react";
 import enTranslations from "@app/locales/en/components.json";
 import frTranslations from "@app/locales/fr/components.json";
@@ -50,6 +51,12 @@ export function getDashboardNavItems(locale: Locale): DashboardNavItem[] {
       to: ROUTES.DASHBOARD_SYSTEMS,
       label: t.dashboardNavItems[2].label,
       icon: Server,
+      adminOnly: true // Platform admin only
+    },
+    {
+      to: ROUTES.DASHBOARD_ADMIN,
+      label: "Admin Panel",
+      icon: Shield,
       adminOnly: true // Platform admin only
     }
   ];

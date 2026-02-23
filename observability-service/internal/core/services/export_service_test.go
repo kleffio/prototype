@@ -59,6 +59,9 @@ func (m *exportMockMetricsRepo) GetNodes(_ context.Context) ([]domain.NodeMetric
 func (m *exportMockMetricsRepo) GetNamespaces(_ context.Context) ([]domain.NamespaceMetric, error) {
 	return nil, nil
 }
+func (m *exportMockMetricsRepo) GetTopProjects(_ context.Context, _ domain.TopProjectsRequest) (*domain.TopProjectsResponse, error) {
+	return nil, nil
+}
 func (m *exportMockMetricsRepo) GetUptimeMetrics(_ context.Context, _ string) (*domain.UptimeMetrics, error) {
 	return nil, nil
 }

@@ -11,6 +11,9 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 	_ = os.Setenv("PROMETHEUS_URL", "http://prometheus:9090")
 	_ = os.Setenv("LOKI_URL", "http://loki:3100")
 	_ = os.Setenv("ENVIRONMENT", "production")
+	_ = os.Setenv("PROJECT_NAMESPACE_FILTERING_ENABLED", "false")
+	_ = os.Setenv("SYSTEM_NAMESPACE_BLOCKLIST", "kube-system,monitoring")
+	_ = os.Setenv("PROJECT_ENRICHMENT_MAX_CONCURRENCY", "4")
 
 	defer func() {
 		// Clean up environment variables
@@ -18,6 +21,9 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 		_ = os.Unsetenv("PROMETHEUS_URL")
 		_ = os.Unsetenv("LOKI_URL")
 		_ = os.Unsetenv("ENVIRONMENT")
+		_ = os.Unsetenv("PROJECT_NAMESPACE_FILTERING_ENABLED")
+		_ = os.Unsetenv("SYSTEM_NAMESPACE_BLOCKLIST")
+		_ = os.Unsetenv("PROJECT_ENRICHMENT_MAX_CONCURRENCY")
 	}()
 
 	config := Load()
@@ -36,6 +42,18 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 
 	if config.Environment != "production" {
 		t.Errorf("Expected Environment to be 'production', got '%s'", config.Environment)
+	}
+
+	if config.ProjectNamespaceFilteringEnabled {
+		t.Errorf("Expected ProjectNamespaceFilteringEnabled to be false")
+	}
+
+	if config.ProjectEnrichmentMaxConcurrency != 4 {
+		t.Errorf("Expected ProjectEnrichmentMaxConcurrency to be 4, got '%d'", config.ProjectEnrichmentMaxConcurrency)
+	}
+
+	if len(config.SystemNamespaceBlocklist) != 2 {
+		t.Errorf("Expected SystemNamespaceBlocklist length to be 2, got '%d'", len(config.SystemNamespaceBlocklist))
 	}
 }
 

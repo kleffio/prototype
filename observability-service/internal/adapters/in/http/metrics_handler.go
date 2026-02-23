@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,6 +15,8 @@ import (
 type MetricsHandler struct {
 	metricsService ports.MetricsService
 }
+
+const authTokenContextKey = "authorization_token"
 
 func NewMetricsHandler(metricsService ports.MetricsService) *MetricsHandler {
 	return &MetricsHandler{
@@ -123,6 +126,37 @@ func (h *MetricsHandler) GetNamespaces(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, namespaces)
+}
+
+func (h *MetricsHandler) GetTopProjects(c *gin.Context) {
+	sortBy := c.Query("sort")
+	if sortBy == "" {
+		sortBy = c.DefaultQuery("sortBy", "cpu")
+	}
+
+	limit := 10
+	if limitStr := c.Query("limit"); limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil || parsedLimit < 1 || parsedLimit > 50 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be an integer between 1 and 50"})
+			return
+		}
+		limit = parsedLimit
+	}
+
+	duration := c.DefaultQuery("duration", "1h")
+
+	ctx := c.Request.Context()
+	if token := extractBearerToken(c.Request); token != "" {
+		ctx = context.WithValue(ctx, authTokenContextKey, token)
+	}
+
+	projects, err := h.metricsService.GetTopProjects(ctx, sortBy, limit, duration)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, projects)
 }
 
 func (h *MetricsHandler) GetDatabaseIOMetrics(c *gin.Context) {

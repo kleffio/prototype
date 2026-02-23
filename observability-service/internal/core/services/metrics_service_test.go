@@ -22,6 +22,7 @@ type mockMetricsRepository struct {
 	getMemoryUtilizationFunc                func(ctx context.Context, duration string) (*domain.ResourceUtilization, error)
 	getNodesFunc                            func(ctx context.Context) ([]domain.NodeMetric, error)
 	getNamespacesFunc                       func(ctx context.Context) ([]domain.NamespaceMetric, error)
+	getTopProjectsFunc                      func(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error)
 	getDatabaseIOMetricsFunc                func(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
 	getProjectUsageMetricsFunc              func(ctx context.Context, projectID string) (*domain.ProjectUsageMetrics, error)
 	getProjectUsageMetricsWithDaysFunc      func(ctx context.Context, projectID string, days int) (*domain.ProjectUsageMetrics, error)
@@ -97,6 +98,13 @@ func (m *mockMetricsRepository) GetNodes(ctx context.Context) ([]domain.NodeMetr
 func (m *mockMetricsRepository) GetNamespaces(ctx context.Context) ([]domain.NamespaceMetric, error) {
 	if m.getNamespacesFunc != nil {
 		return m.getNamespacesFunc(ctx)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockMetricsRepository) GetTopProjects(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error) {
+	if m.getTopProjectsFunc != nil {
+		return m.getTopProjectsFunc(ctx, req)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -701,6 +709,39 @@ func TestGetDatabaseIOMetrics_Error(t *testing.T) {
 	if result != nil {
 		t.Errorf("Expected nil result, got %v", result)
 	}
+}
+
+func TestGetTopProjects_Success(t *testing.T) {
+	mockRepo := &mockMetricsRepository{
+		getCPUUtilizationFunc: func(ctx context.Context, duration string) (*domain.ResourceUtilization, error) {
+			return &domain.ResourceUtilization{CurrentValue: 50}, nil
+		},
+		getMemoryUtilizationFunc: func(ctx context.Context, duration string) (*domain.ResourceUtilization, error) {
+			return &domain.ResourceUtilization{CurrentValue: 40}, nil
+		},
+		getTopProjectsFunc: func(ctx context.Context, req domain.TopProjectsRequest) (*domain.TopProjectsResponse, error) {
+			assert.Equal(t, "cpu", req.SortBy)
+			assert.Equal(t, 50, req.Limit)
+			assert.Equal(t, "1h", req.Duration)
+
+			return &domain.TopProjectsResponse{
+				Projects: []domain.ProjectRanking{
+					{
+						ProjectID:   "11111111-1111-1111-1111-111111111111",
+						ProjectName: "project-1",
+						Namespace:   "11111111-1111-1111-1111-111111111111",
+					},
+				},
+			}, nil
+		},
+	}
+
+	service := NewMetricsService(mockRepo)
+	result, err := service.GetTopProjects(context.Background(), "", 0, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Len(t, result.Projects, 1)
+	assert.Nil(t, result.Alert)
 }
 
 func TestGetProjectUsageMetricsWithDays_Success(t *testing.T) {

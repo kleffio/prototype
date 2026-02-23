@@ -17,6 +17,7 @@ type MetricsService interface {
 	GetMemoryUtilization(ctx context.Context, duration string) (*domain.ResourceUtilization, error)
 	GetNodes(ctx context.Context) ([]domain.NodeMetric, error)
 	GetNamespaces(ctx context.Context) ([]domain.NamespaceMetric, error)
+	GetTopProjects(ctx context.Context, sortBy string, limit int, duration string) (*domain.TopProjectsResponse, error)
 	GetUptimeMetrics(ctx context.Context, duration string) (*domain.UptimeMetrics, error)
 	GetSystemUptime(ctx context.Context) (float64, error)
 	GetDatabaseIOMetrics(ctx context.Context, duration string, namespaces []string) (*domain.DatabaseMetrics, error)
