@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { DollarSign, Calendar, X, Eye, Receipt, TrendingUp, CreditCard } from "lucide-react";
 import { Button } from "@shared/ui/Button";
 import { Spinner } from "@shared/ui/Spinner";
@@ -202,7 +203,7 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
       )}
 
       {/* Modal */}
-      {selectedInvoice && (
+      {selectedInvoice && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setSelectedInvoice(null)}
@@ -346,7 +347,8 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </SoftPanel>
   );
