@@ -34,9 +34,7 @@ test.describe("UC-01 Register Account — Pre-Authentication", () => {
     await expect(page).toHaveURL(/\/auth\/signin|auth\.kleff\.io/, { timeout: 30_000 });
   });
 
-  test("Alt 2b: Accessing /dashboard without auth redirects to /auth/signin", async ({
-    page
-  }) => {
+  test("Alt 2b: Accessing /dashboard without auth redirects to /auth/signin", async ({ page }) => {
     await page.goto(routes.dashboard.root, { waitUntil: "domcontentloaded" });
 
     await expect(page).toHaveURL(/\/auth\/signin|auth\.kleff\.io/, { timeout: 30_000 });
@@ -50,9 +48,7 @@ test.describe("UC-01 Register Account — Pre-Authentication", () => {
     await expect(page).toHaveURL(/\/auth\/signin|auth\.kleff\.io/, { timeout: 30_000 });
   });
 
-  test("Exc 9a: /auth/callback without valid session redirects to Authentik", async ({
-    page
-  }) => {
+  test("Exc 9a: /auth/callback without valid session redirects to Authentik", async ({ page }) => {
     await page.goto(routes.auth.callback, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/auth\.kleff\.io/, { timeout: 30_000 });
   });
@@ -72,37 +68,34 @@ authTest.describe("UC-01 Register Account — Post-Authentication", () => {
     }
   );
 
-  authTest(
-    "MSS Step 11-13: GET /api/v1/users/me returns valid user profile",
-    async ({ page }) => {
-      const responsePromise = page.waitForResponse(
-        (resp) => /\/api\/v1\/users\/me(\?|$)/.test(resp.url()) && resp.request().method() === "GET"
-      );
+  authTest("MSS Step 11-13: GET /api/v1/users/me returns valid user profile", async ({ page }) => {
+    const responsePromise = page.waitForResponse(
+      (resp) => /\/api\/v1\/users\/me(\?|$)/.test(resp.url()) && resp.request().method() === "GET"
+    );
 
-      const dash = new DashboardPage(page);
-      await dash.open();
+    const dash = new DashboardPage(page);
+    await dash.open();
 
-      const apiResponse = await responsePromise;
-      expect(apiResponse.status()).toBe(200);
+    const apiResponse = await responsePromise;
+    expect(apiResponse.status()).toBe(200);
 
-      const user = await apiResponse.json();
+    const user = await apiResponse.json();
 
-      expect(user).toHaveProperty("id");
-      expect(user).toHaveProperty("email");
-      expect(user).toHaveProperty("username");
-      expect(user).toHaveProperty("displayName");
-      expect(user).toHaveProperty("emailVerified");
-      expect(user).toHaveProperty("createdAt");
-      expect(user).toHaveProperty("updatedAt");
-      expect(user).toHaveProperty("isDeactivated");
+    expect(user).toHaveProperty("id");
+    expect(user).toHaveProperty("email");
+    expect(user).toHaveProperty("username");
+    expect(user).toHaveProperty("displayName");
+    expect(user).toHaveProperty("emailVerified");
+    expect(user).toHaveProperty("createdAt");
+    expect(user).toHaveProperty("updatedAt");
+    expect(user).toHaveProperty("isDeactivated");
 
-      expect(user.username).toMatch(/^[a-z0-9_-]{2,63}$/);
+    expect(user.username).toMatch(/^[a-z0-9_-]{2,63}$/);
 
-      expect(typeof user.emailVerified).toBe("boolean");
+    expect(typeof user.emailVerified).toBe("boolean");
 
-      expect(user.isDeactivated).toBe(false);
-    }
-  );
+    expect(user.isDeactivated).toBe(false);
+  });
 
   authTest("MSS Step 14: Dashboard loads and shows project management UI", async ({ page }) => {
     const dash = new DashboardPage(page);
@@ -112,25 +105,19 @@ authTest.describe("UC-01 Register Account — Post-Authentication", () => {
     await expect(page.getByRole("heading", { name: "My Projects Dashboard" })).toBeVisible();
   });
 
-  authTest(
-    "MSS Step 14: Authenticated user can navigate to Projects page",
-    async ({ page }) => {
-      const dash = new DashboardPage(page);
-      await dash.open();
-      await dash.expectLoaded();
+  authTest("MSS Step 14: Authenticated user can navigate to Projects page", async ({ page }) => {
+    const dash = new DashboardPage(page);
+    await dash.open();
+    await dash.expectLoaded();
 
-      await page.goto(routes.dashboard.projects, { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(/\/dashboard\/projects/);
-    }
-  );
+    await page.goto(routes.dashboard.projects, { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/dashboard\/projects/);
+  });
 
-  authTest(
-    "MSS Step 14: Authenticated user can access Settings page",
-    async ({ page }) => {
-      await page.goto(routes.dashboard.settings, { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(/\/dashboard\/settings/);
-    }
-  );
+  authTest("MSS Step 14: Authenticated user can access Settings page", async ({ page }) => {
+    await page.goto(routes.dashboard.settings, { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/dashboard\/settings/);
+  });
 
   authTest(
     "Postcondition: User has at least one platform role assigned",
@@ -180,11 +167,8 @@ authTest.describe("UC-01 Register Account — Post-Authentication", () => {
     }
   );
 
-  authTest(
-    "Exc 14b: /error/deactivated page is accessible",
-    async ({ page }) => {
-      await page.goto("/error/deactivated", { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(/\/error\/deactivated/);
-    }
-  );
+  authTest("Exc 14b: /error/deactivated page is accessible", async ({ page }) => {
+    await page.goto("/error/deactivated", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/error\/deactivated/);
+  });
 });
