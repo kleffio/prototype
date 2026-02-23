@@ -114,10 +114,13 @@ export function DashboardPage() {
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4">
+      {/* WCAG 2.0 AA: Main content with id for skip link target */}
+      <h1 className="sr-only">My Projects Dashboard</h1>
+      
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Projects Dashboard</h1>
+          <h2 className="text-2xl font-bold tracking-tight">My Projects Dashboard</h2>
           <p className="text-muted-foreground">
             Resource usage and performance across your projects
           </p>
@@ -146,9 +149,9 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* WCAG 2.0 AA: Error Display with live region */}
       {error && (
-        <div className="border-destructive/20 bg-destructive/10 text-destructive rounded-lg border p-4">
+        <div role="alert" aria-live="assertive" className="border-destructive/20 bg-destructive/10 text-destructive rounded-lg border p-4">
           {error}
         </div>
       )}
@@ -197,22 +200,25 @@ export function DashboardPage() {
       {/* Graphs */}
       <DiskGraph />
 
-      {/* Project Usage Table */}
+      {/* WCAG 2.0 AA: Project Usage Table with caption */}
       {projectUsages.length > 0 && (
         <SoftPanel>
           <div className="mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-neutral-400" />
-            <h3 className="text-lg font-semibold text-neutral-50">Resource Usage by Project</h3>
+            <TrendingUp className="h-5 w-5 text-neutral-400" aria-hidden="true" />
+            <h3 id="resource-usage-heading" className="text-lg font-semibold text-neutral-50">Resource Usage by Project</h3>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table aria-labelledby="resource-usage-heading">
+              <caption className="sr-only">
+                Resource usage metrics for all projects including CPU cores, memory usage, disk I/O, and measurement window.
+              </caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Project</TableHead>
-                  <TableHead>CPU Cores</TableHead>
-                  <TableHead>Memory (GB)</TableHead>
-                  <TableHead>Disk (KB/s)</TableHead>
-                  <TableHead>Window</TableHead>
+                  <TableHead scope="col">Project</TableHead>
+                  <TableHead scope="col">CPU Cores</TableHead>
+                  <TableHead scope="col">Memory (GB)</TableHead>
+                  <TableHead scope="col">Disk (KB/s)</TableHead>
+                  <TableHead scope="col">Window</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -37,38 +37,47 @@ export function UsersTable({
 
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
+      {/* WCAG 2.0 AA: Search Bar with proper label */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" aria-hidden="true" />
+          <label htmlFor="user-search-input" className="sr-only">
+            Search users by email, username, or display name
+          </label>
           <input
-            type="text"
+            id="user-search-input"
+            type="search"
             placeholder="Search by email, username, or display name..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="Search users"
             className="w-full rounded-lg border border-neutral-800 bg-neutral-950/80 py-2 pl-10 pr-4 text-sm text-neutral-50 placeholder-neutral-500 focus:border-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-700"
           />
         </div>
         <button
           onClick={handleSearch}
+          aria-label="Execute search"
           className="rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
         >
           Search
         </button>
       </div>
 
-      {/* Table */}
+      {/* WCAG 2.0 AA: Table with caption for screen readers */}
       <div className="overflow-hidden rounded-xl border border-neutral-800/80 bg-neutral-900/60">
-        <table className="w-full">
+        <table className="w-full" aria-label="Users management table">
+          <caption className="sr-only">
+            List of platform users with their email, roles, status, and creation date. Click on a user row to view details.
+          </caption>
           <thead>
             <tr className="border-b border-neutral-800/50 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Roles</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th scope="col" className="px-4 py-3">User</th>
+              <th scope="col" className="px-4 py-3">Email</th>
+              <th scope="col" className="px-4 py-3">Roles</th>
+              <th scope="col" className="px-4 py-3">Status</th>
+              <th scope="col" className="px-4 py-3">Created</th>
+              <th scope="col" className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800/50">
@@ -154,14 +163,16 @@ export function UsersTable({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
+                    {/* WCAG 2.0 AA: Icon button has accessible name */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectUser(user);
                       }}
+                      aria-label={`View details for ${user.displayName || user.username}`}
                       className="rounded p-1 text-neutral-500 opacity-0 transition hover:bg-neutral-700 hover:text-neutral-300 group-hover:opacity-100"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </td>
                 </tr>

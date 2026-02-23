@@ -74,17 +74,21 @@ export function AuthPage() {
     <div
       className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4"
       data-testid="auth-callback"
+      role="main"
     >
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-6 shadow-2xl shadow-black/70">
+      {/* WCAG 2.0 AA: Main content area */}
+      <h1 className="sr-only">Authentication</h1>
+      
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-6 shadow-2xl shadow-black/70" aria-live="polite">
         <div className="mb-5 flex flex-col items-center gap-3">
           <div className="bg-kleff-gold/10 flex h-12 w-12 items-center justify-center rounded-2xl">
-            <KleffDot size={28} variant="full" />
+            <KleffDot size={28} variant="full" aria-hidden="true" />
           </div>
-          <h1 className="text-lg font-semibold text-white">{title}</h1>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
           <p className="text-center text-xs text-neutral-400">{subtitle}</p>
         </div>
 
-        <div className="flex justify-center py-6">
+        <div className="flex justify-center py-6" role="status" aria-live="polite">
           <Spinner size={56} label={title} />
         </div>
 
@@ -95,6 +99,7 @@ export function AuthPage() {
             className="hover:border-kleff-gold/60 border-white/15 bg-transparent text-xs text-neutral-200 hover:text-white"
             onClick={handleContinue}
             disabled={auth.isLoading}
+            aria-label="Try authentication again"
           >
             {t.try_again}
           </Button>

@@ -39,17 +39,20 @@ export function AuditLogTable({
 
   return (
     <div className="space-y-4">
-      {/* Table */}
+      {/* WCAG 2.0 AA: Table with caption for screen readers */}
       <div className="overflow-hidden rounded-xl border border-neutral-800/80 bg-neutral-900/60">
-        <table className="w-full">
+        <table className="w-full" aria-label="Admin audit logs table">
+          <caption className="sr-only">
+            Audit log entries showing administrative actions including who performed the action, the target, details, IP address, and timestamp.
+          </caption>
           <thead>
             <tr className="border-b border-neutral-800/50 text-left text-xs font-medium uppercase tracking-wider text-neutral-400">
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Admin</th>
-              <th className="px-4 py-3">Target</th>
-              <th className="px-4 py-3">Details</th>
-              <th className="px-4 py-3">IP Address</th>
-              <th className="px-4 py-3">Time</th>
+              <th scope="col" className="px-4 py-3">Action</th>
+              <th scope="col" className="px-4 py-3">Admin</th>
+              <th scope="col" className="px-4 py-3">Target</th>
+              <th scope="col" className="px-4 py-3">Details</th>
+              <th scope="col" className="px-4 py-3">IP Address</th>
+              <th scope="col" className="px-4 py-3">Time</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800/50">

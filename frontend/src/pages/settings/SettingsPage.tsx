@@ -329,13 +329,13 @@ export function SettingsPage() {
   return (
     <div className="bg-kleff-bg text-foreground relative flex min-h-screen flex-col">
       {/* Background */}
-      <div className="pointer-events-none fixed inset-0">
+      <div className="pointer-events-none fixed inset-0" aria-hidden="true">
         <div className="bg-modern-noise bg-kleff-spotlight h-full w-full opacity-60" />
         <div className="bg-kleff-grid absolute inset-0 opacity-[0.25]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl">
+      {/* WCAG 2.0 AA: Header landmark */}
+      <header className="relative z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl" role="banner">
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-[#0f0f10]/60 via-[#0f0f10]/50 to-[#0f0f10]/60" />
         <div className="pointer-events-none absolute inset-0 z-0 shadow-[0_1px_0_0_rgba(255,255,255,0.05)]" />
 
@@ -367,61 +367,75 @@ export function SettingsPage() {
           <h1 className="sr-only">{t.account_settings}</h1>
 
           <div className="flex gap-8">
-            {/* Sidebar */}
+            {/* WCAG 2.0 AA: Sidebar navigation with proper ARIA roles */}
             <aside className="w-64 flex-shrink-0">
-              <nav className="space-y-1">
+              <nav className="space-y-1" role="tablist" aria-label="Settings sections">
                 <button
                   onClick={() => setActiveTab("profile")}
+                  role="tab"
+                  aria-selected={activeTab === "profile"}
+                  aria-controls="profile-panel"
+                  id="profile-tab"
+                  tabIndex={activeTab === "profile" ? 0 : -1}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                     activeTab === "profile"
                       ? "bg-neutral-800/50 font-medium text-neutral-50"
                       : "text-neutral-400 hover:bg-neutral-800/30 hover:text-neutral-200"
                   }`}
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.public_profile}
                 </button>
                 <button
                   onClick={() => setActiveTab("account")}
+                  role="tab"
+                  aria-selected={activeTab === "account"}
+                  aria-controls="account-panel"
+                  id="account-tab"
+                  tabIndex={activeTab === "account" ? 0 : -1}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                     activeTab === "account"
                       ? "bg-neutral-800/50 font-medium text-neutral-50"
                       : "text-neutral-400 hover:bg-neutral-800/30 hover:text-neutral-200"
                   }`}
                 >
-                  <Shield className="h-4 w-4" />
+                  <Shield className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.account}
                 </button>
                 <button
                   onClick={() => setActiveTab("projects")}
                   disabled
+                  aria-disabled="true"
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
-                  <FolderGit2 className="h-4 w-4" />
+                  <FolderGit2 className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.your_projects}
                 </button>
                 <button
                   onClick={() => setActiveTab("appearance")}
                   disabled
+                  aria-disabled="true"
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
-                  <Palette className="h-4 w-4" />
+                  <Palette className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.appearance}
                 </button>
                 <button
                   onClick={() => setActiveTab("email")}
                   disabled
+                  aria-disabled="true"
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Mail className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.email}
                 </button>
                 <button
                   onClick={() => setActiveTab("billing")}
                   disabled
+                  aria-disabled="true"
                   className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-500"
                 >
-                  <CreditCard className="h-4 w-4" />
+                  <CreditCard className="h-4 w-4" aria-hidden="true" />
                   {t.tabs.billing}
                 </button>
               </nav>
@@ -429,9 +443,11 @@ export function SettingsPage() {
 
             {/* Main Content Area */}
             <div className="min-w-0 flex-1">
-              {/* Notification */}
+              {/* WCAG 2.0 AA: Notification with live region for screen readers */}
               {notification && (
                 <div
+                  role="alert"
+                  aria-live="assertive"
                   className={`mb-8 flex items-center gap-3 rounded-lg border px-5 py-4 text-sm shadow-lg ${
                     notification.type === "success"
                       ? "border-green-500/30 bg-green-500/10 text-green-300"
@@ -439,9 +455,9 @@ export function SettingsPage() {
                   }`}
                 >
                   {notification.type === "success" ? (
-                    <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
                   ) : (
-                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
                   )}
                   {notification.message}
                 </div>

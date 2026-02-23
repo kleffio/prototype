@@ -164,13 +164,13 @@ export function AdminPage() {
   return (
     <div className="bg-kleff-bg text-foreground relative min-h-screen">
       {/* Background */}
-      <div className="pointer-events-none fixed inset-0">
+      <div className="pointer-events-none fixed inset-0" aria-hidden="true">
         <div className="bg-modern-noise bg-kleff-spotlight h-full w-full opacity-60" />
         <div className="bg-kleff-grid absolute inset-0 opacity-[0.25]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl">
+      {/* WCAG 2.0 AA: Header landmark */}
+      <header className="relative z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl" role="banner">
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-[#0f0f10]/60 via-[#0f0f10]/50 to-[#0f0f10]/60" />
         <div className="pointer-events-none absolute inset-0 z-0 shadow-[0_1px_0_0_rgba(255,255,255,0.05)]" />
 
@@ -206,48 +206,68 @@ export function AdminPage() {
             </p>
           </div>
 
-          {/* Tab Navigation */}
+          {/* WCAG 2.0 AA: Tab Navigation with proper ARIA roles */}
           <div className="mb-6 border-b border-neutral-800">
-            <nav className="flex gap-4">
+            <nav className="flex gap-4" role="tablist" aria-label="Admin panel sections">
               <button
                 onClick={() => setActiveTab("users")}
+                role="tab"
+                aria-selected={activeTab === "users"}
+                aria-controls="users-panel"
+                id="users-tab"
+                tabIndex={activeTab === "users" ? 0 : -1}
                 className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
                   activeTab === "users"
                     ? "border-kleff-gold text-neutral-50"
                     : "border-transparent text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
                 }`}
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-4 w-4" aria-hidden="true" />
                 User Management
               </button>
               <button
                 onClick={() => setActiveTab("audit")}
+                role="tab"
+                aria-selected={activeTab === "audit"}
+                aria-controls="audit-panel"
+                id="audit-tab"
+                tabIndex={activeTab === "audit" ? 0 : -1}
                 className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
                   activeTab === "audit"
                     ? "border-kleff-gold text-neutral-50"
                     : "border-transparent text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
                 }`}
               >
-                <Activity className="h-4 w-4" />
+                <Activity className="h-4 w-4" aria-hidden="true" />
                 Audit Logs
               </button>
               <button
                 onClick={() => setActiveTab("insights")}
+                role="tab"
+                aria-selected={activeTab === "insights"}
+                aria-controls="insights-panel"
+                id="insights-tab"
+                tabIndex={activeTab === "insights" ? 0 : -1}
                 className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
                   activeTab === "insights"
                     ? "border-kleff-gold text-neutral-50"
                     : "border-transparent text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
                 }`}
               >
-                <Brain className="h-4 w-4" />
+                <Brain className="h-4 w-4" aria-hidden="true" />
                 Insights
               </button>
             </nav>
           </div>
 
-          {/* Tab Content */}
+          {/* WCAG 2.0 AA: Tab Content with proper ARIA roles */}
           {activeTab === "users" && (
-            <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm">
+            <div 
+              className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
+              role="tabpanel"
+              id="users-panel"
+              aria-labelledby="users-tab"
+            >
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-neutral-50">Users</h2>
                 <p className="text-sm text-neutral-400">
@@ -266,7 +286,12 @@ export function AdminPage() {
           )}
 
           {activeTab === "audit" && (
-            <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm">
+            <div 
+              className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
+              role="tabpanel"
+              id="audit-panel"
+              aria-labelledby="audit-tab"
+            >
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-neutral-50">Admin Audit Logs</h2>
                 <p className="text-sm text-neutral-400">
@@ -284,7 +309,12 @@ export function AdminPage() {
           )}
 
           {activeTab === "insights" && (
-            <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm">
+            <div 
+              className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm"
+              role="tabpanel"
+              id="insights-panel"
+              aria-labelledby="insights-tab"
+            >
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-neutral-50">Cluster Insights</h2>
                 <p className="text-sm text-neutral-400">
