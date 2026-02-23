@@ -114,7 +114,7 @@ export function DashboardPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <RefreshCw className="h-8 w-8 animate-spin" />
-        <span className="ml-2 text-muted-foreground">{t.project_usage.loading}</span>
+        <span className="text-muted-foreground ml-2">{t.project_usage.loading}</span>
       </div>
     );
   }
@@ -128,9 +128,7 @@ export function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{t.overview_title}</h2>
-          <p className="text-muted-foreground">
-            {t.overview_subtitle}
-          </p>
+          <p className="text-muted-foreground">{t.overview_subtitle}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -183,13 +181,17 @@ export function DashboardPage() {
         </MiniCard>
         <MiniCard title={t.cpu_usage || t.performance}>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{totalCpuCores.toFixed(2)} {t.cores}</div>
+            <div className="text-2xl font-bold">
+              {totalCpuCores.toFixed(2)} {t.cores}
+            </div>
             <Cpu className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
         <MiniCard title={t.memory_utilization}>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{totalMemoryGB.toFixed(2)} {t.gb}</div>
+            <div className="text-2xl font-bold">
+              {totalMemoryGB.toFixed(2)} {t.gb}
+            </div>
             <HardDrive className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
@@ -223,13 +225,21 @@ export function DashboardPage() {
           <div className="overflow-x-auto">
             <Table aria-labelledby="resource-usage-heading">
               <caption className="sr-only">
-                {t.project_metrics?.title || t.project_usage.title || "Resource usage metrics for all projects including CPU cores, memory usage, disk I/O, and measurement window."}
+                {t.project_metrics?.title ||
+                  t.project_usage.title ||
+                  "Resource usage metrics for all projects including CPU cores, memory usage, disk I/O, and measurement window."}
               </caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col">{t.resource_attribution?.headers?.project || t.project_filter || "Project"}</TableHead>
-                  <TableHead scope="col">{t.project_metrics?.avg_cpu || t.cpu_usage || "CPU Cores"}</TableHead>
-                  <TableHead scope="col">{t.project_metrics?.avg_memory || t.memory_utilization || "Memory (GB)"}</TableHead>
+                  <TableHead scope="col">
+                    {t.resource_attribution?.headers?.project || t.project_filter || "Project"}
+                  </TableHead>
+                  <TableHead scope="col">
+                    {t.project_metrics?.avg_cpu || t.cpu_usage || "CPU Cores"}
+                  </TableHead>
+                  <TableHead scope="col">
+                    {t.project_metrics?.avg_memory || t.memory_utilization || "Memory (GB)"}
+                  </TableHead>
                   <TableHead scope="col">{t.project_metrics?.avg_disk || "Disk (KB/s)"}</TableHead>
                   <TableHead scope="col">{t.project_usage?.time_window || "Window"}</TableHead>
                 </TableRow>
@@ -278,9 +288,7 @@ export function DashboardPage() {
         <div className="py-12 text-center">
           <Server className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
           <h3 className="mb-2 text-lg font-semibold">{t.no_projects_available}</h3>
-          <p className="text-muted-foreground mb-4">
-            {t.create_new_deployment}
-          </p>
+          <p className="text-muted-foreground mb-4">{t.create_new_deployment}</p>
           <Button onClick={() => setIsModalOpen(true)}>{t.deploy_new_project}</Button>
         </div>
       )}
