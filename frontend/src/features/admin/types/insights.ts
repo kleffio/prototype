@@ -52,12 +52,23 @@ export interface InsightsSummary {
   partialData: boolean;
 }
 
+export interface InsightsMetadata {
+  generationMs: number;
+  cacheHit: boolean;
+  analysisWindow: string;
+  thresholdsUsed: {
+    anomalyStdDev: number;
+    sloErrorRateTargetPercent: number;
+  };
+}
+
 export interface InsightsResponse {
   recommendations: InsightRecommendation[];
   anomalies: InsightAnomaly[];
   costSavings: CostSavingsInsight;
   sloStatus: SLOStatus;
   summary: InsightsSummary;
+  metadata: InsightsMetadata;
   generatedAt: string;
 }
 

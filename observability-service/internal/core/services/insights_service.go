@@ -422,9 +422,41 @@ func (s *insightsService) GetAdminInsights(ctx context.Context, window string) (
 		GeneratedAt: time.Now().UTC(),
 	}
 
-	enrichInsightsWithAI(ctx, s.aiClient, response)
+	// Start AI enrichment in background - don't block the response
+	if s.aiClient != nil {
+		go s.asyncEnrichWithAI(window, response)
+	}
+
 	s.setCached(window, response)
 	return response, nil
+}
+
+func (s *insightsService) asyncEnrichWithAI(window string, response *domain.InsightsResponse) {
+	// Use a background context with timeout for AI enrichment
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Create a copy of the response for AI enrichment
+	baseCopy := *response
+	baseCopy.Recommendations = make([]domain.InsightRecommendation, len(response.Recommendations))
+	copy(baseCopy.Recommendations, response.Recommendations)
+
+	enrichInsightsWithAI(ctx, s.aiClient, &baseCopy)
+
+	// Update the cached response with AI-enriched data
+	s.mu.Lock()
+	if cached, ok := s.cache[window]; ok {
+		// Only update if the cache hasn't been refreshed by another request
+		if cached.value.GeneratedAt.Equal(response.GeneratedAt) {
+			cached.value.Recommendations = baseCopy.Recommendations
+			cached.value.Summary.TotalRecommendations = len(baseCopy.Recommendations)
+			if baseCopy.CostSavings.Note != "" {
+				cached.value.CostSavings.Note = baseCopy.CostSavings.Note
+			}
+			s.cache[window] = cached
+		}
+	}
+	s.mu.Unlock()
 }
 
 func (s *insightsService) collectNamespaces(
