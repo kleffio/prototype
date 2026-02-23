@@ -69,6 +69,18 @@ func SetupRouter(handler *MetricsHandler, logsHandler *LogsHandler, exportHandle
 	return router
 }
 
+func RegisterAdminRoutes(router *gin.Engine, insightsHandler *InsightsHandler, userServiceURL string) {
+	if router == nil || insightsHandler == nil {
+		return
+	}
+
+	admin := router.Group("/api/v1/admin")
+	admin.Use(jwtAuthMiddleware(userServiceURL))
+	{
+		admin.GET("/insights", insightsHandler.GetInsights)
+	}
+}
+
 // jwtAuthMiddleware validates JWT tokens and checks user deactivation status
 func jwtAuthMiddleware(userServiceURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {

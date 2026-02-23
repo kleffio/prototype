@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -18,6 +19,15 @@ type Config struct {
 	ProjectNamespaceFilteringEnabled bool
 	SystemNamespaceBlocklist         []string
 	ProjectEnrichmentMaxConcurrency  int
+	InsightsCacheTTL                 time.Duration
+	InsightsAnalysisWindow           string
+	InsightsAnomalyStdDev            float64
+	SLOErrorRateTargetPercent        float64
+	CPUCostPerCoreMonthUSD           float64
+	MemoryCostPerGBMonthUSD          float64
+	OpenAIAPIKey                     string
+	OpenAIModel                      string
+	OpenAIBaseURL                    string
 }
 
 func Load() *Config {
@@ -36,6 +46,15 @@ func Load() *Config {
 			[]string{"default", "kube-system", "kube-public", "kube-node-lease", "monitoring", "ingress-nginx", "loki", "prometheus", "cert-manager"},
 		),
 		ProjectEnrichmentMaxConcurrency: getEnvInt("PROJECT_ENRICHMENT_MAX_CONCURRENCY", 8),
+		InsightsCacheTTL:                getEnvDuration("INSIGHTS_CACHE_TTL", 5*time.Minute),
+		InsightsAnalysisWindow:          getEnv("INSIGHTS_ANALYSIS_WINDOW", "7d"),
+		InsightsAnomalyStdDev:           getEnvFloat("INSIGHTS_ANOMALY_STDDEV", 2.0),
+		SLOErrorRateTargetPercent:       getEnvFloat("SLO_ERROR_RATE_TARGET_PERCENT", 1.0),
+		CPUCostPerCoreMonthUSD:          getEnvFloat("CPU_COST_PER_CORE_MONTH_USD", 8.0),
+		MemoryCostPerGBMonthUSD:         getEnvFloat("MEMORY_COST_PER_GB_MONTH_USD", 1.5),
+		OpenAIAPIKey:                    getEnv("OPENAI_API_KEY", ""),
+		OpenAIModel:                     getEnv("OPENAI_MODEL", "gpt-4o-mini"),
+		OpenAIBaseURL:                   getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
 	}
 }
 
@@ -109,4 +128,17 @@ func getEnvList(key string, defaultValue []string) []string {
 		copy(out, defaultValue)
 	}
 	return out
+}
+
+func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return defaultValue
+	}
+
+	parsed, err := time.ParseDuration(value)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
 }

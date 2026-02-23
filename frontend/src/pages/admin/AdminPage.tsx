@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "react-oidc-context";
 import { Link } from "react-router-dom";
-import { Users, Activity, ArrowLeft } from "lucide-react";
+import { Users, Activity, ArrowLeft, Brain } from "lucide-react";
 
 import { getUsers } from "@features/admin/api/getUsers";
 import { getUserDetails } from "@features/admin/api/getUserDetails";
@@ -9,6 +9,7 @@ import { getAdminAuditLogs } from "@features/admin/api/getAdminAuditLogs";
 import { UsersTable } from "@features/admin/components/UsersTable";
 import { UserDetailModal } from "@features/admin/components/UserDetailModal";
 import { AuditLogTable } from "@features/admin/components/AuditLogTable";
+import { InsightsPanel } from "@features/admin/components/InsightsPanel";
 
 import type {
   AdminUserListItem,
@@ -22,7 +23,7 @@ import { ROUTES } from "@app/routes/routes";
 import { KleffDot } from "@shared/ui/KleffDot";
 import { Skeleton } from "@shared/ui/Skeleton";
 
-type TabType = "users" | "audit";
+type TabType = "users" | "audit" | "insights";
 
 export function AdminPage() {
   const auth = useAuth();
@@ -230,6 +231,17 @@ export function AdminPage() {
                 <Activity className="h-4 w-4" />
                 Audit Logs
               </button>
+              <button
+                onClick={() => setActiveTab("insights")}
+                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
+                  activeTab === "insights"
+                    ? "border-kleff-gold text-neutral-50"
+                    : "border-transparent text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
+                }`}
+              >
+                <Brain className="h-4 w-4" />
+                Insights
+              </button>
             </nav>
           </div>
 
@@ -268,6 +280,18 @@ export function AdminPage() {
                 state={auditState}
                 onStateChange={handleAuditStateChange}
               />
+            </div>
+          )}
+
+          {activeTab === "insights" && (
+            <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-6 shadow-xl backdrop-blur-sm">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-neutral-50">Cluster Insights</h2>
+                <p className="text-sm text-neutral-400">
+                  AI-enhanced recommendations and anomaly alerts generated from 7-day Prometheus analysis.
+                </p>
+              </div>
+              <InsightsPanel />
             </div>
           )}
         </div>
