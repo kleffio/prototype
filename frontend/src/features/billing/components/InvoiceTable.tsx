@@ -203,153 +203,154 @@ export default function InvoiceTable({ projectId }: InvoiceTableProps) {
       )}
 
       {/* Modal */}
-      {selectedInvoice && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => setSelectedInvoice(null)}
-        >
+      {selectedInvoice &&
+        createPortal(
           <div
-            className="w-full max-w-2xl rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={() => setSelectedInvoice(null)}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 p-5">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-emerald-500/10 p-2 ring-1 ring-emerald-500/20">
-                  <Receipt className="h-5 w-5 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-50">
-                    Invoice #{selectedInvoice.invoiceId.slice(0, 12)}
-                  </h3>
-                  <p className="text-xs text-neutral-500">
-                    {new Date(selectedInvoice.startDate).toLocaleDateString()} -{" "}
-                    {new Date(selectedInvoice.endDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedInvoice(null)}
-                className="rounded-lg p-2 transition-colors hover:bg-white/10"
-              >
-                <X className="h-5 w-5 text-neutral-400" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="space-y-5 p-5">
-              {/* Key Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
-                  <p className="mb-1 text-xs text-neutral-500">{t.status}</p>
-                  {getStatusBadge(selectedInvoice.status)}
-                </div>
-                <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
-                  <p className="mb-1 text-xs text-neutral-500">{t.project_id}</p>
-                  <p className="truncate text-sm font-medium text-neutral-200">
-                    {selectedInvoice.projectId}
-                  </p>
-                </div>
-              </div>
-
-              {/* Usage Breakdown */}
-              <div className="space-y-3 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                  <TrendingUp className="text-kleff-primary h-4 w-4" />
-                  {t.usage_breakdown}
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-400">CPU</span>
-                    <span className="font-medium text-neutral-200">
-                      {selectedInvoice.totalCPU.toFixed(2)} cores
-                    </span>
+            <div
+              className="w-full max-w-2xl rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-emerald-500/10 p-2 ring-1 ring-emerald-500/20">
+                    <Receipt className="h-5 w-5 text-emerald-400" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-400">RAM</span>
-                    <span className="font-medium text-neutral-200">
-                      {selectedInvoice.totalRAM.toFixed(2)} GB
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-400">Storage</span>
-                    <span className="font-medium text-neutral-200">
-                      {selectedInvoice.totalSTORAGE.toFixed(2)} GB
-                    </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-50">
+                      Invoice #{selectedInvoice.invoiceId.slice(0, 12)}
+                    </h3>
+                    <p className="text-xs text-neutral-500">
+                      {new Date(selectedInvoice.startDate).toLocaleDateString()} -{" "}
+                      {new Date(selectedInvoice.endDate).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Payment Summary */}
-              <div className="space-y-2 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                  <CreditCard className="h-4 w-4 text-emerald-400" />
-                  {t.payment_summary}
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-400">{t.subtotal}</span>
-                    <span className="font-medium text-neutral-200">
-                      ${selectedInvoice.subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-400">{t.taxes}</span>
-                    <span className="font-medium text-neutral-200">
-                      ${selectedInvoice.taxes.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-white/10 pt-2">
-                    <span className="font-semibold text-neutral-50">{t.total}</span>
-                    <span className="text-lg font-bold text-emerald-400">
-                      ${selectedInvoice.total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {payError && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3">
-                  <p className="text-sm text-red-400">{payError}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex gap-2 border-t border-white/10 p-5">
-              {selectedInvoice.status.toLowerCase() !== "paid" && (
-                <Button
-                  onClick={handlePay}
-                  disabled={payLoading}
-                  className="bg-gradient-kleff shadow-kleff-primary/20 flex-1 rounded-xl px-4 py-2.5 text-sm font-bold text-black shadow-lg"
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="rounded-lg p-2 transition-colors hover:bg-white/10"
                 >
-                  {payLoading ? (
-                    <>
-                      <Spinner size={16} />
-                      {t.processing}
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      {t.pay_now}
-                    </>
-                  )}
+                  <X className="h-5 w-5 text-neutral-400" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="space-y-5 p-5">
+                {/* Key Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
+                    <p className="mb-1 text-xs text-neutral-500">{t.status}</p>
+                    {getStatusBadge(selectedInvoice.status)}
+                  </div>
+                  <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
+                    <p className="mb-1 text-xs text-neutral-500">{t.project_id}</p>
+                    <p className="truncate text-sm font-medium text-neutral-200">
+                      {selectedInvoice.projectId}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Usage Breakdown */}
+                <div className="space-y-3 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
+                    <TrendingUp className="text-kleff-primary h-4 w-4" />
+                    {t.usage_breakdown}
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">CPU</span>
+                      <span className="font-medium text-neutral-200">
+                        {selectedInvoice.totalCPU.toFixed(2)} cores
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">RAM</span>
+                      <span className="font-medium text-neutral-200">
+                        {selectedInvoice.totalRAM.toFixed(2)} GB
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Storage</span>
+                      <span className="font-medium text-neutral-200">
+                        {selectedInvoice.totalSTORAGE.toFixed(2)} GB
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Summary */}
+                <div className="space-y-2 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
+                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    {t.payment_summary}
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">{t.subtotal}</span>
+                      <span className="font-medium text-neutral-200">
+                        ${selectedInvoice.subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">{t.taxes}</span>
+                      <span className="font-medium text-neutral-200">
+                        ${selectedInvoice.taxes.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-white/10 pt-2">
+                      <span className="font-semibold text-neutral-50">{t.total}</span>
+                      <span className="text-lg font-bold text-emerald-400">
+                        ${selectedInvoice.total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {payError && (
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3">
+                    <p className="text-sm text-red-400">{payError}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-2 border-t border-white/10 p-5">
+                {selectedInvoice.status.toLowerCase() !== "paid" && (
+                  <Button
+                    onClick={handlePay}
+                    disabled={payLoading}
+                    className="bg-gradient-kleff shadow-kleff-primary/20 flex-1 rounded-xl px-4 py-2.5 text-sm font-bold text-black shadow-lg"
+                  >
+                    {payLoading ? (
+                      <>
+                        <Spinner size={16} />
+                        {t.processing}
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        {t.pay_now}
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedInvoice(null)}
+                  className="rounded-xl px-4 py-2.5 text-sm"
+                >
+                  {t.close}
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedInvoice(null)}
-                className="rounded-xl px-4 py-2.5 text-sm"
-              >
-                {t.close}
-              </Button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </SoftPanel>
   );
 }
