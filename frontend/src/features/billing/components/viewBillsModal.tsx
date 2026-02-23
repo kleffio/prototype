@@ -108,24 +108,18 @@ export function BillingModal({ isOpen, onClose, projectId }: BillingModalProps) 
     }).format(amount);
   };
 
-  // const getStatusColor = (status: string) => {
-  //   switch (status.toUpperCase()) {
-  //     case "PAID":
-  //       return "success";
-  //     case "PENDING":
-  //       return "warning";
-  //     case "OVERDUE":
-  //       return "danger";
-  //     default:
-  //       return "secondary";
-  //   }
-  // };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-neutral-900 to-neutral-800 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4">
+    // Backdrop: covers full screen, scrollable to handle very tall content on small screens
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:items-center sm:p-6"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* Modal container: flex column so header/tabs/footer stay fixed, only content scrolls */}
+      <div className="relative my-auto flex w-full max-w-5xl flex-col rounded-2xl border border-white/10 bg-gradient-to-br from-neutral-900 to-neutral-800 shadow-2xl">
+        {/* Header — fixed, never scrolls */}
+        <div className="flex flex-shrink-0 items-center justify-between rounded-t-2xl border-b border-white/10 bg-white/5 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">
               <DollarSign className="h-5 w-5 text-white" />
@@ -143,8 +137,8 @@ export function BillingModal({ isOpen, onClose, projectId }: BillingModalProps) 
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-white/10 bg-white/5 px-6">
+        {/* Tabs — fixed, never scrolls */}
+        <div className="flex flex-shrink-0 border-b border-white/10 bg-white/5 px-6">
           <button
             onClick={() => setActiveTab("invoices")}
             className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
@@ -180,8 +174,8 @@ export function BillingModal({ isOpen, onClose, projectId }: BillingModalProps) 
           </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto p-6" style={{ maxHeight: "calc(90vh - 180px)" }}>
+        {/* Scrollable content — this is the ONLY part that scrolls */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex justify-center py-10">
               <Spinner />
@@ -228,11 +222,7 @@ export function BillingModal({ isOpen, onClose, projectId }: BillingModalProps) 
                               {formatCurrency(invoice.totalAmount)}
                             </TableCell>
                             <TableCell>
-                              <Badge
-                              // variant={getStatusColor(invoice.status)} className="text-xs"
-                              >
-                                {invoice.status}
-                              </Badge>
+                              <Badge>{invoice.status}</Badge>
                             </TableCell>
                             <TableCell className="text-xs text-neutral-300">
                               {invoice.createdAt}
@@ -340,8 +330,8 @@ export function BillingModal({ isOpen, onClose, projectId }: BillingModalProps) 
           )}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-white/10 bg-white/5 px-6 py-4">
+        {/* Footer — fixed, never scrolls */}
+        <div className="flex-shrink-0 rounded-b-2xl border-t border-white/10 bg-white/5 px-6 py-4">
           <div className="flex justify-end">
             <Button onClick={onClose} variant="ghost" className="rounded-full px-6 py-2 text-sm">
               Close
