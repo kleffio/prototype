@@ -1,4 +1,6 @@
 import { getLocale } from "@app/locales/locale";
+import enTranslations from "@app/locales/en/dashboard.json";
+import frTranslations from "@app/locales/fr/dashboard.json";
 import { CreateProjectModal } from "@features/projects/components/CreateProjectModal";
 import { getProjectUsage } from "@features/observability/api/getProjectMetrics";
 import type { ProjectUsage } from "@features/observability/types/projectUsage.types";
@@ -20,6 +22,8 @@ import {
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { TutorialSheet } from "./components/TutorialSheet";
 import { DiskGraph } from "./components/DiskGraph";
+
+const translations = { en: enTranslations, fr: frTranslations };
 
 export function DashboardPage() {
   const { projects: allProjects, isLoading: projectsLoading, reload } = useProjects();
@@ -47,6 +51,8 @@ export function DashboardPage() {
     }, 100);
     return () => clearInterval(interval);
   }, [locale]);
+
+  const t = translations[locale].dashboard;
 
   const fetchProjectMetrics = useCallback(async () => {
     if (projectsLoading) return;
@@ -108,6 +114,7 @@ export function DashboardPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="text-muted-foreground ml-2">{t.project_usage.loading}</span>
       </div>
     );
   }
@@ -115,15 +122,13 @@ export function DashboardPage() {
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4">
       {/* WCAG 2.0 AA: Main content with id for skip link target */}
-      <h1 className="sr-only">My Projects Dashboard</h1>
+      <h1 className="sr-only">{t.overview_title}</h1>
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">My Projects Dashboard</h2>
-          <p className="text-muted-foreground">
-            Resource usage and performance across your projects
-          </p>
+          <h2 className="text-2xl font-bold tracking-tight">{t.overview_title}</h2>
+          <p className="text-muted-foreground">{t.overview_subtitle}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -133,7 +138,7 @@ export function DashboardPage() {
             className="text-muted-foreground hover:text-foreground flex items-center gap-2"
           >
             <BookOpen className="h-4 w-4" />
-            Guide
+            {t.quick_actions}
           </Button>
           <Button
             variant="outline"
@@ -143,9 +148,9 @@ export function DashboardPage() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${loading || projectsLoading ? "animate-spin" : ""}`} />
-            Refresh
+            {t.refresh}
           </Button>
-          <Button onClick={() => setIsModalOpen(true)}>New Project</Button>
+          <Button onClick={() => setIsModalOpen(true)}>{t.deploy_new_project}</Button>
         </div>
       </div>
 
@@ -156,37 +161,41 @@ export function DashboardPage() {
           aria-live="assertive"
           className="border-destructive/20 bg-destructive/10 text-destructive rounded-lg border p-4"
         >
-          {error}
+          {t.project_usage.error}
         </div>
       )}
 
       {/* Project Overview Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MiniCard title="Active Projects">
+        <MiniCard title={t.project_overview}>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{activeProjects}</div>
             <Server className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
-        <MiniCard title="Projects with Data">
+        <MiniCard title={t.projects_with_data || t.metrics_overview}>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">{projectsWithUsage}</div>
             <Activity className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
-        <MiniCard title="Real-time CPU Load">
+        <MiniCard title={t.cpu_usage || t.performance}>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{totalCpuCores.toFixed(2)} cores</div>
+            <div className="text-2xl font-bold">
+              {totalCpuCores.toFixed(2)} {t.cores}
+            </div>
             <Cpu className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
-        <MiniCard title="Real-time Memory">
+        <MiniCard title={t.memory_utilization}>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">{totalMemoryGB.toFixed(2)} GB</div>
+            <div className="text-2xl font-bold">
+              {totalMemoryGB.toFixed(2)} {t.gb}
+            </div>
             <HardDrive className="text-primary h-5 w-5" />
           </div>
         </MiniCard>
-        <MiniCard title="Current Disk I/O">
+        <MiniCard title={t.avg_disk || t.current_disk_io || "Current Disk I/O"}>
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-lg font-bold">
@@ -210,22 +219,29 @@ export function DashboardPage() {
           <div className="mb-4 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-neutral-400" aria-hidden="true" />
             <h3 id="resource-usage-heading" className="text-lg font-semibold text-neutral-50">
-              Resource Usage by Project
+              {t.project_metrics?.title || t.project_usage.title || "Resource Usage by Project"}
             </h3>
           </div>
           <div className="overflow-x-auto">
             <Table aria-labelledby="resource-usage-heading">
               <caption className="sr-only">
-                Resource usage metrics for all projects including CPU cores, memory usage, disk I/O,
-                and measurement window.
+                {t.project_metrics?.title ||
+                  t.project_usage.title ||
+                  "Resource usage metrics for all projects including CPU cores, memory usage, disk I/O, and measurement window."}
               </caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col">Project</TableHead>
-                  <TableHead scope="col">CPU Cores</TableHead>
-                  <TableHead scope="col">Memory (GB)</TableHead>
-                  <TableHead scope="col">Disk (KB/s)</TableHead>
-                  <TableHead scope="col">Window</TableHead>
+                  <TableHead scope="col">
+                    {t.resource_attribution?.headers?.project || t.project_filter || "Project"}
+                  </TableHead>
+                  <TableHead scope="col">
+                    {t.project_metrics?.avg_cpu || t.cpu_usage || "CPU Cores"}
+                  </TableHead>
+                  <TableHead scope="col">
+                    {t.project_metrics?.avg_memory || t.memory_utilization || "Memory (GB)"}
+                  </TableHead>
+                  <TableHead scope="col">{t.project_metrics?.avg_disk || "Disk (KB/s)"}</TableHead>
+                  <TableHead scope="col">{t.project_usage?.time_window || "Window"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -271,17 +287,15 @@ export function DashboardPage() {
       {projects.length === 0 && !projectsLoading && (
         <div className="py-12 text-center">
           <Server className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-semibold">No Projects Yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first project to start monitoring resources
-          </p>
-          <Button onClick={() => setIsModalOpen(true)}>Create Project</Button>
+          <h3 className="mb-2 text-lg font-semibold">{t.no_projects_available}</h3>
+          <p className="text-muted-foreground mb-4">{t.create_new_deployment}</p>
+          <Button onClick={() => setIsModalOpen(true)}>{t.deploy_new_project}</Button>
         </div>
       )}
 
       {/* Last Update */}
       <div className="text-muted-foreground text-center text-sm">
-        Last updated: {lastUpdate.toLocaleTimeString()}
+        {t.last_updated} {lastUpdate.toLocaleTimeString()}
       </div>
 
       <CreateProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
