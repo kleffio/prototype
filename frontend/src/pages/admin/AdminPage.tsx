@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "react-oidc-context";
 import { Link } from "react-router-dom";
-import { Users, Activity, ArrowLeft, Brain } from "lucide-react";
+import { Users, Activity, Brain } from "lucide-react";
 
 import { getUsers } from "@features/admin/api/getUsers";
 import { getUserDetails } from "@features/admin/api/getUserDetails";
@@ -19,7 +19,6 @@ import type {
   AuditLogsTableState
 } from "@features/admin/types/admin";
 
-import { ROUTES } from "@app/routes/routes";
 import { KleffDot } from "@shared/ui/KleffDot";
 import { Skeleton } from "@shared/ui/Skeleton";
 
@@ -168,32 +167,6 @@ export function AdminPage() {
         <div className="bg-modern-noise bg-kleff-spotlight h-full w-full opacity-60" />
         <div className="bg-kleff-grid absolute inset-0 opacity-[0.25]" />
       </div>
-
-      {/* WCAG 2.0 AA: Header landmark */}
-      <header className="relative z-50 border-b border-white/10 bg-[#0f0f10]/40 backdrop-blur-xl" role="banner">
-        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-[#0f0f10]/60 via-[#0f0f10]/50 to-[#0f0f10]/60" />
-        <div className="pointer-events-none absolute inset-0 z-0 shadow-[0_1px_0_0_rgba(255,255,255,0.05)]" />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link to={ROUTES.DASHBOARD} className="group flex items-center gap-3 transition">
-              <KleffDot variant="full" size={24} />
-              <span className="text-sm font-semibold tracking-[0.32em] text-neutral-100 uppercase">
-                LEFF
-              </span>
-              <span className="mx-2 text-neutral-600">|</span>
-              <span className="text-base font-medium text-neutral-400">Admin Panel</span>
-            </Link>
-            <Link
-              to={ROUTES.DASHBOARD}
-              className="flex items-center gap-2 text-sm text-neutral-400 transition hover:text-neutral-50"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="relative z-0 flex-1">

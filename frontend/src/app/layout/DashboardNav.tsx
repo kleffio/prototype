@@ -34,6 +34,9 @@ export function DashboardNav() {
   const { isPlatformAdmin } = usePlatformAdmin();
   const [locale, setLocaleState] = useState(getLocale());
 
+  // Check if we're on the system admin page (no brand header)
+  const isSystemAdminPage = location.pathname === "/dashboard/systems";
+
   useEffect(() => {
     const interval = setInterval(() => {
       const currentLocale = getLocale();

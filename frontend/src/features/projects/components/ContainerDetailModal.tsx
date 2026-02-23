@@ -27,6 +27,7 @@ import { getLocale } from "@app/locales/locale";
 import { SecureComponent } from "@app/components/SecureComponent";
 import { BuildLogsSheet } from "./BuildLogsSheet";
 import { FileText } from "lucide-react";
+import { useWebsiteStatus } from "@features/projects/hooks/useWebsiteStatus";
 
 const translations = {
   en: enTranslations,
@@ -58,6 +59,10 @@ export function ContainerDetailModal({
   const [showBuildLogs, setShowBuildLogs] = React.useState(false);
   const t = translations[locale].projectDetail.containerDetail;
 
+  // Get the app URL for website status check
+  const appUrl = container ? `https://app-${container.containerId}.kleff.io` : "";
+  const { status: websiteStatus } = useWebsiteStatus(appUrl);
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       const currentLocale = getLocale();
@@ -69,8 +74,6 @@ export function ContainerDetailModal({
   }, [locale]);
 
   if (!isOpen || !container) return null;
-
-  const appUrl = `https://app-${container.containerId}.kleff.io`;
 
   const handleCopyId = async () => {
     try {
@@ -116,21 +119,21 @@ export function ContainerDetailModal({
                 <h2 className="text-xl font-semibold text-white">{container.name}</h2>
                 <Badge
                   variant={
-                    container.status?.toLowerCase().includes("running")
+                    websiteStatus === "up"
                       ? "success"
-                      : container.status?.toLowerCase().includes("stopped")
+                      : websiteStatus === "down"
                         ? "secondary"
                         : "warning"
                   }
                   className="mt-1 text-xs"
                 >
-                  {container.status?.toLowerCase().includes("running") && (
+                  {websiteStatus === "up" && (
                     <span className="relative mr-1.5 inline-flex h-1.5 w-1.5">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/40" />
                       <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     </span>
                   )}
-                  {container.status || t.unknown}
+                  {websiteStatus === "up" ? "Up" : websiteStatus === "down" ? "Down" : "Checking..."}
                 </Badge>
               </div>
             </div>
