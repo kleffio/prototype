@@ -35,7 +35,7 @@ export class MetricsDashboardPage extends BasePage {
 
     /** Confirms the inline red error alert is visible with the exact FDUC text. */
     async expectErrorAlert(
-        text = "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible."
+        text = "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible.",
     ) {
         await expect(this.errorBanner()).toBeVisible({ timeout: 15_000 });
         await expect(this.errorBanner()).toContainText(text);
@@ -77,7 +77,7 @@ export class MetricsDashboardPage extends BasePage {
 
     nodeCards() {
         return this.page.locator(
-            ".nodes-scroll-container .rounded-lg.border.border-neutral-700.bg-neutral-800"
+            ".nodes-scroll-container .rounded-lg.border.border-neutral-700.bg-neutral-800",
         );
     }
 
@@ -114,7 +114,7 @@ export class MetricsDashboardPage extends BasePage {
                         totalPods: 12,
                         totalNamespaces: 4,
                         cpuUsagePercent: 42.5,
-                        memoryUsagePercent: 67.1
+                        memoryUsagePercent: 67.1,
                     },
                     requestsMetric: {
                         title: "Requests/s",
@@ -123,7 +123,7 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "+5.0%",
                         changeLabel: "vs last window",
                         status: "good",
-                        sparkline: []
+                        sparkline: [],
                     },
                     podsMetric: {
                         title: "Running Pods",
@@ -132,7 +132,7 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "+0.0%",
                         changeLabel: "stable",
                         status: "excellent",
-                        sparkline: []
+                        sparkline: [],
                     },
                     nodesMetric: {
                         title: "Nodes",
@@ -141,7 +141,7 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "+0.0%",
                         changeLabel: "all healthy",
                         status: "excellent",
-                        sparkline: []
+                        sparkline: [],
                     },
                     tenantsMetric: {
                         title: "Tenants",
@@ -150,14 +150,14 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "+0.0%",
                         changeLabel: "namespaces",
                         status: "good",
-                        sparkline: []
+                        sparkline: [],
                     },
                     cpuUtilization: { currentValue: 42.5, changePercent: 2.1, trend: "up", history: [] },
                     memoryUtilization: {
                         currentValue: 67.1,
                         changePercent: -0.5,
                         trend: "stable",
-                        history: []
+                        history: [],
                     },
                     nodes: [
                         {
@@ -165,19 +165,19 @@ export class MetricsDashboardPage extends BasePage {
                             cpuUsagePercent: 35.0,
                             memoryUsagePercent: 60.0,
                             podCount: 6,
-                            status: "Ready"
+                            status: "Ready",
                         },
                         {
                             name: "node-2",
                             cpuUsagePercent: 50.0,
                             memoryUsagePercent: 74.2,
                             podCount: 6,
-                            status: "Ready"
-                        }
+                            status: "Ready",
+                        },
                     ],
                     namespaces: [
                         { name: "default", podCount: 4, cpuUsage: 20.0, memoryUsage: 30.0 },
-                        { name: "kube-system", podCount: 8, cpuUsage: 22.5, memoryUsage: 37.1 }
+                        { name: "kube-system", podCount: 8, cpuUsage: 22.5, memoryUsage: 37.1 },
                     ],
                     databaseIOMetrics: {
                         diskReadBytesPerSec: 0,
@@ -192,13 +192,13 @@ export class MetricsDashboardPage extends BasePage {
                         diskWriteHistory: [],
                         networkReceiveHistory: [],
                         networkTransmitHistory: [],
-                        source: "mock"
+                        source: "mock",
                     },
                     uptimeMetrics: { services: [] },
                     systemUptime: 86400,
                     systemUptimeFormatted: "1d 0h 0m",
-                    ...overrides
-                })
+                    ...overrides,
+                }),
             });
         });
     }
@@ -233,7 +233,7 @@ export class MetricsDashboardPage extends BasePage {
                         totalPods: 4,
                         totalNamespaces: 2,
                         cpuUsagePercent: null, // null field – Extension 10a
-                        memoryUsagePercent: null // null field – Extension 10a
+                        memoryUsagePercent: null, // null field – Extension 10a
                     },
                     requestsMetric: null, // null card – Extension 6a (query timed out)
                     podsMetric: {
@@ -243,7 +243,7 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "+0.0%",
                         changeLabel: "available",
                         status: "good",
-                        sparkline: []
+                        sparkline: [],
                     },
                     nodesMetric: {
                         title: "Nodes",
@@ -252,7 +252,7 @@ export class MetricsDashboardPage extends BasePage {
                         changePercent: "-50.0%",
                         changeLabel: "one notready",
                         status: "warning",
-                        sparkline: []
+                        sparkline: [],
                     },
                     tenantsMetric: null, // null card – Extension 10a
                     cpuUtilization: null,
@@ -263,15 +263,15 @@ export class MetricsDashboardPage extends BasePage {
                             cpuUsagePercent: 0,
                             memoryUsagePercent: 0,
                             podCount: 4,
-                            status: "Ready"
+                            status: "Ready",
                         },
                         {
                             name: "node-2",
                             cpuUsagePercent: 0,
                             memoryUsagePercent: 0,
                             podCount: 0,
-                            status: "NotReady"
-                        }
+                            status: "NotReady",
+                        },
                     ],
                     namespaces: [],
                     databaseIOMetrics: {
@@ -287,12 +287,12 @@ export class MetricsDashboardPage extends BasePage {
                         diskWriteHistory: [],
                         networkReceiveHistory: [],
                         networkTransmitHistory: [],
-                        source: "mock-partial"
+                        source: "mock-partial",
                     },
                     uptimeMetrics: { services: [] },
                     systemUptime: 0,
-                    systemUptimeFormatted: "0d 0h 0m"
-                })
+                    systemUptimeFormatted: "0d 0h 0m",
+                }),
             });
         });
     }

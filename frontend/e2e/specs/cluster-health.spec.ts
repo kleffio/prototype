@@ -74,9 +74,8 @@ test.describe("MSS Steps 3–5: API Request", () => {
      */
     test("calls GET /api/v1/systems/metrics?duration=1h on mount", async ({ page }) => {
         const requestPromise = page.waitForRequest(
-            (req) =>
-                req.url().includes("/api/v1/systems/metrics") && req.method() === "GET",
-            { timeout: 15_000 }
+            (req) => req.url().includes("/api/v1/systems/metrics") && req.method() === "GET",
+            { timeout: 15_000 },
         );
 
         const metricsPage = new MetricsDashboardPage(page);
@@ -106,9 +105,8 @@ test.describe("MSS Steps 3–5: API Request", () => {
 
         const nextRequestPromise = page.waitForRequest(
             (req) =>
-                req.url().includes("/api/v1/systems/metrics") &&
-                req.url().includes("duration=24h"),
-            { timeout: 15_000 }
+                req.url().includes("/api/v1/systems/metrics") && req.url().includes("duration=24h"),
+            { timeout: 15_000 },
         );
 
         await metricsPage.selectTimeRange("24h");
@@ -188,18 +186,19 @@ test.describe("MSS Steps 10–11: Postcondition Assertions", () => {
      *
      * Covers: FDUC MSS 10–11, Postcondition
      */
-    test("postcondition: MetricCard elements and NodesList row are present after load", async ({
-        page
-    }) => {
-        const metricsPage = new MetricsDashboardPage(page);
-        await metricsPage.mockSuccessResponse();
-        await metricsPage.open();
-        await metricsPage.expectLoaded();
-        await metricsPage.expectReady();
+    test(
+        "postcondition: MetricCard elements and NodesList row are present after load",
+        async ({ page }) => {
+            const metricsPage = new MetricsDashboardPage(page);
+            await metricsPage.mockSuccessResponse();
+            await metricsPage.open();
+            await metricsPage.expectLoaded();
+            await metricsPage.expectReady();
 
-        await metricsPage.expectMetricCardsPresent(4);
-        await metricsPage.expectAtLeastOneNodeRow();
-    });
+            await metricsPage.expectMetricCardsPresent(4);
+            await metricsPage.expectAtLeastOneNodeRow();
+        },
+    );
 
     /**
      * MSS Step 3 (manual refresh) – Refresh button triggers a new API call.
@@ -214,7 +213,7 @@ test.describe("MSS Steps 10–11: Postcondition Assertions", () => {
 
         const refreshPromise = page.waitForRequest(
             (req) => req.url().includes("/api/v1/systems/metrics"),
-            { timeout: 10_000 }
+            { timeout: 10_000 },
         );
         await metricsPage.clickRefresh();
         await refreshPromise;
@@ -233,20 +232,21 @@ test.describe("Extension 6a: Prometheus Timeout → Partial Data", () => {
      *
      * Covers: FDUC Extension 6a
      */
-    test("shows zero-value cards and no error when some Prometheus fields are null", async ({
-        page
-    }) => {
-        const metricsPage = new MetricsDashboardPage(page);
-        await metricsPage.mockPartialDataResponse();
-        await metricsPage.open();
-        await metricsPage.expectLoaded();
+    test(
+        "shows zero-value cards and no error when some Prometheus fields are null",
+        async ({ page }) => {
+            const metricsPage = new MetricsDashboardPage(page);
+            await metricsPage.mockPartialDataResponse();
+            await metricsPage.open();
+            await metricsPage.expectLoaded();
 
-        // Extension 6a: system returns 200 OK – no error alert shown
-        await metricsPage.expectReady();
+            // Extension 6a: system returns 200 OK – no error alert shown
+            await metricsPage.expectReady();
 
-        // UI does not crash – the page container is still present
-        await expect(page.getByTestId("systems-page")).toBeVisible();
-    });
+            // UI does not crash – the page container is still present
+            await expect(page.getByTestId("systems-page")).toBeVisible();
+        },
+    );
 
     /**
      * Extension 6a – Non-null cards still render normally even when other
@@ -254,18 +254,19 @@ test.describe("Extension 6a: Prometheus Timeout → Partial Data", () => {
      *
      * Covers: FDUC Extension 6a (partial render still works)
      */
-    test("non-null metric cards still render when other Prometheus queries timed out", async ({
-        page
-    }) => {
-        const metricsPage = new MetricsDashboardPage(page);
-        await metricsPage.mockPartialDataResponse();
-        await metricsPage.open();
-        await metricsPage.expectLoaded();
+    test(
+        "non-null metric cards still render when other Prometheus queries timed out",
+        async ({ page }) => {
+            const metricsPage = new MetricsDashboardPage(page);
+            await metricsPage.mockPartialDataResponse();
+            await metricsPage.open();
+            await metricsPage.expectLoaded();
 
-        // podsMetric and nodesMetric are non-null in the partial response
-        await expect(page.getByText("Running Pods")).toBeVisible({ timeout: 15_000 });
-        await expect(page.getByText("Nodes")).toBeVisible({ timeout: 15_000 });
-    });
+            // podsMetric and nodesMetric are non-null in the partial response
+            await expect(page.getByText("Running Pods")).toBeVisible({ timeout: 15_000 });
+            await expect(page.getByText("Nodes")).toBeVisible({ timeout: 15_000 });
+        },
+    );
 
     /**
      * Extension 6a – NodesList still shows available nodes even with partial data.
@@ -287,16 +288,17 @@ test.describe("Extension 6a: Prometheus Timeout → Partial Data", () => {
      *
      * Covers: FDUC Extension 6a (degraded node display)
      */
-    test("NodesList shows NotReady status for a degraded node in partial-data response", async ({
-        page
-    }) => {
-        const metricsPage = new MetricsDashboardPage(page);
-        await metricsPage.mockPartialDataResponse();
-        await metricsPage.open();
-        await metricsPage.expectLoaded();
+    test(
+        "NodesList shows NotReady status for a degraded node in partial-data response",
+        async ({ page }) => {
+            const metricsPage = new MetricsDashboardPage(page);
+            await metricsPage.mockPartialDataResponse();
+            await metricsPage.open();
+            await metricsPage.expectLoaded();
 
-        await expect(page.getByText("NotReady")).toBeVisible({ timeout: 15_000 });
-    });
+            await expect(page.getByText("NotReady")).toBeVisible({ timeout: 15_000 });
+        },
+    );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -361,7 +363,7 @@ test.describe("Exception: Service Unreachable → Error Alert", () => {
         await metricsPage.expectLoaded();
 
         await metricsPage.expectErrorAlert(
-            "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible."
+            "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible.",
         );
     });
 
@@ -371,18 +373,19 @@ test.describe("Exception: Service Unreachable → Error Alert", () => {
      *
      * Covers: FDUC Exception (network error variant)
      */
-    test("displays inline red error alert on network error (service unreachable)", async ({
-        page
-    }) => {
-        const metricsPage = new MetricsDashboardPage(page);
-        await metricsPage.mockNetworkError();
-        await metricsPage.open();
-        await metricsPage.expectLoaded();
+    test(
+        "displays inline red error alert on network error (service unreachable)",
+        async ({ page }) => {
+            const metricsPage = new MetricsDashboardPage(page);
+            await metricsPage.mockNetworkError();
+            await metricsPage.open();
+            await metricsPage.expectLoaded();
 
-        await metricsPage.expectErrorAlert(
-            "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible."
-        );
-    });
+            await metricsPage.expectErrorAlert(
+                "Unable to retrieve cluster metrics. Please verify the observability service is running and accessible.",
+            );
+        },
+    );
 
     /**
      * Exception – Error banner carries the correct data-testid="systems-error"
