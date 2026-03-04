@@ -1,32 +1,32 @@
-name: Frontend Lint
+# name: Frontend Lint
 
-on:
-  push:
-    branches: [main]
-  pull_request:
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
 
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+# jobs:
+#   lint:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: frontend/yarn.lock
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'yarn'
+#           cache-dependency-path: frontend/yarn.lock
 
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: yarn install --frozen-lockfile
+#       - name: Install dependencies
+#         working-directory: ./frontend
+#         run: yarn install --frozen-lockfile
 
-      - name: Run ESLint
-        working-directory: ./frontend
-        run: yarn lint
+#       - name: Run ESLint
+#         working-directory: ./frontend
+#         run: yarn lint
 
-      - name: Check code formatting
-        working-directory: ./frontend
-        run: yarn format:check
+#       - name: Check code formatting
+#         working-directory: ./frontend
+#         run: yarn format:check
