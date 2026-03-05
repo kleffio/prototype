@@ -273,5 +273,38 @@ test.describe("Container Logs", () => {
 
     // Verify inputs reset (Search is empty)
     await expect(page.getByPlaceholder("Search logs...")).toBeEmpty();
+
+  });
+
+  test("displays error card when observability service is unreachable", async ({ page }) => {
+    const projectsPage = new ProjectsPage(page);
+    await projectsPage.open();
+    await projectsPage.expectLoaded();
+
+    const projectCell = page.getByRole("cell", { name: projectName, exact: true });
+    await projectCell.click();
+
+    const detailPage = new ProjectDetailPage(page);
+    await detailPage.expectLoaded();
+    await detailPage.expectRunningContainersSection();
+    await detailPage.expectContainerExists(containerName);
+
+    // Intercept logs API and mock 500 error
+    await page.route("**/api/v1/systems/logs/project-containers", route => {
+      route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({}) });
+    });
+
+    await detailPage.clickViewLogs(containerName);
+    await detailPage.expectLogsSheetOpen(containerName);
+
+    // Wait for fetch to complete
+    await page.waitForTimeout(2000);
+
+    // Assert error card is visible
+    await expect(page.getByText(/network issue/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /try again/i })).toBeVisible();
+
+    // Clean up route mock
+    await page.unroute("**/api/v1/systems/logs/project-containers");
   });
 });
