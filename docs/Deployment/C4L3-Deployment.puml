@@ -1,0 +1,84 @@
+@startuml Kleff Hosting C4L3 - Deployment
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Level 3 - Component Diagram for Deployment Service (Container Deployment & Runtime)
+
+' ==== External Containers / Systems (from C4L2) ====
+Container(spa, "Kleff Dashboard (SPA)", "TypeScript, React", "Frontend for triggering deployments and managing containers.")
+Container(project_svc, "Project Management Service", "Java, Spring Boot", "Validates project ownership and project-level permissions.")
+Container(node_agent, "Node Agent", "Go daemon", "Runs on compute nodes, pulls images, starts containers, streams metrics/logs.")
+ContainerDb(deployment_db, "deployment-db", "PostgreSQL", "Stores Deployments and Container instances.")
+System_Ext(git_provider, "Git Provider", "GitHub/GitLab", "Hosts repositories and sends webhooks for docker-compose.yml changes.")
+
+' ==== Deployment Service Boundary ====
+Container_Boundary(deploy_svc, "Deployment Service") {
+
+  ' ---- API Layer (Controllers) ----
+  Component(deploy_api, "Deployment API Controller", "REST Controller", "Handles deployment requests, rollout history, and rollback operations (/api/deployments/*).")
+
+  Component(container_api, "Container API Controller", "REST Controller", "Exposes operations for listing containers, restarting, and stopping them (/api/containers/*).")
+
+  Component(git_webhook_api, "Git Webhook Controller", "Webhook Endpoint", "Receives webhooks from Git Provider to trigger automatic deployments on push/tag events.")
+
+  ' ---- Application / Service Layer ----
+  Component(deploy_app_svc, "Deployment Orchestration Service", "Application Service", "Coordinates deployments: validates permissions, fetches compose config, persists Deployment, and instructs Node Agents.")
+
+  Component(container_lifecycle_svc, "Container Lifecycle Service", "Application Service", "Handles container-level operations: restart, stop, health checks, and status updates.")
+
+  Component(webhook_deploy_svc, "Webhook Deployment Service", "Application Service", "Transforms Git webhooks into Deployment commands based on project configuration.")
+
+  ' ---- Domain Layer ----
+  Component(deployment_domain, "Deployment Aggregate", "Domain Model", "Implements Deployment invariants: immutable commit, status transitions, and container membership.")
+
+  Component(container_domain, "Container Entity", "Domain Model", "Represents a single runtime container: status, node, and mapping back to a Deployment.")
+
+  Component(domain_events, "Deployment Domain Event Publisher", "Domain Service", "Publishes events (DeploymentStarted, DeploymentSucceeded, DeploymentFailed, ContainerUpdated).")
+
+  ' ---- Infrastructure / Adapters ----
+  Component(deployment_repo, "DeploymentRepository", "Repository Adapter", "Persists and retrieves Deployment aggregates and Container entities from deployment-db.")
+
+  Component(project_client, "ProjectServiceClient", "Integration Adapter", "Validates project ownership and DEPLOY permission, reads deployment configuration from Project Management Service.")
+
+  Component(node_agent_client, "NodeAgentClient", "Integration Adapter", "Sends deployment plans to Node Agents (create/update/stop containers).")
+
+  Component(git_client, "GitClient", "Integration Adapter", "Clones repositories and reads docker-compose.yml at a given commit/branch.")
+}
+
+' ==== Relationships: SPA -> Deployment Service ====
+Rel(spa, deploy_api, "Triggers deployments, views history via /api/deployments/*", "JSON/REST/HTTPS (Bearer)")
+Rel(spa, container_api, "Manages runtime containers via /api/containers/*", "JSON/REST/HTTPS (Bearer)")
+
+' ==== Relationships: External Systems -> Deployment Service ====
+Rel(git_provider, git_webhook_api, "Sends push/tag webhooks", "HTTPS/Webhook")
+
+' ==== API -> Application Layer ====
+Rel(deploy_api, deploy_app_svc, "Invokes", "Method calls")
+Rel(container_api, container_lifecycle_svc, "Invokes", "Method calls")
+Rel(git_webhook_api, webhook_deploy_svc, "Invokes", "Method calls")
+
+' ==== Application -> Domain & Adapters ====
+Rel(deploy_app_svc, project_client, "Validates project ownership & DEPLOY permission", "JSON/REST/HTTPS")
+Rel(deploy_app_svc, git_client, "Fetches docker-compose.yml for a specific commit", "Git/HTTPS")
+Rel(deploy_app_svc, deployment_repo, "Creates/updates Deployment & Containers", "Repository API")
+Rel(deploy_app_svc, deployment_domain, "Applies deployment domain rules", "Method calls")
+Rel(deploy_app_svc, node_agent_client, "Sends deployment plan to target nodes", "gRPC/HTTP")
+Rel(deploy_app_svc, domain_events, "Publishes deployment lifecycle events", "Event dispatch")
+
+Rel(container_lifecycle_svc, deployment_repo, "Reads/updates container state", "Repository API")
+Rel(container_lifecycle_svc, container_domain, "Applies container lifecycle rules", "Method calls")
+Rel(container_lifecycle_svc, node_agent_client, "Instructs nodes to restart/stop containers", "gRPC/HTTP")
+Rel(container_lifecycle_svc, domain_events, "Publishes ContainerUpdated events", "Event dispatch")
+
+Rel(webhook_deploy_svc, project_client, "Resolves project from webhook repository URL", "JSON/REST/HTTPS")
+Rel(webhook_deploy_svc, git_client, "Fetches compose config for auto-deploy", "Git/HTTPS")
+Rel(webhook_deploy_svc, deploy_app_svc, "Initiates Deployment based on webhook", "Method calls")
+
+' ==== Adapters -> External Systems ====
+Rel(deployment_repo, deployment_db, "Reads/Writes Deployments & Containers", "SQL")
+Rel(project_client, project_svc, "Queries project config & permissions", "JSON/REST/HTTPS")
+Rel(node_agent_client, node_agent, "Sends deployment & container commands", "gRPC/HTTP")
+Rel(git_client, git_provider, "Clones repos & reads docker-compose.yml", "Git/HTTPS")
+
+@enduml

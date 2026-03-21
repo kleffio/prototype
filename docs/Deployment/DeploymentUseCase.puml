@@ -1,0 +1,37 @@
+@startuml Deployment
+left to right direction
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor #455A64
+  RoundCorner 14
+}
+
+actor "Developer" as Dev #silver
+actor "Git Provider" as Git #purple
+
+rectangle "Kleff Hosting Platform" {
+  rectangle "Deployment" #FFF9C4 {
+
+    usecase "UC-20: Deploy Application" as UC20
+    usecase "UC-21: Update Application" as UC21
+    usecase "UC-22: Rollback Deployment" as UC22
+    usecase "UC-23: Stop/Start Container" as UC23
+    usecase "UC-24: View Deployment History" as UC24
+  }
+}
+' Actors
+Dev -- UC20
+Dev -- UC21
+Dev -- UC22
+Dev -- UC23
+Dev -- UC24
+
+Git ..> UC20 : <<system trigger>>\nGit webhook
+
+' Relationships
+UC20 ..> UC24 : <<includes>>
+UC21 .> UC20 : <<extends>>
+UC22 .> UC20 : <<extends>>
+
+@enduml

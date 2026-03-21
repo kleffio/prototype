@@ -1,0 +1,121 @@
+@startuml Kleff Developer Deployment
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Deployment Diagram for Kleff Hosting Platform - Development Environment
+
+' Developer Workstation
+Deployment_Node(dev_machine, "Developer Laptop", "Windows 11 / macOS / Linux") {
+    Deployment_Node(browser, "Web Browser", "Chrome, Firefox, Safari, or Edge") {
+        Container(spa_dev, "Kleff Dashboard (SPA)", "React, TypeScript, Vite", "Runs locally on http://localhost:5173\nDevelops and tests UI components")
+    }
+    
+    Deployment_Node(ide, "IDE", "VS Code, IntelliJ IDEA") {
+        Container(backend_dev, "Backend Services (Local)", "Go, Java Spring Boot", "Runs microservices locally\nfor development and testing")
+    }
+    
+    Deployment_Node(docker_desktop, "Docker Desktop", "Docker Engine") {
+        ContainerDb(postgres_local, "PostgreSQL (Local)", "PostgreSQL 15", "Local database for\ndevelopment")
+        
+        Container(redis_local, "Redis (Local)", "Redis 7", "Local cache for\nsession management")
+        
+        Container(authentik_local, "Authentik (Local)", "Authentik OIDC", "Local identity provider\nfor authentication testing")
+    }
+    
+    Deployment_Node(git_client, "Git Client", "Git CLI / GitHub Desktop") {
+        Container(source_code, "Source Repository", "Git", "Local clone of\nKleff repositories")
+    }
+}
+
+' Development Kubernetes Cluster
+Deployment_Node(k8s_dev, "Development Kubernetes Cluster", "K3s / Minikube / Kind (Local) or GKE Dev") {
+    
+    Deployment_Node(gateway_node, "Ingress Controller", "Istio Gateway") {
+        Container(istio_gateway, "API Gateway", "Istio/Envoy", "Routes traffic to backend services\nHandles TLS termination")
+    }
+    
+    Deployment_Node(backend_pods, "Backend Service Pods", "Kubernetes Pods") {
+        Container(identity_pod, "Identity Service", "Java Spring Boot\nDocker Container", "User management\nand authentication")
+        
+        Container(project_pod, "Project Service", "Java Spring Boot\nDocker Container", "Project and collaborator\nmanagement")
+        
+        Container(deploy_pod, "Deployment Service", "Go\nDocker Container", "Container orchestration\nand deployment")
+        
+        Container(obs_pod, "Observability Service", "Go\nDocker Container", "Metrics and log collection")
+        
+        Container(billing_pod, "Billing Service", "Java Spring Boot\nDocker Container", "Usage tracking\nand invoicing")
+    }
+    
+    Deployment_Node(data_pods, "Data Layer Pods", "Kubernetes StatefulSets") {
+        ContainerDb(postgres_k8s, "PostgreSQL Cluster", "PostgreSQL 15\nStatefulSet", "Primary database for\nall bounded contexts")
+        
+        ContainerDb(timescale_k8s, "TimescaleDB", "TimescaleDB\nStatefulSet", "Time-series metrics\nand observability data")
+        
+        Container(redis_k8s, "Redis Cluster", "Redis 7\nStatefulSet", "Distributed cache\nfor sessions")
+    }
+    
+    Deployment_Node(agent_daemonset, "Node Agent", "DaemonSet") {
+        Container(node_agent, "Node Agent", "Go Daemon", "Monitors containers\nCollects metrics and logs")
+    }
+}
+
+' External Services (Cloud)
+Deployment_Node(external_services, "External Services", "Cloud / SaaS") {
+    Deployment_Node(git_provider, "Git Provider", "GitHub / GitLab SaaS") {
+        Container(github, "GitHub API", "REST API", "Source code repositories\nWebhook delivery")
+    }
+    
+    Deployment_Node(secrets_mgr, "Secrets Management", "Doppler SaaS") {
+        Container(doppler, "Doppler API", "REST API", "Environment variables\nand secrets storage")
+    }
+    
+    Deployment_Node(email_service, "Email Service", "Brevo SaaS") {
+        Container(brevo, "Brevo SMTP", "SMTP/API", "Transactional email\ndelivery")
+    }
+    
+    Deployment_Node(payment_gw, "Payment Gateway", "Stripe SaaS") {
+        Container(stripe, "Stripe API", "REST API", "Payment processing\nand subscriptions")
+    }
+}
+
+' CI/CD Pipeline
+Deployment_Node(cicd, "CI/CD Pipeline", "GitHub Actions") {
+    Container(gh_actions, "GitHub Actions", "Workflow Runner", "Automated build, test,\nand deployment pipeline")
+}
+
+' Relationships
+Rel(spa_dev, istio_gateway, "Makes API calls to", "HTTPS/JSON")
+Rel(backend_dev, postgres_local, "Connects to", "JDBC/TCP")
+Rel(backend_dev, redis_local, "Caches data in", "Redis Protocol")
+Rel(backend_dev, authentik_local, "Validates tokens with", "OIDC/HTTPS")
+
+Rel(istio_gateway, identity_pod, "Routes /api/auth, /api/users", "HTTP/2")
+Rel(istio_gateway, project_pod, "Routes /api/projects", "HTTP/2")
+Rel(istio_gateway, deploy_pod, "Routes /api/deployments", "HTTP/2")
+Rel(istio_gateway, obs_pod, "Routes /api/metrics, /api/logs", "HTTP/2")
+Rel(istio_gateway, billing_pod, "Routes /api/billing", "HTTP/2")
+
+Rel(identity_pod, postgres_k8s, "Reads/writes user data", "JDBC/TCP")
+Rel(project_pod, postgres_k8s, "Reads/writes project data", "JDBC/TCP")
+Rel(deploy_pod, postgres_k8s, "Reads/writes deployment data", "JDBC/TCP")
+Rel(billing_pod, postgres_k8s, "Reads/writes billing data", "JDBC/TCP")
+Rel(obs_pod, timescale_k8s, "Stores metrics", "TCP")
+
+Rel(identity_pod, redis_k8s, "Caches sessions", "Redis Protocol")
+Rel(project_pod, redis_k8s, "Caches config", "Redis Protocol")
+
+Rel(deploy_pod, node_agent, "Instructs deployment", "gRPC")
+Rel(node_agent, obs_pod, "Pushes metrics/logs", "gRPC/HTTP")
+
+Rel(deploy_pod, github, "Fetches repositories", "Git/HTTPS")
+Rel(node_agent, doppler, "Fetches secrets", "HTTPS/API")
+Rel(identity_pod, brevo, "Sends emails", "SMTP")
+Rel(billing_pod, stripe, "Processes payments", "HTTPS/API")
+
+Rel(source_code, gh_actions, "Triggers on push", "Git webhook")
+Rel(gh_actions, k8s_dev, "Deploys to", "kubectl/Helm")
+
+SHOW_LEGEND()
+
+@enduml

@@ -1,0 +1,43 @@
+        @startuml
+title UC-01: Create Project - Design-Level Sequence Diagram (DLSD)
+
+actor "Project Owner" as Owner
+participant "Kleff Dashboard (SPA)" as SPA
+participant "Project API Controller" as Controller
+participant "Project Application Service" as AppService
+participant "Project Aggregate" as Domain
+participant "ProjectRepository" as Repo
+participant "GitIntegrationAdapter" as GitAdapter
+database "project-db" as DB
+
+Owner -> SPA: Clicks "Create Project"
+SPA -> Controller: POST /api/projects (name, repoUrl)
+activate Controller
+
+Controller -> AppService: createProject(projectData)
+activate AppService
+
+AppService -> Domain: validate(projectData)
+activate Domain
+Domain --> AppService: valid
+deactivate Domain
+
+AppService -> GitAdapter: configureWebhooks(repoUrl)
+activate GitAdapter
+GitAdapter --> AppService: webhookConfigId
+deactivate GitAdapter
+
+AppService -> Repo: save(new Project())
+activate Repo
+Repo -> DB: INSERT INTO projects ...
+DB --> Repo: Success
+Repo --> AppService: projectEntity
+deactivate Repo
+
+AppService --> Controller: projectResponseDTO
+deactivate AppService
+
+Controller --> SPA: 201 Created (Project JSON)
+deactivate Controller
+SPA --> Owner: Displays Project Dashboard
+@enduml

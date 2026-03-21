@@ -1,0 +1,20 @@
+@startuml
+title UC-01: Create Project - State Transition Diagram (STD)
+
+[*] --> Creating : User Submits Form
+state Creating {
+  [*] --> ValidatingName
+  ValidatingName --> ConfiguringGit : Name Unique
+  ConfiguringGit --> Persisting : Webhook Configured
+}
+
+Creating --> Active : Persistence Successful
+Creating --> Failed : Error (Name Conflict / Git Error)
+
+Active --> Archived : Project Owner Deletes/Archives
+Active --> Active : Settings Updated
+
+Failed --> Creating : User Retries
+Archived --> [*]
+
+@enduml

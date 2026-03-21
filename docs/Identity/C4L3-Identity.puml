@@ -1,0 +1,59 @@
+@startuml Kleff Hosting C4L3 - Identity & Access
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Level 3 - Component Diagram for Identity & Access (User Service - Go / Chi)
+
+' ==== External Containers / Systems (from C4L2) ====
+Container(spa, "Kleff Dashboard (SPA)", "TypeScript, React", "Frontend for developers & collaborators.")
+ContainerDb(identity_db, "identity-db", "PostgreSQL", "Stores users, audit_logs, platform_roles, and deleted_users tables.")
+System_Ext(auth_idp, "Authentik IDP", "OIDC/OAuth2 Provider", "Handles login, registration, MFA, password reset, and issues ID/Access tokens.")
+
+' ==== User Service Boundary ====
+Container_Boundary(identity_svc, "User Service (Go, Chi)") {
+
+  ' ---- API Layer (HTTP Handlers) ----
+  Component(user_handler, "UserHandler", "HTTP Handler (Chi)", "Exposes REST endpoints:\n• GET /api/v1/users/me\n• PATCH /api/v1/users/me/profile\n• DELETE /api/v1/users/me/deactivate\n• GET /api/v1/users/me/audit\n• GET /api/v1/users/me/platform-roles\n• GET /api/v1/users/profile/@{handle}\n• GET /api/v1/users/{id}\n• GET /api/v1/users/status/{userId}\n• POST /api/v1/users/resolve")
+
+  ' ---- Application / Service Layer ----
+  Component(user_service, "UserService", "Application Service", "Business logic:\n• EnsureUserFromToken (auto-create on first login)\n• GetMe (token validation + user fetch)\n• UpdateProfile (username sync to Authentik)\n• DeactivateAccount (soft delete)\n• GetMyPlatformRoles\n• GetMyAuditLogs")
+
+  ' ---- Domain Layer ----
+  Component(user_domain, "User Aggregate", "Domain Model", "Implements User invariants:\n• Email must be unique\n• Username: ^[a-z0-9_-]{2,63}$\n• Deactivated users cannot log in\n• Auto-generate username from OIDC claims")
+
+  ' ---- Infrastructure / Adapters ----
+  Component(user_repo, "UserRepository", "Repository Adapter (PostgreSQL)", "CRUD for User aggregate:\n• GetByID, GetByEmail, GetByUsername\n• Save, UpdateProfile, Delete\n• UpdateUserID, IsUserDeleted\n• UsernameExists")
+
+  Component(audit_repo, "AuditRepository", "Repository Adapter (PostgreSQL)", "Records and queries audit logs:\n• Record (profile_updated, account_deactivated)\n• GetUserAuditLogs, CountByUser")
+
+  Component(role_repo, "PlatformRoleRepository", "Repository Adapter (PostgreSQL)", "Manages platform role assignments:\n• HasRole, GrantRole, RevokeRole\n• GetActiveRolesByUserID")
+
+  Component(token_validator, "TokenValidator", "Outbound Adapter (HTTP)", "Validates Bearer tokens by calling\nAuthentik's /userinfo/ endpoint.\nExtracts TokenClaims (sub, email,\nemail_verified, preferred_username).")
+
+  Component(authentik_mgr, "AuthentikUserManager", "Outbound Adapter (HTTP)", "Manages Authentik user records:\n• ResolveUserID (email → Authentik UUID)\n• UpdateUsername (sync username changes)")
+}
+
+' ==== Relationships: SPA -> Service & Authentik ====
+Rel(spa, auth_idp, "Browser-based login/signup/logout via OIDC (redirects)", "HTTPS / OIDC (PKCE)")
+Rel(spa, user_handler, "Calls /api/v1/users/* with Bearer token from Authentik", "JSON/REST/HTTP (Bearer)")
+
+' ==== Relationships: Handler -> Service ====
+Rel(user_handler, user_service, "Delegates to service layer", "Method calls")
+
+' ==== Relationships: Service -> Domain & Adapters ====
+Rel(user_service, user_domain, "Applies domain logic & invariants", "Method calls")
+Rel(user_service, user_repo, "Creates/updates/reads User aggregates", "Repository API")
+Rel(user_service, audit_repo, "Records profile changes and account actions", "Repository API")
+Rel(user_service, role_repo, "Manages platform roles (auto-grant admin)", "Repository API")
+Rel(user_service, token_validator, "Validates Bearer token, extracts OIDC claims", "HTTP call to Authentik")
+Rel(user_service, authentik_mgr, "Resolves Authentik UUID, syncs username", "HTTP call to Authentik")
+
+' ==== Relationships: Adapters -> External Systems ====
+Rel(user_repo, identity_db, "Reads/Writes users, deleted_users", "SQL (database/sql)")
+Rel(audit_repo, identity_db, "Reads/Writes audit_logs", "SQL (database/sql)")
+Rel(role_repo, identity_db, "Reads/Writes platform_roles", "SQL (database/sql)")
+Rel(token_validator, auth_idp, "Calls /application/o/userinfo/ to validate tokens", "HTTPS/REST")
+Rel(authentik_mgr, auth_idp, "Calls Authentik Admin API to resolve UUIDs & update usernames", "HTTPS/REST")
+
+@enduml

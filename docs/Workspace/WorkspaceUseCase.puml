@@ -1,0 +1,28 @@
+@startuml WorkspaceManagement
+left to right direction
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor #455A64
+  RoundCorner 14
+}
+
+actor "Developer" as Dev #silver
+
+rectangle "Kleff Hosting Platform" {
+    rectangle "Workspace Management" #C8E6C9 {
+
+    usecase "UC-07: Create Workspace" as UC07
+    usecase "UC-08: Manage Workspace Settings" as UC08
+    usecase "UC-09: Manage Workspace Members" as UC09
+    }
+}
+' Actors
+Dev -- UC07
+Dev -- UC08
+Dev -- UC09
+
+' Relationships
+UC07 ..> UC08 : <<includes>>\ninitial configuration
+
+@enduml

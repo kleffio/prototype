@@ -1,0 +1,144 @@
+@startuml C4_Container_KleffHosting
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+scale 0.4
+
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+
+!includeurl $ICONURL/common.puml
+!includeurl $ICONURL/devicons2/spring_original.puml
+!includeurl $ICONURL/devicons/go.puml
+!includeurl $ICONURL/devicons/postgresql.puml
+!includeurl $ICONURL/devicons/react.puml
+!includeurl $ICONURL/devicons/html5.puml
+
+!includeurl $ICONURL/font-awesome-5/database.puml
+!includeurl $ICONURL/font-awesome-5/user.puml
+!includeurl $ICONURL/font-awesome-5/node.puml
+
+AddElementTag("microService-java", $shape=EightSidedShape(), $bgColor="#6DB33F", $fontColor="black", $legendText="Java microservice")
+AddElementTag("microService-go", $shape=EightSidedShape(), $bgColor="#29BEB0", $fontColor="white", $legendText="Go microservice")
+AddElementTag("microService-node", $shape=EightSidedShape(), $bgColor="#68A063", $fontColor="white", $legendText="Node.js microservice")
+
+AddElementTag("storage-postgres", $shape=RoundedBoxShape(), $bgColor="#336791",$borderColor="Black", $fontColor="white", $legendText="Postgres Database")
+AddElementTag("storage-tsdb", $shape=RoundedBoxShape(), $bgColor="#ff6600",$borderColor="Black", $fontColor="white", $legendText="Time Series Database")
+AddElementTag("framework-react", $shape=RoundedBoxShape(), $bgColor="#61DBFB", $fontColor="white", $legendText="React Single-Page Application")
+AddElementTag("webApp", $bgColor="#e34f26", $fontColor="white", $legendText="Web Application")
+
+AddRelTag("identity-bc", $lineColor="#FF5252", $legendText="Identity & Access BC")
+AddRelTag("project-bc", $lineColor="#9C27B0", $legendText="Project Management BC")
+AddRelTag("deployment-bc", $lineColor="#F9A825", $legendText="Deployment BC")
+AddRelTag("observability-bc", $lineColor="#FF6F00", $legendText="Observability BC")
+AddRelTag("billing-bc", $lineColor="#5C6BC0", $legendText="Billing BC")
+AddRelTag("workspace-bc", $lineColor="#4CAF50", $legendText="Workspace Management BC")
+AddRelTag("chat-bc", $lineColor="#00BCD4", $legendText="Chat Support BC")
+
+LAYOUT_TOP_DOWN()
+SHOW_PERSON_OUTLINE()
+
+title Container Diagram for Kleff Hosting PaaS\n(Docker Compose Projects with GitHub-style Collaboration)
+
+' ==== People ====
+Person(developer, "Developer", "Developers - Log in to check their associated projects and user profile")
+Person(projectowner, "Project Owner", "Project Owner - Creates projects and manages team")
+Person(collaborator, "Collaborator", "Team Member - Works on projects with assigned permissions")
+Person(admin, "System Admin", "Platform Admin - Manages infrastructure")
+
+' ==== External Systems ====
+Container_Ext(payment_gateway, "Payment Gateway", "Stripe/PayPal", "Processes payments")
+Container_Ext(auth_idp, "External IdP", "Authentik/Okta", "OAuth2/OIDC authentication")
+Container_Ext(secrets_mgr, "Secrets Manager", "Doppler", "Stores project secrets & env vars")
+Container_Ext(email_service, "Email Service", "Brevo", "Sends emails")
+Container_Ext(git_provider, "Git Provider", "GitHub/GitLab", "Hosts repos & webhooks")
+
+' ==== Kleff Hosting System Boundary ====
+System_Boundary(kleff, "Kleff Hosting System") {
+
+    ' --- Frontend / Web ---
+    together {
+        Container(landing_app, "Landing Web Application", "HTML, CSS", "Public landing/marketing site", $sprite="html5", $tags="webApp")
+        Container(spa, "Kleff Dashboard (SPA)", "TypeScript, React", "Manage projects, collaborators, deployments, containers, metrics, and billing", $sprite="react", $tags="framework-react")
+    }
+
+    ' --- Gateway ---
+    Container(api_gateway, "API Gateway", "Nginx", "Routes traffic to backend services, enforces rate limits")
+
+    ' --- Bounded Context Services ---
+    together {
+        Container(identity_svc, "User Service", "Go, Chi", "BC: Identity & Access - Manages user profiles, platform roles, and audit logs based on identities from Authentik", $sprite="go", $tags="microService-go")
+        Container(billing_svc, "Billing Service", "Java, Spring Boot", "BC: Billing - Tracks usage per project/container, generates invoices", $sprite="spring_original", $tags="microService-java")
+        Container(project_svc, "Project Management Service", "Java, Spring Boot", "BC: Project Lifecycle - Projects, collaborators, permissions (GitHub-style)", $sprite="spring_original", $tags="microService-java")
+    }
+
+    together {
+        Container(deploy_svc, "Deployment Service", "Java, Spring Boot", "BC: Container Deployment - Parses docker-compose.yml, orchestrates deployments, manages containers", $sprite="spring_original", $tags="microService-java")
+        Container(obs_svc, "Observability Service", "Go, Gin", "BC: Monitoring & Logs - Collects metrics and logs from containers", $sprite="go", $tags="microService-go")
+        Container(chat_svc, "Chat Support Service", "Node.js, Express", "BC: Chat Support - LLM-powered support chatbot using OpenAI", $sprite="nodejs_original", $tags="microService-node")
+    }
+
+    ' --- Infrastructure ---
+    Container(node_agent, "Node Agent", "Go daemon", "Runs on compute nodes: pulls images, starts containers, streams metrics/logs", $sprite="go", $tags="microService-go")
+
+    ' --- Data Stores (Per BC) ---
+    ContainerDb(identity_db, "identity-db", "Postgres", "User profiles, audit logs, platform roles", $sprite="postgresql", $tags="storage-postgres")
+
+    ContainerDb(project_db, "project-db", "Postgres", "Projects, collaborators, permissions, invitation state", $sprite="postgresql", $tags="storage-postgres")
+    
+    ContainerDb(deployment_db, "deployment-db", "Postgres", "Deployments, containers, docker-compose content, build logs", $sprite="postgresql", $tags="storage-postgres")
+    
+    ContainerDb(obs_db, "observability-db", "TimescaleDB", "Time-series metrics and log entries per container", $sprite="database", $tags="storage-tsdb")
+    
+    ContainerDb(billing_db, "billing-db", "Postgres", "Usage records, reservations, invoices per project", $sprite="postgresql", $tags="storage-postgres")
+}
+
+' ==== Relationships: People -> Web ====
+Rel(projectowner, landing_app, "Visits kleff.io", "HTTPS")
+Rel(developer, landing_app, "Visits kleff.io", "HTTPS")
+Rel(collaborator, landing_app, "Visits kleff.io", "HTTPS")
+Rel(admin, landing_app, "Visits kleff.io/admin", "HTTPS")
+Rel_R(landing_app, spa, "Delivers SPA to browser")
+Rel(spa, api_gateway, "Calls APIs with Bearer token issued by Authentik", "HTTPS/JSON")
+
+' ==== Gateway -> BC Services ====
+Rel(api_gateway, identity_svc, "Routes /api/v1/users/*", "JSON/REST/HTTP", $tags="identity-bc")
+Rel(api_gateway, project_svc, "Routes /api/v1/projects/*, /api/v1/invitations/*", "JSON/REST/HTTP", $tags="project-bc")
+Rel(api_gateway, deploy_svc, "Routes /api/v1/containers/*", "JSON/REST/HTTP", $tags="deployment-bc")
+Rel(api_gateway, obs_svc, "Routes /api/v1/systems/*", "JSON/REST/HTTP", $tags="observability-bc")
+Rel(api_gateway, billing_svc, "Routes /api/v1/billing/*", "JSON/REST/HTTP", $tags="billing-bc")
+Rel(api_gateway, chat_svc, "Routes /api/v1/chat/*", "JSON/REST/HTTP", $tags="chat-bc")
+
+' ==== Identity & Access BC ====
+Rel(api_gateway, auth_idp, "Validates access tokens (JWKS) / enforces OIDC", "HTTPS/OIDC Discovery")
+Rel(spa, auth_idp, "Browser redirects for login/logout via OIDC", "HTTPS/OIDC")
+
+Rel(identity_svc, identity_db, "Reads/writes User aggregates", "SQL/TCP", $tags="identity-bc")
+Rel(identity_svc, auth_idp, "Validates tokens via /userinfo, resolves Authentik UUIDs", "HTTPS/REST", $tags="identity-bc")
+
+' ==== Project Management BC ====
+Rel(project_svc, project_db, "Reads/writes Projects, Collaborators, Permissions", "JDBC/SQL/TCP", $tags="project-bc")
+Rel(project_svc, email_service, "Sends collaboration invitations", "SMTP/HTTPS", $tags="project-bc")
+
+' ==== Deployment BC ====
+Rel(deploy_svc, git_provider, "Clones repos, receives webhooks for docker-compose.yml", "Git/HTTPS", $tags="deployment-bc")
+Rel(deploy_svc, deployment_db, "Reads/writes Deployments, Containers", "JPA/SQL/TCP", $tags="deployment-bc")
+Rel(deploy_svc, project_svc, "Validates project ownership & DEPLOY permission", "JSON/REST/HTTPS", $tags="deployment-bc")
+Rel(deploy_svc, node_agent, "Instructs nodes to pull images & start containers", "gRPC/HTTP", $tags="deployment-bc")
+Rel(node_agent, secrets_mgr, "Fetches project env vars & secrets", "HTTPS")
+
+' ==== Observability BC ====
+Rel(node_agent, obs_svc, "Pushes container metrics & logs", "gRPC/HTTP", $tags="observability-bc")
+Rel(obs_svc, obs_db, "Stores time-series data per container", "InfluxQL/TCP", $tags="observability-bc")
+Rel(obs_svc, project_svc, "Validates VIEW_LOGS & VIEW_METRICS permissions", "JSON/REST/HTTPS", $tags="observability-bc")
+Rel(obs_svc, deployment_db, "Reads container metadata for labeling", "read-only JDBC", $tags="observability-bc")
+
+' ==== Billing BC ====
+Rel(billing_svc, obs_svc, "Queries aggregated usage per project/container", "JSON/REST/HTTPS", $tags="billing-bc")
+Rel(billing_svc, project_db, "Reads project metadata for billing", "read-only JDBC", $tags="billing-bc")
+Rel(billing_svc, identity_svc, "Retrieves user info for invoices", "JSON/REST/HTTPS", $tags="billing-bc")
+Rel(billing_svc, billing_db, "Reads/writes UsageRecords, Invoices per project", "JDBC/SQL/TCP", $tags="billing-bc")
+Rel(billing_svc, payment_gateway, "Captures payments", "HTTPS/API", $tags="billing-bc")
+Rel(billing_svc, email_service, "Sends invoice emails", "SMTP/HTTPS", $tags="billing-bc")
+
+SHOW_LEGEND()
+
+@enduml

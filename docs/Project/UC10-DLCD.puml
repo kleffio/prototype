@@ -1,0 +1,42 @@
+@startuml
+title UC-01: Create Project - Design-Level Class Diagram (DLCD)
+
+class Project {
+  - UUID id
+  - String name
+  - String repositoryUrl
+  - ProjectStatus status
+  + validate()
+  + updateSettings()
+}
+
+enum ProjectStatus {
+  CREATING
+  ACTIVE
+  ARCHIVED
+}
+
+interface ProjectRepository {
+  + save(Project): Project
+  + findByName(String): Project
+}
+
+class ProjectApplicationService {
+  + createProject(DTO): Project
+}
+
+class ProjectApiController {
+  + createProject(HttpRequest): HttpResponse
+}
+
+class GitIntegrationAdapter {
+  + configureWebhooks(String): String
+}
+
+ProjectApiController --> ProjectApplicationService : uses
+ProjectApplicationService --> ProjectRepository : uses
+ProjectApplicationService --> GitIntegrationAdapter : uses
+ProjectApplicationService ..> Project : manages
+ProjectRepository ..> Project : persists
+
+@enduml

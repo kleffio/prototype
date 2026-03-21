@@ -1,0 +1,50 @@
+@startuml C4L3-Presentation
+title C4 Level 3 – Presentation Tier (Kleff Dashboard)
+
+skinparam packageStyle rectangle
+
+package "Presentation Tier – Kleff Dashboard (React / Vite SPA)" {
+
+  component "Dashboard Shell\n• Layout & Navigation\n• Tenant-aware routing" as DashboardShell
+  component "Auth UI Module\n• Login / Signup\n• OAuth buttons\n• Forgot password" as AuthUI
+  component "Tenant & Workspace Switcher\n• Current tenant\n• Switch / Join / Create" as TenantSwitcher
+  component "Project Management UI\n• Project list & details\n• Git repo binding\n• Environment view" as ProjectUI
+  component "Deployment Management UI\n• Deploy history\n• Live status\n• Rollbacks & actions" as DeploymentUI
+  component "Billing & Subscription UI\n• Plan selector\n• Payment methods\n• Invoices" as BillingUI
+  component "Observability & Logs UI\n• Logs viewer\n• Metrics dashboards\n• Alerts configuration" as ObservabilityUI
+  component "Account & Profile Settings UI\n• Profile\n• Security\n• Personal preferences" as AccountUI
+  component "Frontend API Client SDK\n• REST client\n• Auth token handling\n• Error / retry policies" as ApiClient
+
+  DashboardShell -[#gray]-> AuthUI
+  DashboardShell -[#gray]-> TenantSwitcher
+  DashboardShell -[#gray]-> ProjectUI
+  DashboardShell -[#gray]-> DeploymentUI
+  DashboardShell -[#gray]-> BillingUI
+  DashboardShell -[#gray]-> ObservabilityUI
+  DashboardShell -[#gray]-> AccountUI
+
+  AuthUI --> ApiClient
+  TenantSwitcher --> ApiClient
+  ProjectUI --> ApiClient
+  DeploymentUI --> ApiClient
+  BillingUI --> ApiClient
+  ObservabilityUI --> ApiClient
+  AccountUI --> ApiClient
+}
+
+' External APIs the frontend talks to (from C4 L2)
+package "Application Tier APIs (HTTP / JSON)" {
+  [Auth API]
+  [Tenant & Project API]
+  [Deployment API]
+  [Billing API]
+  [Observability API]
+}
+
+ApiClient --> [Auth API]
+ApiClient --> [Tenant & Project API]
+ApiClient --> [Deployment API]
+ApiClient --> [Billing API]
+ApiClient --> [Observability API]
+
+@enduml

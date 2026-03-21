@@ -1,0 +1,67 @@
+@startuml C4L3-DataTier
+title C4 Level 3 – Data Tier (Kleff Data Platform)
+
+skinparam packageStyle rectangle
+
+package "Data Tier – Kleff Data Platform" {
+
+  ' ========= Core Relational Database (Postgres) =========
+  package "Kleff Relational Database (Postgres Cluster)" {
+    component "Identity Schema\n• users\n• tenants\n• sessions\n• oauth_identities" as IdentitySchema
+    component "Project Schema\n• projects\n• app_environments\n• deployments_meta" as ProjectSchema
+    component "Billing Schema\n• subscriptions\n• invoices\n• payment_methods\n• usage_records" as BillingSchema
+    component "Observability Schema\n• metrics_metadata\n• alert_rules\n• dashboards" as ObservabilitySchema
+
+    component "Migration Runner\n(Goose / Flyway)" as MigrationRunner
+    component "Connection Pool\n(PgBouncer / Built-in pooling)" as ConnectionPool
+    component "Read Replica(s)\n(Read-only reporting / analytics)" as ReadReplica
+    component "Backup & Restore Service\n(Scheduled snapshots / PITR)" as BackupService
+
+    MigrationRunner --> IdentitySchema
+    MigrationRunner --> ProjectSchema
+    MigrationRunner --> BillingSchema
+    MigrationRunner --> ObservabilitySchema
+
+    ConnectionPool --> IdentitySchema
+    ConnectionPool --> ProjectSchema
+    ConnectionPool --> BillingSchema
+    ConnectionPool --> ObservabilitySchema
+
+    ReadReplica -down- IdentitySchema
+    ReadReplica -down- ProjectSchema
+    ReadReplica -down- BillingSchema
+    ReadReplica -down- ObservabilitySchema
+
+    BackupService --> IdentitySchema
+    BackupService --> ProjectSchema
+    BackupService --> BillingSchema
+    BackupService --> ObservabilitySchema
+  }
+
+  ' ========= Caching Layer =========
+  package "Caching Layer (Redis)" {
+    component "Auth Cache\n• session tokens\n• rate limits" as AuthCache
+    component "Config & Metadata Cache\n• tenant config\n• feature flags" as ConfigCache
+  }
+
+  ' ========= Logs & Metrics Storage =========
+  package "Logs & Metrics Storage" {
+    component "Log Store\n(Object storage / Loki index)" as LogStore
+    component "Metrics Store\n(Time-series DB like Prometheus)" as MetricsStore
+    component "Artifact Store\n(Build artifacts / images metadata)" as ArtifactStore
+  }
+}
+
+' Which application components read/write here (high-level)
+[AuthService] -down-> ConnectionPool
+[TenantService] -down-> ConnectionPool
+[ProjectService] -down-> ConnectionPool
+[DeploymentService] -down-> ConnectionPool
+[BillingService] -down-> ConnectionPool
+[ObservabilityService] -down-> MetricsStore
+[ObservabilityService] -down-> LogStore
+
+[AuthService] --> AuthCache
+[ProjectService] --> ConfigCache
+
+@enduml

@@ -1,0 +1,602 @@
+@startuml Kleff Hosting DDD
+hide circle
+top to bottom direction
+
+!define ENTITY(entityName) entity entityName << Entity >>
+!define AGGREGATE(aggregateName) entity aggregateName << Aggregate >>
+!define AGGREGATE_ROOT(aggregateRootName) entity aggregateRootName << Aggregate Root >>
+!define VALUE_OBJECT(valueObjectName) class valueObjectName << Value Object >>
+!define ENUM(enumName) class enumName << Enum >>
+!pragma useVerticalIf on
+
+skinparam dpi 350
+skinparam packageStyle rectangle
+
+skinparam rectangle {
+  BackgroundColor #f7f4eb
+  BorderColor Black
+}
+
+rectangle "Kleff Hosting Domain" as Domain #line.dashed {
+
+  ' ==========================
+  ' Identity & Access BC
+  ' ==========================
+  package "Identity & Access BC\n(User Management & Authentication)" #FFCDD2 {
+
+    AGGREGATE_ROOT(User) #lightblue {
+      id: ID (OIDC sub)
+      authentikId: String
+      email: String
+      emailVerified: Boolean
+      loginUsername: String
+      username: String
+      displayName: String
+      avatarUrl: String?
+      bio: String?
+      isDeactivated: Boolean
+      deactivatedAt: DateTime?
+      createdAt: DateTime
+      updatedAt: DateTime
+    }
+
+    VALUE_OBJECT(ID) #Bisque {
+      value: String
+    }
+
+    VALUE_OBJECT(TokenClaims) #Bisque {
+      sub: String
+      email: String
+      emailVerified: Boolean
+      preferredUsername: String
+    }
+
+    VALUE_OBJECT(ProfileUpdate) #Bisque {
+      username: String?
+      displayName: String?
+      avatarUrl: String?
+      bio: String?
+    }
+
+    VALUE_OBJECT(PublicProfile) #Bisque {
+      username: String
+      displayName: String
+      avatarUrl: String
+      bio: String
+      createdAt: DateTime
+    }
+
+    ENTITY(AuditLog) #lightblue {
+      id: String
+      userId: ID
+      action: String
+      changes: Map<String, ChangeDetail>
+      ipAddress: String
+      userAgent: String
+      timestamp: DateTime
+    }
+
+    VALUE_OBJECT(ChangeDetail) #Bisque {
+      old: String
+      new: String
+    }
+
+    ENTITY(PlatformRoleAssignment) #lightblue {
+      id: String
+      userId: String
+      role: PlatformRole
+      grantedBy: String?
+      grantedAt: DateTime
+      revokedAt: DateTime?
+      createdAt: DateTime
+    }
+
+    ENUM(PlatformRole) #SandyBrown {
+      PLATFORM_ADMIN,
+      PLATFORM_SUPPORT,
+      PLATFORM_USER
+    }
+
+    class AuthentikIdP << External System >> #lightyellow {
+      OIDC UserInfo endpoint
+      Admin API (user management)
+      --
+      Validates bearer tokens
+      Resolves user IDs by email
+      Syncs username changes
+    }
+
+    note right of User
+      Invariants:
+      - Email must be unique
+      - Username must be unique
+      - Username must match ^[a-z0-9_-]{2,63}$
+      - ID comes from OIDC sub claim
+      - Deactivated accounts cannot re-register
+    end note
+
+    note right of AuthentikIdP
+      Anti-Corruption Layer:
+      - TokenValidator adapter validates
+        tokens via /application/o/userinfo/
+      - AuthentikUserManager adapter
+        syncs data via /api/v3/core/users/
+    end note
+
+    User "1" o--> "1" ID
+    User "1" --> "*" AuditLog : auditTrail
+    User "1" --> "*" PlatformRoleAssignment : roles
+    User --> PublicProfile : generates
+    TokenClaims ..> User : creates / updates
+    ProfileUpdate ..> User : patches
+    AuditLog *--> ChangeDetail : changes
+    PlatformRoleAssignment --> PlatformRole
+    AuthentikIdP ..> TokenClaims : issues
+    User ..> AuthentikIdP : authentikId
+  }
+
+  ' ==================================
+  ' Workspace Management BC
+  ' ==================================
+  package "Workspace Management BC\n(Tenants & Teams)" #C8E6C9 {
+
+    AGGREGATE_ROOT(Workspace) #lightblue {
+      workspaceId: WorkspaceIdentifier
+      name: String
+      slug: String
+      status: WorkspaceStatus
+      billingPlan: BillingPlan
+      createdAt: DateTime
+      ownerId: ID
+    }
+
+    ENTITY(WorkspaceMember) #lightblue {
+      memberId: WorkspaceMemberIdentifier
+      workspaceId: WorkspaceIdentifier
+      userId: ID
+      role: WorkspaceRole
+      joinedAt: DateTime
+      invitedBy: ID
+    }
+
+    VALUE_OBJECT(WorkspaceIdentifier) #Bisque {
+      workspaceId: UUID
+    }
+
+    VALUE_OBJECT(WorkspaceMemberIdentifier) #Bisque {
+      memberId: UUID
+    }
+
+    note right of Workspace
+      Invariants:
+      - Slug unique platform-wide
+      - Must have at least one OWNER
+      - OWNER must be a WorkspaceMember
+    end note
+
+    note right of WorkspaceMember
+      Invariants:
+      - (workspaceId, userId) must be unique
+      - Cannot remove last OWNER
+    end note
+
+    Workspace "1" o--> "1" WorkspaceIdentifier
+    Workspace "1" --> "*" WorkspaceMember : members
+    WorkspaceMember "1" o--> "1" WorkspaceMemberIdentifier
+    WorkspaceMember "*" --> "1" Workspace : belongsTo
+    WorkspaceMember "*" --> "1" ID : userId
+  }
+
+ ' ==================================
+  ' Project Management BC (UPDATED PER SQL SCHEMA)
+  ' ==================================
+  package "Project Management BC\n(Project Lifecycle & Collaboration)" #D1C4E9 {
+
+    AGGREGATE_ROOT(Project) #lightblue {
+      projectId: UUID
+      name: String
+      description: Text
+      ownerId: String
+      environmentVariables: JSONB
+      projectStatus: String
+      createdDate: Timestamp
+      updatedDate: Timestamp
+    }
+
+    AGGREGATE(Invitation) #lightblue {
+      id: Integer
+      projectId: String
+      inviterId: String
+      inviteeEmail: String
+      role: RoleEnum
+      status: InvitationStatus
+      expiresAt: Timestamp
+      createdAt: Timestamp
+      updatedAt: Timestamp
+    }
+
+    ENTITY(ProjectCollaborator) #lightblue {
+      id: Integer
+      projectId: String
+      userId: String
+      role: RoleEnum
+      status: CollaboratorStatus
+      invitedBy: String
+      invitedAt: Timestamp
+      acceptedAt: Timestamp
+      expiresAt: Timestamp
+      lastAccessedAt: Timestamp
+      createdAt: Timestamp
+      updatedAt: Timestamp
+    }
+
+    ENTITY(FeatureFlag) #lightgrey {
+      id: Integer
+      flagKey: String
+      enabled: Boolean
+      description: Text
+    }
+
+    ENTITY(AuthorizationAuditLog) #lightgrey {
+      id: BigInt
+      userId: String
+      projectId: String
+      action: String
+      resourceType: String
+      resourceId: String
+      permissionChecked: String
+      authorizationResult: AuthResultEnum
+      shadowMode: Boolean
+      ipAddress: String
+      userAgent: Text
+      requestId: String
+      changes: JSON
+      createdAt: Timestamp
+    }
+
+    ENUM(RoleEnum) #SandyBrown {
+      OWNER
+      ADMIN
+      DEVELOPER
+      VIEWER
+    }
+
+    ENUM(InvitationStatus) #SandyBrown {
+      PENDING
+      ACCEPTED
+      EXPIRED
+    }
+
+    ENUM(CollaboratorStatus) #SandyBrown {
+      PENDING
+      ACCEPTED
+      REFUSED
+      EXPIRED
+    }
+
+    ENUM(AuthResultEnum) #SandyBrown {
+      ALLOW
+      DENY
+      SHADOW_ALLOW
+      SHADOW_DENY
+    }
+
+    note right of Project
+      Invariants:
+      - Project name is NOT NULL
+      - Uses JSONB for environment variables
+    end note
+
+    note right of ProjectCollaborator
+      Invariants:
+      - Unique constraint on (projectId, userId)
+      - Tracks last access for security auditing
+    end note
+
+    Project "1" *-- "*" ProjectCollaborator : consists of
+    Project "1" *-- "*" Invitation : tracks
+    ProjectCollaborator --> RoleEnum
+    Invitation --> RoleEnum
+    Invitation --> InvitationStatus
+    ProjectCollaborator --> CollaboratorStatus
+    AuthorizationAuditLog --> AuthResultEnum
+    
+    ' Links to Identity
+    Project --> ID : ownerId
+    ProjectCollaborator --> ID : userId
+    Invitation --> ID : inviterId
+  }
+
+  ' ==================================
+  ' Deployment BC
+  ' ==================================
+  package "Deployment BC\n(Container Deployment & Runtime)" #FFF9C4 {
+
+    AGGREGATE_ROOT(Deployment) #lightblue {
+      deploymentId: DeploymentIdentifier
+      projectId: ProjectIdentifier
+      version: String
+      commitHash: String
+      deployedBy: ID
+      nodeId: NodeIdentifier
+      triggeredBy: DeploymentTrigger
+      status: DeploymentStatus
+      dockerComposeContent: String
+      startedAt: DateTime
+      completedAt: DateTime
+      buildLogs: String
+    }
+
+    ENTITY(Container) #lightblue {
+      containerId: ContainerIdentifier
+      deploymentId: DeploymentIdentifier
+      serviceName: String
+      imageName: String
+      imageTag: String
+      status: ContainerStatus
+      port: Integer
+      exposedPort: Integer
+      cpuLimit: Double
+      memoryLimit: Integer
+      startedAt: DateTime
+    }
+
+    VALUE_OBJECT(DeploymentIdentifier) #Bisque {
+      deploymentId: UUID
+    }
+
+    VALUE_OBJECT(ContainerIdentifier) #Bisque {
+      containerId: UUID
+    }
+
+    VALUE_OBJECT(NodeIdentifier) #Bisque {
+      nodeId: UUID
+    }
+
+    ENUM(DeploymentStatus) #SandyBrown {
+      QUEUED,
+      PULLING_IMAGE,
+      BUILDING,
+      DEPLOYING,
+      RUNNING,
+      FAILED,
+      STOPPED,
+      ROLLED_BACK
+    }
+
+    ENUM(ContainerStatus) #SandyBrown {
+      STARTING,
+      RUNNING,
+      STOPPING,
+      STOPPED,
+      FAILED,
+      RESTARTING
+    }
+
+    ENUM(DeploymentTrigger) #SandyBrown {
+      GIT_PUSH,
+      GIT_TAG,
+      MANUAL,
+      API,
+      ROLLBACK
+    }
+
+    note right of Deployment
+      Invariant:
+      - Must reference valid Project
+      - Must reference valid Node
+      - Parses docker-compose.yml to create Containers
+      - Only one RUNNING deployment per Project
+    end note
+
+    note right of Container
+      Invariant:
+      - Must belong to Deployment
+      - Service name from docker-compose.yml
+      - Port mappings must not conflict on Node
+    end note
+
+    Deployment "1" o--> "1" DeploymentIdentifier
+    Deployment "1" --> "*" Container : contains
+    Deployment "1" --> "1" DeploymentStatus : status
+    Deployment "1" --> "1" DeploymentTrigger : triggeredBy
+    Deployment "0..1" --> "1" NodeIdentifier : nodeId
+
+    Container "1" o--> "1" ContainerIdentifier
+    Container "*" --> "1" Deployment : belongsTo
+    Container "1" --> "1" ContainerStatus : status
+  }
+
+  ' ==============================
+  ' Observability BC
+  ' ==============================
+  package "Observability BC\n(Monitoring & Logs)" #FFCCBC {
+
+    ENTITY(Metrics) #lightblue {
+      metricId: MetricIdentifier
+      resourceId: UUID
+      resourceType: ResourceType
+      cpuUsage: Double
+      memoryUsage: Double
+      diskUsage: Double
+      networkIn: Long
+      networkOut: Long
+      timestamp: DateTime
+    }
+
+    VALUE_OBJECT(MetricIdentifier) #Bisque {
+      metricId: UUID
+    }
+
+    ENTITY(LogEntry) #lightblue {
+      logId: LogEntryIdentifier
+      resourceId: UUID
+      resourceType: ResourceType
+      containerId: ContainerIdentifier
+      level: LogLevel
+      message: String
+      timestamp: DateTime
+    }
+
+    VALUE_OBJECT(LogEntryIdentifier) #Bisque {
+      logId: UUID
+    }
+
+    ENUM(ResourceType) #SandyBrown {
+      NODE,
+      PROJECT,
+      CONTAINER
+    }
+
+    ENUM(LogLevel) #SandyBrown {
+      DEBUG,
+      INFO,
+      WARNING,
+      ERROR,
+      CRITICAL
+    }
+
+    Metrics o--> MetricIdentifier
+    Metrics --> ResourceType
+    
+    LogEntry o--> LogEntryIdentifier
+    LogEntry --> ResourceType
+    LogEntry --> LogLevel
+  }
+
+  ' ======================
+  ' Billing BC
+  ' ======================
+  package "Billing BC\n(Billing & Usage Tracking)" #B3E5FC {
+
+    ENUM(PricingModel) #SandyBrown {
+        ON_DEMAND,
+        RESERVED
+    }
+
+    ENUM(UsageMetric) #SandyBrown {
+        CPU_HOURS,
+        MEMORY_GB_HOURS,
+        STORAGE_GB,
+        CONTAINER_HOURS
+    }
+
+    AGGREGATE(ReservedAllocation) #lightblue {
+        allocationId: ReservedAllocationIdentifier
+        userId: ID
+        workspaceId: WorkspaceIdentifier
+        projectId: ProjectIdentifier
+        cpuCores: Double
+        memoryGb: Double
+        storageGb: Double
+        containerLimit: Integer
+        monthlyPrice: Double
+        startDate: DateTime
+        endDate: DateTime
+    }
+
+    VALUE_OBJECT(ReservedAllocationIdentifier) #Bisque {
+        allocationId: UUID
+    }
+
+    ENTITY(UsageRecord) #lightblue {
+        usageId: UsageIdentifier
+        projectId: ProjectIdentifier
+        containerId: ContainerIdentifier
+        pricingModel: PricingModel
+        metric: UsageMetric
+        quantity: Double
+        recordedAt: DateTime
+    }
+
+    VALUE_OBJECT(UsageIdentifier) #Bisque {
+        usageId: UUID
+    }
+
+    AGGREGATE(Invoice) #lightblue {
+        invoiceId: InvoiceIdentifier
+        billedToWorkspace: WorkspaceIdentifier
+        periodStart: DateTime
+        periodEnd: DateTime
+        status: InvoiceStatus
+        subtotal: Double
+        taxes: Double
+        total: Double
+    }
+
+    ENTITY(InvoiceItem) #lightblue {
+        itemId: InvoiceItemIdentifier
+        invoiceId: InvoiceIdentifier
+        projectId: ProjectIdentifier
+        description: String
+        pricingModel: PricingModel
+        metric: UsageMetric
+        quantity: Double
+        unitPrice: Double
+        amount: Double
+    }
+
+    VALUE_OBJECT(InvoiceIdentifier) #Bisque {
+        invoiceId: UUID
+    }
+
+    VALUE_OBJECT(InvoiceItemIdentifier) #Bisque {
+        itemId: UUID
+    }
+
+    ENUM(InvoiceStatus) #SandyBrown {
+        DRAFT,
+        OPEN,
+        PAID,
+        VOID,
+        UNCOLLECTIBLE
+    }
+
+    ReservedAllocation "1" o--> "1" ReservedAllocationIdentifier
+    UsageRecord "1" o--> "1" UsageIdentifier
+    UsageRecord --> PricingModel
+    UsageRecord --> UsageMetric
+
+    Invoice "1" o--> "1" InvoiceIdentifier
+    Invoice "1" --> "*" InvoiceItem
+    Invoice --> InvoiceStatus
+
+    InvoiceItem "1" o--> "1" InvoiceItemIdentifier
+    InvoiceItem --> PricingModel
+    InvoiceItem --> UsageMetric
+
+    Invoice "1" --> "1" WorkspaceIdentifier : billedToWorkspace
+    InvoiceItem --> ProjectIdentifier : projectId
+    ReservedAllocation "1" --> "1" WorkspaceIdentifier : workspaceId
+    ReservedAllocation "1" --> "0..1" ProjectIdentifier : projectId
+  }
+
+  ' ===============================
+  ' Cross-BC Relationships
+  ' ===============================
+
+  ProjectCollaborator o--> ID : userId
+  Project o--> ID : ownerId
+
+  Deployment o--> ProjectIdentifier : projectId
+  Deployment o--> ID : deployedBy
+
+  Metrics o--> ProjectIdentifier : resourceId (when PROJECT)
+  LogEntry o--> ProjectIdentifier : resourceId (when PROJECT)
+  LogEntry o--> ContainerIdentifier : containerId
+
+  UsageRecord o--> ProjectIdentifier : projectId
+  UsageRecord o--> ContainerIdentifier : containerId
+  ReservedAllocation o--> ProjectIdentifier : projectId
+
+  Invoice o--> ID : billedTo
+  InvoiceItem o--> ProjectIdentifier : projectId
+
+  Project o--> WorkspaceIdentifier : workspaceId
+  WorkspaceMember o--> ID : userId
+
+  ReservedAllocation o--> WorkspaceIdentifier : workspaceId
+  Invoice o--> WorkspaceIdentifier : billedToWorkspace
+}
+
+@enduml

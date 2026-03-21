@@ -1,0 +1,56 @@
+@startuml IdentityAndAccess
+left to right direction
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor #455A64
+  RoundCorner 14
+}
+
+actor "Developer" as Dev #silver
+actor "Project Owner" as Owner #lightblue
+actor "Authentik IdP" as Authentik #lightyellow
+
+Owner -|> Dev
+rectangle "Kleff Hosting Platform" {
+  rectangle "Identity & Access" #FFCDD2 {
+
+    usecase "UC-01: Register Account" as UC01
+    usecase "UC-02: Login with OAuth/Email" as UC02
+    usecase "UC-03: Manage User Profile" as UC03
+    usecase "UC-04: Reset Password" as UC04
+    usecase "UC-05: Manage Sessions & Tokens" as UC05
+    usecase "UC-06: Deactivate Account" as UC06
+    usecase "UC-07: View Audit Logs" as UC07
+
+    usecase "Validate OIDC Token" as ValidateToken
+    usecase "Auto-Create User\n(EnsureUserFromToken)" as AutoCreate
+  }
+}
+
+' Actor → main use cases
+Dev -- UC02
+Dev -- UC03
+Dev -- UC04
+Dev -- UC06
+Dev -- UC07
+
+Owner -- UC01
+
+' Secondary actor
+UC01 -- Authentik
+UC02 -- Authentik
+UC04 -- Authentik
+
+' Key include relationships
+UC01 ..> UC02 : <<includes>>
+UC02 ..> UC05 : <<includes>>
+UC02 ..> ValidateToken : <<includes>>
+UC01 ..> AutoCreate : <<includes>>
+UC06 ..> UC05 : <<includes>>
+
+' Extension
+UC03 ..> ValidateToken : <<includes>>
+UC07 ..> ValidateToken : <<includes>>
+
+@enduml

@@ -1,0 +1,85 @@
+@startuml Kleff Hosting C4L3 - Billing
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Level 3 - Component Diagram for Billing Service (Billing & Usage Tracking)
+
+' ==== External Containers / Systems (from C4L2) ====
+Container(spa, "Kleff Dashboard (SPA)", "TypeScript, React", "Frontend for viewing usage, invoices, and managing payment methods.")
+Container(obs_svc, "Observability Service", "Go", "Provides aggregated usage per project/container.")
+Container(identity_svc, "Identity & Access Service", "Java/Go", "Provides user and tenant information.")
+ContainerDb(project_db, "project-db", "PostgreSQL", "Stores project metadata used in billing descriptions.")
+ContainerDb(billing_db, "billing-db", "PostgreSQL", "Stores Invoices, Prices and reserved allocation information.")
+System_Ext(payment_gateway, "Payment Gateway", "Stripe", "Captures payments and handles billing events.")
+
+' ==== Billing Service Boundary ====
+Container_Boundary(billing_svc, "Billing Service") {
+
+  ' ---- API Layer (Controllers) ----
+  Component(billing_api, "Billing API Controller", "REST Controller", "Exposes usage summaries, pricing info, and reserved allocation management (/api/billing/*).")
+
+  Component(invoice_api, "Invoice API Controller", "REST Controller", "Lists and retrieves invoices for tenants and projects (/api/invoices/*).")
+
+  Component(payment_webhook_api, "Payment Webhook Controller", "Webhook Endpoint", "Receives payment events (succeeded, failed, refunded) from Payment Gateway.")
+
+  ' ---- Application / Service Layer ----
+
+  Component(billing_app_svc, "Billing Application Service", "Application Service", "Calculates charges based on PricingModel, creates Invoice aggregates, and applies discounts/credits.")
+
+  Component(payment_app_svc, "Payment Application Service", "Application Service", "Coordinates payment intents/charges with the Payment Gateway and updates invoice status based on webhooks.")
+
+  ' ---- Domain Layer ----
+  Component(usage_domain, "Prices & ReservedAllocation Domain Model", "Domain Model", "Represents prices for metrics and reserved capacity for billing (CPU_HOURS, CONTAINER_HOURS, etc.).")
+
+  Component(invoice_domain, "Invoice Aggregate", "Domain Model", "Represents an invoice with multiple items, totals, and status transitions (DRAFT, ISSUED, PAID).")
+
+  Component(domain_events, "Billing Domain Event Publisher", "Domain Service", "Publishes events (InvoiceIssued, InvoicePaid, PaymentFailed) for notifications/audit.")
+
+  ' ---- Infrastructure / Adapters ----
+  Component(billing_repo, "BillingRepository", "Repository Adapter", "Persists and reads Invoices from billing-db.")
+
+  Component(obs_client, "ObservabilityServiceClient", "Integration Adapter", "Retrieves aggregated usage metrics per project/container from Observability Service.")
+
+  Component(project_reader, "ProjectMetadataReader", "Data Access Adapter", "Reads project names and ownership from project-db for invoice line-item descriptions.")
+
+  Component(identity_client, "IdentityServiceClient", "Integration Adapter", "Resolves billing contact and tenant info from Identity & Access Service.")
+
+  Component(payment_gateway_adapter, "PaymentGatewayAdapter", "Integration Adapter", "Creates payment intents, charges customers, and validates signatures on webhooks.")
+
+}
+
+' ==== Relationships: SPA -> Billing Service ====
+Rel(spa, billing_api, "Views usage & pricing via /api/billing/*", "JSON/REST/HTTPS (Bearer)")
+Rel(spa, invoice_api, "Views and downloads invoices via /api/invoices/*", "JSON/REST/HTTPS (Bearer)")
+
+' ==== Relationships: Payment Gateway -> Billing Service ====
+Rel(payment_gateway, payment_webhook_api, "Sends payment events", "HTTPS/Webhook")
+
+' ==== API -> Application Layer ====
+Rel(billing_api, billing_app_svc, "May trigger invoice generation (admin flows)", "Method calls")
+Rel(invoice_api, billing_app_svc, "Loads invoices for viewing", "Method calls")
+Rel(payment_webhook_api, payment_app_svc, "Invokes", "Method calls")
+
+' ==== Application -> Domain & Adapters ====
+
+Rel(billing_app_svc, billing_repo, "Reads UsageRecords & ReservedAllocations", "Repository API")
+Rel(billing_app_svc, usage_domain, "Applies usage & pricing rules", "Method calls")
+Rel(billing_app_svc, invoice_domain, "Creates/updates Invoice aggregates", "Method calls")
+Rel(billing_app_svc, project_reader, "Enriches line-items with project metadata", "Data access")
+Rel(billing_app_svc, identity_client, "Resolves billing contact & tenant info", "JSON/REST/HTTPS")
+Rel(billing_app_svc, domain_events, "Publishes InvoiceIssued events", "Event dispatch")
+
+Rel(payment_app_svc, billing_repo, "Updates Invoice status based on payments", "Repository API")
+Rel(payment_app_svc, invoice_domain, "Applies payment-related status transitions", "Method calls")
+Rel(payment_app_svc, payment_gateway_adapter, "Creates charges / validates webhook signatures", "HTTPS/API")
+Rel(payment_app_svc, domain_events, "Publishes InvoicePaid/PaymentFailed events", "Event dispatch")
+Rel(billing_app_svc, obs_client, "Reads aggregated usage per project/container", "Repository API")
+' ==== Adapters -> External Systems ====
+Rel(billing_repo, billing_db, "Reads/Writes UsageRecords, ReservedAllocations, Invoices", "SQL")
+Rel(obs_client, obs_svc, "Reads aggregated usage per project/container", "JSON/REST/HTTPS")
+Rel(project_reader, project_db, "Reads project metadata", "SQL (read-only)")
+Rel(identity_client, identity_svc, "Reads user/tenant info", "JSON/REST/HTTPS")
+Rel(payment_gateway_adapter, payment_gateway, "Creates payment intents & charges; receives webhook payloads", "HTTPS/API")
+
+@enduml

@@ -1,0 +1,264 @@
+@startuml UC01-DLCD
+title UC-01: Register Account — Design-Level Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam roundcorner 10
+hide circle
+
+' ==============================================================
+' Presentation Tier
+' ==============================================================
+package "Presentation Tier (React / TypeScript)" #E3F2FD {
+
+  class AuthButtons <<React Component>> {
+    - onLogin: () => void
+    - variant: "desktop" | "mobile"
+    + render(): JSX
+  }
+
+  class AuthPage <<React Component>> {
+    - auth: AuthContextProps
+    - isCallback: boolean
+    - from: string
+    + handleContinue(): void
+    + render(): JSX
+  }
+
+  class ProtectedRoute <<React Component>> {
+    - auth: AuthContextProps
+    - location: Location
+    + render(): JSX | Navigate
+  }
+
+  class UserSettingsProvider <<React Context Provider>> {
+    - settings: UserSettings | null
+    - isLoading: boolean
+    - error: Error | null
+    - deactivatedUsers: Set<string>
+    + load(): Promise<void>
+    + isProtectedRoute(): boolean
+  }
+
+  class AxiosClient <<HTTP Client>> {
+    - baseURL: string
+    - accessToken: string | null
+    + setAccessToken(token: string): void
+    + get(url: string): Promise<Response>
+    + patch(url: string, data: object): Promise<Response>
+    + delete(url: string): Promise<Response>
+  }
+
+  interface UserSettings <<TypeScript Interface>> {
+    id: string
+    email: string
+    emailVerified: boolean
+    username: string
+    displayName: string
+    avatarUrl: string | null
+    bio: string | null
+    isDeactivated: boolean
+    createdAt: string
+    updatedAt: string
+  }
+
+  AuthButtons ..> ProtectedRoute : triggers navigation
+  ProtectedRoute ..> AuthPage : redirects if !authenticated
+  AuthPage ..> UserSettingsProvider : triggers profile load
+  UserSettingsProvider --> AxiosClient : calls API
+  UserSettingsProvider ..> UserSettings : stores
+}
+
+' ==============================================================
+' Application Tier
+' ==============================================================
+package "Application Tier (Go / Chi)" #E8F5E9 {
+
+  class Handler <<HTTP Handler>> {
+    - svc: UserService
+    + GetMe(w: ResponseWriter, r: Request): void
+    + PatchMeProfile(w: ResponseWriter, r: Request): void
+    + DeactivateAccount(w: ResponseWriter, r: Request): void
+    + GetPublicProfile(w: ResponseWriter, r: Request): void
+    + GetUser(w: ResponseWriter, r: Request): void
+    + GetMyAuditLogs(w: ResponseWriter, r: Request): void
+    + GetMyPlatformRoles(w: ResponseWriter, r: Request): void
+    + GetUserStatus(w: ResponseWriter, r: Request): void
+    + ResolveMany(w: ResponseWriter, r: Request): void
+    - extractBearerToken(r: Request): string
+    - jsonResponse(w: ResponseWriter, status: int, v: any): void
+    - jsonError(w: ResponseWriter, status: int, msg: string): void
+  }
+
+  class Service <<Application Service>> {
+    - repo: UserRepository
+    - auditRepo: AuditRepository
+    - platformRoleRepo: PlatformRoleRepository
+    - tokenValidator: TokenValidator
+    - authentikManager: AuthentikUserManager
+    - defaultAdminEmail: string
+    + GetMe(ctx: Context, bearerToken: string): (*User, error)
+    + EnsureUserFromToken(ctx: Context, claims: *TokenClaims): (*User, error)
+    + UpdateProfile(ctx: Context, id: ID, update: *ProfileUpdate): (*User, error)
+    + DeactivateAccount(ctx: Context, userID: ID): error
+    + GetMyPlatformRoles(ctx: Context, userID: ID): ([]PlatformRole, error)
+    + GetMyAuditLogs(ctx: Context, userID: ID, limit, offset: int): ([]*AuditLog, int64, error)
+    - generateUniqueUsername(ctx: Context, claims: *TokenClaims): string
+    - generateDisplayName(claims: *TokenClaims): string
+    - detectAndLogChanges(ctx: Context, old, new: *User): void
+  }
+
+  Handler --> Service : delegates to
+
+  ' ---- Ports (Interfaces) ----
+  interface UserRepository <<Port>> {
+    + GetByID(ctx: Context, id: ID): (*User, error)
+    + GetByEmail(ctx: Context, email: string): (*User, error)
+    + GetByUsername(ctx: Context, username: string): (*User, error)
+    + Save(ctx: Context, user: *User): error
+    + UpdateProfile(ctx: Context, id: ID, update: *ProfileUpdate): error
+    + Delete(ctx: Context, id: ID): error
+    + UpdateUserID(ctx: Context, oldID, newID: ID): error
+    + IsUserDeleted(ctx: Context, id: ID, email: string): (bool, error)
+    + UsernameExists(ctx: Context, username: string, excludeID: ID): (bool, error)
+  }
+
+  interface AuditRepository <<Port>> {
+    + Record(ctx: Context, log: *AuditLog): error
+    + GetUserAuditLogs(ctx: Context, userID: ID, limit, offset: int): ([]*AuditLog, error)
+    + CountByUser(ctx: Context, userID: string): (int64, error)
+  }
+
+  interface PlatformRoleRepository <<Port>> {
+    + HasRole(ctx: Context, userID: string, role: PlatformRole): (bool, error)
+    + GrantRole(ctx: Context, userID: string, role: PlatformRole, grantedBy: *string): error
+    + GetActiveRolesByUserID(ctx: Context, userID: string): ([]PlatformRole, error)
+  }
+
+  interface TokenValidator <<Port>> {
+    + ValidateToken(ctx: Context, bearerToken: string): (*TokenClaims, error)
+  }
+
+  interface AuthentikUserManager <<Port>> {
+    + ResolveUserID(ctx: Context, email: string): (string, error)
+    + UpdateUsername(ctx: Context, authentikID, username: string): error
+  }
+
+  Service --> UserRepository : uses
+  Service --> AuditRepository : uses
+  Service --> PlatformRoleRepository : uses
+  Service --> TokenValidator : uses
+  Service --> AuthentikUserManager : uses
+}
+
+' ==============================================================
+' Domain Layer
+' ==============================================================
+package "Domain (Go Structs)" #FFF3E0 {
+
+  class User <<Aggregate Root>> {
+    + ID: ID
+    + AuthentikID: string
+    + Email: string
+    + EmailVerified: bool
+    + LoginUsername: string
+    + Username: string
+    + DisplayName: string
+    + AvatarURL: *string
+    + Bio: *string
+    + IsDeactivated: bool
+    + DeactivatedAt: *time.Time
+    + CreatedAt: time.Time
+    + UpdatedAt: time.Time
+    + PublicProfile(): *PublicProfile
+  }
+
+  class "ID" as DomainID <<Value Object>> {
+    value: string
+  }
+
+  class TokenClaims <<Value Object>> {
+    + Sub: string
+    + Email: string
+    + EmailVerified: bool
+    + PreferredUsername: string
+  }
+
+  class ProfileUpdate <<Value Object>> {
+    + Username: *string
+    + DisplayName: *string
+    + AvatarURL: *string
+    + Bio: *string
+  }
+
+  class AuditLog <<Entity>> {
+    + ID: string
+    + UserID: ID
+    + Action: string
+    + Changes: map[string]ChangeDetail
+    + Timestamp: time.Time
+  }
+
+  class ChangeDetail <<Value Object>> {
+    + Old: string
+    + New: string
+  }
+
+  enum PlatformRole <<Enum>> {
+    PLATFORM_ADMIN
+    PLATFORM_SUPPORT
+    PLATFORM_USER
+  }
+
+  class PublicProfile <<Value Object>> {
+    + Username: string
+    + DisplayName: string
+    + AvatarURL: string
+    + Bio: string
+    + CreatedAt: time.Time
+  }
+
+  User --> DomainID : id
+  User --> PublicProfile : generates
+  AuditLog --> DomainID : userId
+  AuditLog *--> ChangeDetail : changes
+}
+
+' ==============================================================
+' Data Tier
+' ==============================================================
+package "Data Tier (PostgreSQL)" #FCE4EC {
+
+  class PostgresUserRepository <<Repository Adapter>> {
+    - db: *sql.DB
+    + GetByID(ctx, id): (*User, error)
+    + GetByEmail(ctx, email): (*User, error)
+    + Save(ctx, user): error
+    + Delete(ctx, id): error
+    + IsUserDeleted(ctx, id, email): (bool, error)
+  }
+
+  class PostgresAuditRepository <<Repository Adapter>> {
+    - db: *sql.DB
+    + Record(ctx, log): error
+    + GetUserAuditLogs(ctx, userID, limit, offset): ([]*AuditLog, error)
+    + CountByUser(ctx, userID): (int64, error)
+  }
+
+  class PostgresPlatformRoleRepository <<Repository Adapter>> {
+    - db: *sql.DB
+    + HasRole(ctx, userID, role): (bool, error)
+    + GrantRole(ctx, userID, role, grantedBy): error
+    + GetActiveRolesByUserID(ctx, userID): ([]PlatformRole, error)
+  }
+
+  PostgresUserRepository ..|> UserRepository : implements
+  PostgresAuditRepository ..|> AuditRepository : implements
+  PostgresPlatformRoleRepository ..|> PlatformRoleRepository : implements
+}
+
+' ==============================================================
+' Cross-Tier Relationships
+' ==============================================================
+AxiosClient ..> Handler : HTTP REST calls
+
+@enduml

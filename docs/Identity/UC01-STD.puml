@@ -1,0 +1,91 @@
+@startuml UC01-STD
+title UC-01: Register Account — State Transition Diagram\n(User Account Lifecycle)
+
+skinparam state {
+  BackgroundColor #FAFAFA
+  BorderColor #455A64
+  RoundCorner 14
+}
+
+[*] --> Unregistered : User discovers Kleff
+
+state Unregistered {
+  state "No Account" as NoAccount
+}
+
+Unregistered --> RegistrationInProgress : clicks "Sign Up"\nor "Get Started"
+
+state RegistrationInProgress {
+  state "Redirected to Authentik" as RedirectedToAuth
+  state "Filling Registration Form" as FillingForm
+  state "Email Verification Pending" as EmailPending
+  state "Email Verified" as EmailVerified
+
+  RedirectedToAuth --> FillingForm : Authentik presents form
+  FillingForm --> EmailPending : submits valid\nregistration data
+  FillingForm --> FillingForm : validation error\n(retry with corrections)
+  EmailPending --> EmailVerified : clicks verification link
+  EmailPending --> EmailPending : resend verification
+}
+
+RegistrationInProgress --> RegistrationFailed : OIDC callback error\nor abandoned
+
+state RegistrationFailed {
+  state "Auth Error Displayed" as AuthError
+  state "Registration Abandoned" as Abandoned
+
+  AuthError --> [*] : user navigates away
+}
+
+RegistrationInProgress --> AccountCreation : OIDC callback success\n(authorization code received)
+
+state AccountCreation {
+  state "Token Exchange" as TokenExchange
+  state "User Provisioning" as Provisioning
+
+  TokenExchange --> Provisioning : access_token obtained
+  TokenExchange --> RegistrationFailed : token exchange fails
+}
+
+AccountCreation --> Active : EnsureUserFromToken\ncreates User record
+
+state Active {
+  state "Authenticated" as Authenticated
+  state "Profile Updated" as ProfileUpdated
+
+  Authenticated --> ProfileUpdated : PATCH /api/v1/users/me/profile
+  ProfileUpdated --> Authenticated : profile saved
+}
+
+Active --> Deactivated : DELETE /api/v1/users/me/deactivate\n(soft delete)
+
+state Deactivated {
+  state "Account Deactivated" as AcctDeactivated
+  note right of AcctDeactivated
+    - isDeactivated = true
+    - deactivatedAt is set
+    - Login returns 403
+    - Redirected to /error/deactivated
+  end note
+}
+
+AccountCreation --> Deactivated : EnsureUserFromToken\ndetects previously\ndeactivated/deleted account
+
+Deactivated --> [*] : permanent\n(cannot re-register)
+
+note right of Active
+  User invariants enforced:
+  - Email: unique, from OIDC claims
+  - Username: ^[a-z0-9_-]{2,63}$, unique
+  - Platform role: auto-assigned
+end note
+
+note left of AccountCreation
+  EnsureUserFromToken checks:
+  1. GetByID (existing user?)
+  2. IsUserDeleted (previously deleted?)
+  3. GetByEmail (email migration?)
+  4. Create new User if none found
+end note
+
+@enduml

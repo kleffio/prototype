@@ -1,0 +1,16 @@
+@startuml
+title UC-01: Create Project - System Sequence Diagram (SSD)
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+actor "Project Owner" as Owner
+participant "Kleff Hosting Platform" as System
+
+Owner -> System: createProject(name, description, settings)
+activate System
+    System -> System: Validate uniqueness of project id
+    System -> System: Link repository & setup webhooks
+    System --> Owner: Project Created Confirmation (Project ID)
+deactivate System
+
+@enduml

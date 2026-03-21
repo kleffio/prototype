@@ -1,0 +1,109 @@
+@startuml Kleff Hosting - Observability Full Journey
+autonumber
+skinparam Style strictuml
+skinparam SequenceMessageAlignment center
+skinparam MaxMessageSize 250
+
+actor "Admin User" as User
+
+box "Presentation Layer (Frontend)" #FAFAFA
+    participant "DashboardNav\n(Sidebar)" as Nav
+    participant "React Router" as Router
+    participant "MetricsDashboard\n(Page)" as Page
+    participant "API Client\n(getAllMetrics.ts)" as Client
+end box
+
+box "Infrastructure Inbound" #F5F5F5
+    participant "MetricsHandler\n(Gin/Go)" as Handler
+end box
+
+box "Application & Domain" #E3F2FD
+    participant "MetricsService\n(Core Logic)" as Service
+end box
+
+box "Infrastructure Outbound" #FFF9C4
+    participant "PrometheusClient\n(Adapter)" as Adapter
+end box
+
+participant "Prometheus API\n(K3s)" as K3s
+
+== Phase 1: Navigation & Mounting ==
+
+User -> Nav : Clicks "Observability"
+activate Nav
+
+Nav -> Router : navigate("/dashboard/observability")
+deactivate Nav
+activate Router
+
+Router -> Page : Mount Component
+deactivate Router
+activate Page
+
+note over Page : Initial Render\n(Show Loading Skeletons)
+
+Page -> Page : useEffect() triggered
+
+== Phase 2: Data Fetching ==
+
+Page -> Client : getAllMetrics("1h")
+activate Client
+
+Client -> Handler : GET /api/v1/systems/metrics?duration=1h
+activate Handler
+
+Handler -> Service : GetAllMetrics(ctx, "1h")
+activate Service
+
+Service -> Adapter : GetAllMetrics(ctx)
+activate Adapter
+
+note over Adapter : Initialize sync.WaitGroup\nInitialize sync.Mutex\nresults := &AggregatedMetrics{}
+
+== Phase 3: Concurrent Execution (Fan-Out) ==
+
+par Goroutine 1: Cluster Overview
+    Adapter -> Adapter : GetClusterOverview(ctx)
+    Adapter -> K3s : POST /api/v1/query (Overview Query)
+    activate K3s
+    K3s --> Adapter : 200 OK (Vector JSON)
+    deactivate K3s
+    note right of Adapter : mu.Lock()\nUpdate results.Overview\nmu.Unlock()
+else Goroutine 2: Node Metrics
+    Adapter -> Adapter : GetNodesMetric(ctx)
+    Adapter -> K3s : POST /api/v1/query_range (Node Query)
+    activate K3s
+    alt Success
+        K3s --> Adapter : 200 OK (Matrix JSON)
+        note right of Adapter : mu.Lock()\nUpdate results.Nodes\nmu.Unlock()
+    else TLS Timeout
+        K3s --> Adapter : Error: context deadline exceeded
+        note right of Adapter : mu.Lock()\nAppend error\nmu.Unlock()
+    end
+    deactivate K3s
+else Goroutine 3...N (Pods, CPU, Memory...)
+    Adapter -> K3s : Other Prometheus Queries...
+end
+
+Adapter -> Adapter : wg.Wait()
+
+== Phase 4: Response & Rendering ==
+
+Adapter --> Service : return results, errorList
+deactivate Adapter
+
+Service --> Handler : return results, nil
+deactivate Service
+
+Handler --> Client : 200 OK (AggregatedMetrics JSON)
+deactivate Handler
+
+Client --> Page : return metricsData
+deactivate Client
+
+Page -> Page : setOverview(data.overview)\nsetNodes(data.nodes)\nsetLoading(false)
+
+Page -> User : Update View\n(Render Charts, Tables, & Metric Cards)
+deactivate Page
+
+@enduml

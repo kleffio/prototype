@@ -1,0 +1,163 @@
+@startuml UC01-DLSD
+title UC-01: Register Account — Design-Level Sequence Diagram
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam maxMessageSize 200
+
+' ==== Presentation Tier ====
+box "Presentation Tier (React SPA)" #E3F2FD
+  actor "User" as User
+  participant "LandingPage" as Landing
+  participant "AuthButtons" as AuthBtns
+  participant "ProtectedRoute" as Guard
+  participant "AuthPage" as AuthPage
+  participant "oidc-client-ts" as OIDCLib
+  participant "UserSettingsProvider" as UserCtx
+  participant "Axios Client" as AxiosClient
+end box
+
+' ==== External ====
+box "External IdP" #FFF9C4
+  participant "Authentik IdP" as Authentik
+end box
+
+' ==== Application Tier ====
+box "Application Tier (Go / Chi)" #E8F5E9
+  participant "UserHandler" as Handler
+  participant "UserService" as Service
+  participant "TokenValidator" as TokenVal
+  participant "AuthentikUserManager" as AuthMgr
+end box
+
+' ==== Data Tier ====
+box "Data Tier (PostgreSQL)" #FCE4EC
+  participant "UserRepository" as UserRepo
+  participant "PlatformRoleRepository" as RoleRepo
+  database "identity-db" as DB
+end box
+
+== MSS Steps 1-4: User Clicks Sign Up → OIDC Redirect ==
+
+User -> Landing : clicks "Get Started" or "Sign Up"
+activate Landing
+Landing -> AuthBtns : onLogin()
+AuthBtns -> Guard : navigate("/dashboard")
+activate Guard
+Guard -> Guard : useAuth().isAuthenticated === false
+Guard --> AuthPage : Navigate to /auth/signin\nstate={from: "/dashboard"}
+deactivate Guard
+activate AuthPage
+AuthPage -> OIDCLib : signinRedirect({state: {from}})
+activate OIDCLib
+OIDCLib --> User : HTTP 302 → auth.kleff.io/application/o/authorize/\n?client_id=...&redirect_uri=/auth/callback\n&response_type=code&scope=openid profile email
+deactivate OIDCLib
+deactivate AuthPage
+deactivate Landing
+
+== MSS Steps 5-9: Authentik Registration & Callback ==
+
+User -> Authentik : Enters email, username, password
+activate Authentik
+Authentik -> Authentik : validateInput(email, password, username)
+Authentik -> User : sendVerificationEmail()
+User -> Authentik : clickVerificationLink()
+Authentik --> User : HTTP 302 → /auth/callback\n?code=AUTH_CODE&state=STATE
+deactivate Authentik
+
+== MSS Steps 10-11: Token Exchange & Redirect ==
+
+User -> AuthPage : /auth/callback?code=AUTH_CODE&state=STATE
+activate AuthPage
+AuthPage -> AuthPage : isCallback = true (detects code param)
+AuthPage -> OIDCLib : OIDC library processes callback
+activate OIDCLib
+OIDCLib -> Authentik : POST /application/o/token/\n{code, redirect_uri, client_id}
+activate Authentik
+Authentik --> OIDCLib : {access_token, id_token, refresh_token}
+deactivate Authentik
+OIDCLib -> OIDCLib : store tokens in localStorage
+OIDCLib --> AuthPage : isAuthenticated = true
+deactivate OIDCLib
+AuthPage -> AuthPage : navigate(from="/dashboard", replace)
+deactivate AuthPage
+
+== MSS Steps 12-15: Profile Loading (EnsureUserFromToken) ==
+
+User -> UserCtx : Dashboard route triggers load()
+activate UserCtx
+UserCtx -> UserCtx : isAuthenticated=true, extract access_token
+UserCtx -> AxiosClient : setAccessToken(token)
+UserCtx -> AxiosClient : GET /api/v1/users/me
+activate AxiosClient
+AxiosClient -> Handler : GET /api/v1/users/me\nAuthorization: Bearer <token>
+activate Handler
+Handler -> Handler : extractBearerToken(request)
+Handler -> Service : GetMe(ctx, bearerToken)
+activate Service
+
+' Token validation
+Service -> TokenVal : ValidateToken(ctx, bearerToken)
+activate TokenVal
+TokenVal -> Authentik : GET /application/o/userinfo/\nAuthorization: Bearer <token>
+activate Authentik
+Authentik --> TokenVal : {sub, email, email_verified,\npreferred_username}
+deactivate Authentik
+TokenVal --> Service : TokenClaims{Sub, Email,\nEmailVerified, PreferredUsername}
+deactivate TokenVal
+
+' User creation (first login)
+Service -> UserRepo : GetByID(ctx, claims.Sub)
+activate UserRepo
+UserRepo -> DB : SELECT * FROM users WHERE id = $1
+DB --> UserRepo : nil (user not found)
+UserRepo --> Service : nil
+deactivate UserRepo
+
+Service -> UserRepo : IsUserDeleted(ctx, claims.Sub, claims.Email)
+activate UserRepo
+UserRepo -> DB : SELECT EXISTS FROM deleted_users\nWHERE id = $1 OR email = $2
+DB --> UserRepo : false
+UserRepo --> Service : false
+deactivate UserRepo
+
+Service -> UserRepo : GetByEmail(ctx, claims.Email)
+activate UserRepo
+UserRepo -> DB : SELECT * FROM users WHERE email = $1
+DB --> UserRepo : nil (no existing user)
+UserRepo --> Service : nil
+deactivate UserRepo
+
+Service -> Service : generateUniqueUsername(claims)\n→ try preferred_username\n→ try email local part\n→ fallback: user_<uuid>
+Service -> Service : generateDisplayName(claims)
+
+Service -> AuthMgr : ResolveUserID(ctx, claims.Email)
+activate AuthMgr
+AuthMgr -> Authentik : GET /api/v3/core/users/\n?search=<email>
+Authentik --> AuthMgr : authentik_uuid
+AuthMgr --> Service : authentik_uuid
+deactivate AuthMgr
+
+Service -> Service : create User{\n  ID: claims.Sub,\n  AuthentikID: uuid,\n  Email: claims.Email,\n  EmailVerified: true,\n  Username: generated,\n  DisplayName: generated,\n  CreatedAt: now,\n  UpdatedAt: now\n}
+
+Service -> UserRepo : Save(ctx, user)
+activate UserRepo
+UserRepo -> DB : INSERT INTO users\n(id, authentik_id, email, email_verified,\nusername, display_name, created_at, updated_at)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+DB --> UserRepo : OK
+UserRepo --> Service : nil (success)
+deactivate UserRepo
+
+Service --> Handler : User{id, email, username, ...}
+deactivate Service
+
+Handler -> Handler : jsonResponse(200, user)
+Handler --> AxiosClient : HTTP 200 {id, email,\nusername, displayName, ...}
+deactivate Handler
+AxiosClient --> UserCtx : userProfile
+deactivate AxiosClient
+
+UserCtx -> UserCtx : setSettings(userProfile)
+UserCtx --> User : Dashboard renders with user profile
+deactivate UserCtx
+
+@enduml

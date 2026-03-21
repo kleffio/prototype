@@ -1,0 +1,36 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+LAYOUT_WITH_LEGEND()
+SHOW_PERSON_OUTLINE()
+
+title Level 1 - System Context Diagram for Kleff Hosting System
+
+' ==== External Actors ====
+Person(developer, "Developer", "A developer who would like to manage their account credentials and associated projects.")
+Person(projectowner, "Project Owner", "A developer who creates and manages projects with containerized applications.")
+Person(collaborator, "Collaborator", "A developer invited to contribute to projects with assigned permissions.")
+Person(admin, "System Admin", "An admin who oversees the platform operations, nodes, and billing.")
+
+' ==== External Systems ====
+System_Ext(payment_gateway, "Payment Gateway", "External system for processing online transactions using Stripe")
+System_Ext(auth_server, "Authentik IDP", "Central OIDC/OAuth2 Identity Provider for Kleff Hosting")
+System_Ext(secret_manager, "Secrets Manager", "Manages and provides secrets and environment variables using Doppler")
+System_Ext(emailing_service, "Email Service", "Sends transactional emails using Authentik's email server")
+System_Ext(git_provider, "Git Provider", "Hosts source repositories and sends webhooks using GitHub")
+
+' ==== System ====
+System(kleff, "Kleff Hosting", "PaaS that enables developers to deploy Docker Compose projects from Git repositories with team collaboration.")
+
+' ==== Relationships ====
+Rel(projectowner, kleff, "Creates projects, manages collaborators, deploys containers, monitors metrics", "HTTPS/Web")
+Rel(developer, kleff, "Updates their user profile, checks their associated ", "HTTPS/Web")
+Rel(collaborator, kleff, "Contributes to projects based on assigned permissions", "HTTPS/Web")
+Rel(admin, kleff, "Manages infrastructure nodes, monitors platform health, reviews invoices", "HTTPS/Internal Web")
+
+Rel(kleff, payment_gateway, "Processes payments for invoices", "HTTPS/API")
+Rel(kleff, auth_server, "Delegates all authentication (login, logout) and token issuing", "OIDC/OAuth2")
+Rel(kleff, secret_manager, "Stores and retrieves project secrets and env vars", "HTTPS/API")
+Rel(kleff, emailing_service, "Sends invitation, deployment, and billing emails", "SMTP/HTTPS")
+Rel(kleff, git_provider, "Fetches docker-compose.yml, receives push/tag webhooks", "HTTPS/Git")
+
+@enduml

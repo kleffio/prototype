@@ -1,0 +1,128 @@
+@startuml C4L3-Application
+title C4 Level 3 – Application Tier (Kleff Backend Services)
+
+skinparam packageStyle rectangle
+
+package "Application Tier – Kleff Backend (Go / HTTP APIs)" {
+
+  ' ========= Identity & Access (via Authentik) =========
+  package "Identity & Access Integration" {
+    component "AuthController\n(/me, logout, token debug)" as AuthController
+    component "TenantController" as TenantController
+
+    component "AuthSessionService\n(Token verification & current user)" as AuthService
+    component "TenantService\n(Tenant membership & roles)" as TenantService
+
+    component "UserRepository\n(Users & memberships)" as UserRepo
+    component "TenantRepository\n(Tenants & plans)" as TenantRepo
+    component "SessionRepository\n(Optional: server-side session cache)" as SessionRepo
+
+    component "AuthentikOIDCAdapter\n• Validates ID/Access tokens\n• Fetches userinfo\n• Maps claims -> User" as AuthentikAdapter
+
+    AuthController --> AuthService
+    TenantController --> TenantService
+
+    AuthService --> UserRepo
+    AuthService --> SessionRepo
+    AuthService --> AuthentikAdapter
+
+    TenantService --> TenantRepo
+    TenantService --> UserRepo
+  }
+
+
+  ' ========= Project & Deployment =========
+  package "Project & Deployment Lifecycle" {
+    component "ProjectController" as ProjectController
+    component "DeploymentController" as DeploymentController
+
+    component "ProjectService" as ProjectService
+    component "DeploymentService" as DeploymentService
+
+    component "ProjectRepository" as ProjectRepo
+    component "AppEnvironmentRepository" as EnvRepo
+    component "DeploymentRepository" as DeploymentRepo
+
+    component "GitProviderClient\n(GitHub / GitLab)" as GitClient
+    component "BuildOrchestrator\n(Container builder / CI adapter)" as BuildOrchestrator
+    component "RuntimeOrchestrator\n(Kubernetes / Docker adapter)" as RuntimeOrchestrator
+
+    ProjectController --> ProjectService
+    DeploymentController --> DeploymentService
+
+    ProjectService --> ProjectRepo
+    ProjectService --> EnvRepo
+    ProjectService --> GitClient
+
+    DeploymentService --> DeploymentRepo
+    DeploymentService --> ProjectRepo
+    DeploymentService --> BuildOrchestrator
+    DeploymentService --> RuntimeOrchestrator
+  }
+
+  ' ========= Billing & Subscription =========
+  package "Billing & Payments" {
+    component "BillingController" as BillingController
+
+    component "BillingService" as BillingService
+
+    component "SubscriptionRepository" as SubscriptionRepo
+    component "InvoiceRepository" as InvoiceRepo
+    component "PaymentMethodRepository" as PaymentMethodRepo
+
+    component "PaymentGatewayClient\n(Stripe adapter)" as PaymentGateway
+    component "BillingEventPublisher\n(Webhooks / events)" as BillingEvents
+
+    BillingController --> BillingService
+
+    BillingService --> SubscriptionRepo
+    BillingService --> InvoiceRepo
+    BillingService --> PaymentMethodRepo
+    BillingService --> PaymentGateway
+    BillingService --> BillingEvents
+  }
+
+  ' ========= Observability & Monitoring =========
+  package "Observability & Monitoring" {
+    component "ObservabilityController" as ObservabilityController
+
+    component "ObservabilityService" as ObservabilityService
+
+    component "LogRepository\n(App log index)" as LogRepo
+    component "MetricRepository\n(Time-series metrics)" as MetricRepo
+    component "AlertRuleRepository" as AlertRuleRepo
+
+    component "LogIngestionAdapter\n(Fluent Bit / Loki / Elasticsearch)" as LogIngest
+    component "MetricsAdapter\n(Prometheus / OTLP)" as MetricsAdapter
+    component "AlertingAdapter\n(Alertmanager / Email / Slack)" as AlertingAdapter
+
+    ObservabilityController --> ObservabilityService
+
+    ObservabilityService --> LogRepo
+    ObservabilityService --> MetricRepo
+    ObservabilityService --> AlertRuleRepo
+    ObservabilityService --> LogIngest
+    ObservabilityService --> MetricsAdapter
+    ObservabilityService --> AlertingAdapter
+  }
+}
+
+' Data tier boundary (from L2)
+package "Data Tier (Postgres / Redis / Object Storage)" {
+  [Kleff Relational DB]
+  [Cache (Redis)]
+  [Object Storage (Logs / Artifacts)]
+}
+
+UserRepo --> [Kleff Relational DB]
+TenantRepo --> [Kleff Relational DB]
+SessionRepo --> [Kleff Relational DB]
+ProjectRepo --> [Kleff Relational DB]
+EnvRepo --> [Kleff Relational DB]
+DeploymentRepo --> [Kleff Relational DB]
+SubscriptionRepo --> [Kleff Relational DB]
+InvoiceRepo --> [Kleff Relational DB]
+PaymentMethodRepo --> [Kleff Relational DB]
+LogRepo --> [Object Storage (Logs / Artifacts)]
+MetricRepo --> [Kleff Relational DB]
+AlertRuleRepo --> [Kleff Relational DB]

@@ -1,0 +1,92 @@
+@startuml UC01-SSD
+title UC-01: Register Account — System Sequence Diagram
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+actor "Developer\n(User)" as User
+participant "Kleff System" as System
+participant "Authentik IdP" as Authentik
+
+== Main Success Scenario ==
+
+User -> System : clickSignUp()
+activate System
+System --> User : redirectToAuth(returnUrl)
+deactivate System
+
+User -> Authentik : navigateToRegistrationForm()
+activate Authentik
+Authentik --> User : displayRegistrationForm()
+
+User -> Authentik : submitRegistration(email, username, password)
+Authentik -> Authentik : validateInput()
+Authentik -> User : sendVerificationEmail(email)
+User -> Authentik : verifyEmail(verificationToken)
+Authentik --> User : oidcCallback(authorizationCode, state)
+deactivate Authentik
+
+User -> System : handleOIDCCallback(authorizationCode, state)
+activate System
+System -> Authentik : exchangeToken(authorizationCode)
+activate Authentik
+Authentik --> System : tokens(accessToken, idToken, refreshToken)
+deactivate Authentik
+
+System -> System : getMe(accessToken)
+System --> User : redirectToDashboard()
+System --> User : displayDashboard(userProfile)
+deactivate System
+
+== Extension 2b: Access Protected Resource Without Auth ==
+
+User -> System : navigateTo(/dashboard)
+activate System
+System -> System : checkAuthentication()
+System --> User : redirectToAuth(returnUrl=/dashboard)
+deactivate System
+
+note right of System
+  ProtectedRoute detects
+  !isAuthenticated and redirects
+  to /auth/signin with return URL
+end note
+
+== Exception 7a: Authentik Validation Failure ==
+
+User -> Authentik : submitRegistration(invalidData)
+activate Authentik
+Authentik -> Authentik : validateInput()
+Authentik --> User : displayValidationError(reason)
+deactivate Authentik
+
+note right of Authentik
+  Possible errors:
+  - Email already registered
+  - Password too weak
+  - Username already taken
+end note
+
+== Exception 9a: OIDC Callback Error ==
+
+Authentik --> User : oidcCallback(error=access_denied)
+User -> System : handleOIDCCallback(error)
+activate System
+System --> User : displayAuthError("Try Again")
+deactivate System
+
+== Exception 14b: Deactivated Account ==
+
+User -> System : handleOIDCCallback(authorizationCode, state)
+activate System
+System -> Authentik : exchangeToken(authorizationCode)
+activate Authentik
+Authentik --> System : tokens(accessToken)
+deactivate Authentik
+System -> System : getMe(accessToken)
+System -> System : ensureUserFromToken()
+System --> User : error(403, "account deactivated")
+System --> User : redirectTo(/error/deactivated)
+deactivate System
+
+@enduml

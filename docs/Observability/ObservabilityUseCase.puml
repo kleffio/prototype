@@ -1,0 +1,48 @@
+@startuml Kleff Hosting - Observability Use Cases
+left to right direction
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor #455A64
+  RoundCorner 14
+}
+
+' ==== Actors ====
+actor "Developer" as AuthUser #silver
+actor "Project Owner" as Owner #lightblue
+actor "Collaborator" as Collab #lightgreen
+
+Owner -|> AuthUser
+Collab -|> AuthUser
+
+rectangle "Kleff Hosting Platform" {
+
+  package "Observability" #FFCCBC {
+    usecase "UC-30: View Application Logs" as UC30
+    usecase "UC-31: Filter/Search Logs" as UC31
+    usecase "UC-32: View Resource Metrics" as UC32
+    usecase "UC-33: Set Monitoring Alerts" as UC33
+    usecase "UC-34: Download Reports" as UC34
+    usecase "UC-35: View Error Summaries" as UC35
+  }
+}
+
+' ==== Actor Relationships ====
+AuthUser -- UC30
+AuthUser -- UC31
+AuthUser -- UC33
+AuthUser -- UC34
+AuthUser -- UC35
+
+Collab -- UC30
+
+' ==== EXTENDS ====
+UC31 .> UC30 : <<extends>>
+UC34 .> UC30 : <<extends>>
+UC34 .> UC32 : <<extends>>
+UC35 .> UC30 : <<extends>>
+
+' ==== INCLUDES ====
+UC33 ..> UC32 : <<includes>>
+
+@enduml

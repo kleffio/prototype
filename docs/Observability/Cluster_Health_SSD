@@ -1,0 +1,17 @@
+@startuml
+actor Jeremy as "System Administrator"
+participant System as "Kleff Hosting Platform"
+
+Jeremy -> System : Request Cluster Health Dashboard
+System -> System : Aggregating real-time metrics & logs
+
+alt Success: Cluster Reachable
+    System --> Jeremy : Display Dashboard (Full Metrics & Logs)
+else API Timeout (Manual Screenshot Scenario)
+    note right of System
+        Logic: Go service returns partial data + warning logs
+    end note
+    System --> Jeremy : Display Dashboard with Partial Data / Loading Error
+end
+
+@enduml

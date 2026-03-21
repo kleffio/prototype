@@ -1,0 +1,87 @@
+@startuml Kleff Hosting C4L3 - Observability
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Level 3 - Component Diagram for Observability Service (Monitoring & Logs)
+
+' ==== External Containers / Systems (from C4L2) ====
+Container(spa, "Kleff Dashboard (SPA)", "TypeScript, React", "Frontend for viewing metrics and logs.")
+Container(node_agent, "Node Agent", "Go daemon", "Pushes container metrics and logs.")
+Container(project_svc, "Project Management Service", "Java, Spring Boot", "Validates project permissions (VIEW_LOGS, VIEW_METRICS).")
+ContainerDb(obs_db, "observability-db", "TimescaleDB", "Stores time-series metrics and log entries.")
+ContainerDb(deployment_db, "deployment-db", "PostgreSQL", "Stores container metadata used for labeling.")
+
+' ==== Observability Service Boundary ====
+Container_Boundary(obs_svc, "Observability Service") {
+
+  ' ---- API Layer (Controllers) ----
+  Component(metrics_api, "Metrics API Controller", "REST Controller", "Exposes aggregated/container metrics queries (/api/metrics/*).")
+
+  Component(logs_api, "Logs API Controller", "REST Controller", "Exposes log query endpoints with filtering & pagination (/api/logs/*).")
+
+  Component(ingest_api, "Ingestion Controller", "gRPC/HTTP Endpoint", "Receives metrics and logs from Node Agents.")
+
+  ' ---- Application / Service Layer ----
+  Component(metrics_query_svc, "Metrics Query Service", "Application Service", "Handles metric queries, aggregation, and downsampling.")
+
+  Component(logs_query_svc, "Logs Query Service", "Application Service", "Executes log searches and streaming for tail-like views.")
+
+  Component(ingest_svc, "Ingestion Service", "Application Service", "Transforms raw metrics & logs from Node Agents into normalized records for storage.")
+
+  Component(obs_auth_svc, "Observability Authorization Service", "Application Service", "Validates that the requesting user has VIEW_LOGS / VIEW_METRICS permissions for the target project.")
+
+  ' ---- Domain Layer ----
+  Component(metrics_domain, "Metrics Domain Model", "Domain Model", "Represents normalized metrics per resource (Deployment/Container/Project).")
+
+  Component(logs_domain, "LogEntry Domain Model", "Domain Model", "Represents structured log entries with resource linkage and severity levels.")
+
+  ' ---- Infrastructure / Adapters ----
+  Component(metrics_repo, "MetricsRepository", "Repository Adapter", "Persists and queries metrics series in observability-db.")
+
+  Component(logs_repo, "LogsRepository", "Repository Adapter", "Persists and queries logs in observability-db.")
+
+  Component(project_client, "ProjectServiceClient", "Integration Adapter", "Uses Project Management Service to validate project-level permissions and fetch metadata.")
+
+  Component(deployment_reader, "DeploymentMetadataReader", "Data Access Adapter", "Reads container and deployment metadata from deployment-db for labeling/joins.")
+}
+
+' ==== Relationships: SPA -> Observability Service ====
+Rel(spa, metrics_api, "Queries metrics charts via /api/metrics/*", "JSON/REST/HTTPS (Bearer)")
+Rel(spa, logs_api, "Views container logs via /api/logs/*", "JSON/REST/HTTPS (Bearer)")
+
+' ==== Relationships: Node Agent -> Observability Service ====
+Rel(node_agent, ingest_api, "Pushes metrics & logs", "gRPC/HTTP")
+
+' ==== API -> Application Layer ====
+Rel(metrics_api, obs_auth_svc, "Asks for permission check", "Method calls")
+Rel(metrics_api, metrics_query_svc, "Invokes", "Method calls")
+
+Rel(logs_api, obs_auth_svc, "Asks for permission check", "Method calls")
+Rel(logs_api, logs_query_svc, "Invokes", "Method calls")
+
+Rel(ingest_api, ingest_svc, "Invokes", "Method calls")
+
+' ==== Application -> Domain & Adapters ====
+Rel(obs_auth_svc, project_client, "Validates VIEW_LOGS / VIEW_METRICS permissions", "JSON/REST/HTTPS")
+
+Rel(metrics_query_svc, metrics_repo, "Reads metrics series", "Repository API")
+Rel(metrics_query_svc, metrics_domain, "Maps raw records to domain models", "Method calls")
+Rel(metrics_query_svc, deployment_reader, "Resolves container/deployment labels", "Data access")
+
+Rel(logs_query_svc, logs_repo, "Reads log entries", "Repository API")
+Rel(logs_query_svc, logs_domain, "Maps raw records to domain models", "Method calls")
+Rel(logs_query_svc, deployment_reader, "Resolves container/deployment labels", "Data access")
+
+Rel(ingest_svc, metrics_repo, "Persists metrics records", "Repository API")
+Rel(ingest_svc, logs_repo, "Persists log entries", "Repository API")
+Rel(ingest_svc, metrics_domain, "Normalizes metrics payloads", "Method calls")
+Rel(ingest_svc, logs_domain, "Normalizes log payloads", "Method calls")
+
+' ==== Adapters -> External Systems ====
+Rel(metrics_repo, obs_db, "Reads/Writes time-series metrics", "SQL/TimescaleDB")
+Rel(logs_repo, obs_db, "Reads/Writes log entries", "SQL/TimescaleDB")
+Rel(project_client, project_svc, "Checks permissions & fetches project metadata", "JSON/REST/HTTPS")
+Rel(deployment_reader, deployment_db, "Reads container metadata", "SQL (read-only)")
+
+@enduml
